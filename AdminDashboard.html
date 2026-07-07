@@ -1067,17 +1067,27 @@
             }
 
             #overview .dashboard-overview-card {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
                 min-height: clamp(5rem, 21vw, 6.5rem) !important;
                 padding: clamp(0.38rem, 2.1vw, 0.65rem) !important;
                 overflow: hidden;
             }
 
             #overview .dashboard-overview-card > div {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
                 width: 100%;
                 gap: 0 !important;
             }
 
             #overview .dashboard-overview-label {
+                display: block !important;
+                width: 100% !important;
                 font-size: clamp(0.54rem, 2.6vw, 0.72rem) !important;
                 line-height: 1.12 !important;
                 text-align: center;
@@ -1087,6 +1097,8 @@
             }
 
             #overview .dashboard-overview-value {
+                display: block !important;
+                width: 100% !important;
                 font-size: clamp(1.05rem, 7vw, 1.75rem) !important;
                 line-height: 1 !important;
                 margin-top: 0.35rem !important;
