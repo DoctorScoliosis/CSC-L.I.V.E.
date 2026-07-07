@@ -1038,6 +1038,150 @@
             border-bottom: 4px solid #1d4ed8 !important;
         }
 
+        /* Final mobile readability patch: keep text compact without vertical word distortion. */
+        @media (max-width: 640px) {
+            .admin-header-text {
+                min-width: 0 !important;
+                max-width: calc(100vw - 182px) !important;
+                padding: 0.65rem 0.7rem !important;
+            }
+
+            .admin-header h2 {
+                font-size: clamp(0.92rem, 4.2vw, 1.2rem) !important;
+                line-height: 1.12 !important;
+                overflow-wrap: normal !important;
+                word-break: normal !important;
+                hyphens: auto;
+            }
+
+            .admin-header p {
+                font-size: clamp(0.66rem, 3.2vw, 0.8rem) !important;
+                line-height: 1.25 !important;
+                overflow-wrap: normal !important;
+                word-break: normal !important;
+            }
+
+            #overview .dashboard-overview-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                gap: clamp(0.35rem, 1.8vw, 0.55rem) !important;
+            }
+
+            #overview .dashboard-overview-card {
+                min-height: clamp(5rem, 21vw, 6.5rem) !important;
+                padding: clamp(0.38rem, 2.1vw, 0.65rem) !important;
+                overflow: hidden;
+            }
+
+            #overview .dashboard-overview-card > div {
+                width: 100%;
+                gap: 0 !important;
+            }
+
+            #overview .dashboard-overview-label {
+                font-size: clamp(0.54rem, 2.6vw, 0.72rem) !important;
+                line-height: 1.12 !important;
+                text-align: center;
+                overflow-wrap: normal !important;
+                word-break: normal !important;
+                hyphens: auto;
+            }
+
+            #overview .dashboard-overview-value {
+                font-size: clamp(1.05rem, 7vw, 1.75rem) !important;
+                line-height: 1 !important;
+                margin-top: 0.35rem !important;
+                text-align: center;
+            }
+
+            #overview .dashboard-overview-note {
+                display: none !important;
+            }
+
+            .responsive-table-card,
+            .overflow-x-auto,
+            #participants .responsive-table-card,
+            #accounts .responsive-table-card,
+            #adminDeleteRequestsArea,
+            #overview .responsive-table-card {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab-content table,
+            #participants table,
+            #accounts table,
+            #adminDeleteRequestsArea table,
+            #overview .responsive-table-card table {
+                table-layout: auto !important;
+                width: max-content !important;
+                max-width: none !important;
+                font-size: clamp(0.62rem, 2.85vw, 0.76rem) !important;
+            }
+
+            #overview .responsive-table-card table {
+                min-width: 430px !important;
+            }
+
+            #participants table {
+                min-width: 720px !important;
+            }
+
+            #accounts table {
+                min-width: 980px !important;
+            }
+
+            #adminDeleteRequestsArea table {
+                min-width: 760px !important;
+            }
+
+            .tab-content th,
+            .tab-content td {
+                padding: 0.45rem 0.5rem !important;
+                line-height: 1.25 !important;
+                white-space: normal !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                vertical-align: top;
+            }
+
+            #participants th,
+            #participants td,
+            #accounts th,
+            #accounts td {
+                white-space: normal !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+            }
+
+            #participants .inline-flex,
+            #accounts .inline-flex {
+                white-space: nowrap !important;
+                word-break: normal !important;
+                overflow-wrap: normal !important;
+                font-size: clamp(0.58rem, 2.7vw, 0.72rem) !important;
+                padding: 0.25rem 0.45rem !important;
+            }
+
+            #participants td:last-child {
+                white-space: nowrap !important;
+            }
+
+            #accounts td:last-child > div {
+                min-width: 7.5rem;
+            }
+
+            #accounts .account-approval-btn,
+            #accounts .delete-account-btn,
+            #accounts .edit-account-sport,
+            #accounts td:last-child a,
+            #accounts td:last-child span {
+                white-space: nowrap !important;
+                font-size: clamp(0.58rem, 2.65vw, 0.72rem) !important;
+                line-height: 1.1 !important;
+                padding: 0.42rem 0.55rem !important;
+            }
+        }
+
     </style>
 
 </head>
