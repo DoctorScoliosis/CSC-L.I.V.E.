@@ -105,10 +105,20 @@
             position: fixed !important;
             top: max(0.75rem, env(safe-area-inset-top)) !important;
             right: max(0.75rem, env(safe-area-inset-right)) !important;
-            z-index: 5000 !important;
+            z-index: 2147483000 !important;
             max-height: calc(100dvh - 1.5rem) !important;
             overscroll-behavior: contain;
             isolation: isolate;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            contain: layout paint;
+            pointer-events: auto;
+        }
+
+        .notification-overlay-panel.is-body-overlay {
+            position: fixed !important;
+            inset: auto max(0.75rem, env(safe-area-inset-right)) auto auto !important;
+            top: max(0.75rem, env(safe-area-inset-top)) !important;
         }
 
         #adminNotificationList {
@@ -3235,7 +3245,20 @@
                 return Number(isCreator ? conversation.unread_count_sender : conversation.unread_count_receiver) || 0;
             }
 
+            function ensureAdminNotificationPortal() {
+                if (!adminNotificationPanel || adminNotificationPanel.parentElement === document.body) {
+                    return;
+                }
+
+                document.body.appendChild(adminNotificationPanel);
+                adminNotificationPanel.classList.add("is-body-overlay");
+            }
+
             function setAdminNotificationPanelVisible(isVisible) {
+                if (isVisible) {
+                    ensureAdminNotificationPortal();
+                }
+
                 adminNotificationPanel?.classList.toggle("hidden", !isVisible);
                 adminMessageNotificationBell?.setAttribute("aria-expanded", String(Boolean(isVisible)));
             }
@@ -6929,7 +6952,8 @@
             adminChatBack.addEventListener("click", function () {
                 adminChatShell.classList.remove("chat-open");
             });
-            adminMessageNotificationBell.addEventListener("click", function () {
+            adminMessageNotificationBell.addEventListener("click", function (event) {
+                event.stopPropagation();
                 setAdminNotificationPanelVisible(adminNotificationPanel.classList.contains("hidden"));
             });
             adminConversationMenuButton.addEventListener("click", function () {
@@ -6940,7 +6964,7 @@
                 if (!adminConversationMenuContainer.contains(event.target)) {
                     setAdminConversationMenuVisible(false);
                 }
-                if (!adminNotificationContainer.contains(event.target)) {
+                if (!adminNotificationContainer.contains(event.target) && !adminNotificationPanel.contains(event.target)) {
                     setAdminNotificationPanelVisible(false);
                 }
             });
