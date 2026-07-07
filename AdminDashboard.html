@@ -3092,12 +3092,28 @@
                     `;
                 });
                 const deleteItems = adminPendingDeleteRequests.map(match => `
-                    <button type="button" data-admin-delete-request-id="${escapeHTML(match.id || "")}" class="admin-delete-request-notification w-full rounded-xl px-3 py-3 text-left hover:bg-amber-50">
+                    <div role="button" tabindex="0" data-admin-delete-request-id="${escapeHTML(match.id || "")}" class="admin-delete-request-notification w-full rounded-xl px-3 py-3 text-left hover:bg-amber-50">
                         <span class="block text-xs font-bold uppercase tracking-wide text-amber-700">Delete request</span>
                         <span class="mt-1 block font-bold text-gray-900">${escapeHTML(getOverviewSportName(match))}</span>
                         <span class="mt-1 block text-sm text-gray-600">${escapeHTML(getOverviewTeamName(match, "one"))} vs ${escapeHTML(getOverviewTeamName(match, "two"))}</span>
                         <span class="mt-1 block text-xs text-gray-400">${escapeHTML(match.delete_requested_by_name || "Committee")}</span>
-                    </button>
+                        <span class="mt-3 flex flex-wrap gap-2">
+                            <span
+                                role="button"
+                                tabindex="0"
+                                data-match-id="${escapeHTML(match.id || "")}"
+                                class="admin-delete-request-approve-btn inline-flex rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700">
+                                Approve
+                            </span>
+                            <span
+                                role="button"
+                                tabindex="0"
+                                data-match-id="${escapeHTML(match.id || "")}"
+                                class="admin-delete-request-reject-btn inline-flex rounded-lg bg-gray-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-gray-800">
+                                Reject
+                            </span>
+                        </span>
+                    </div>
                 `);
                 const feedbackItems = studentFeedbackData
                     .filter(item => normalizeComparableValue(item.status || "New") === "new")
@@ -3149,6 +3165,36 @@
                                 deleteRequestsArea.classList.remove("ring-4", "ring-amber-300");
                             }, 1800);
                         }, 100);
+                    });
+                });
+                document.querySelectorAll(".admin-delete-request-approve-btn").forEach(button => {
+                    button.addEventListener("click", async function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setAdminNotificationPanelVisible(false);
+                        await approveMatchDelete(Number(this.dataset.matchId));
+                    });
+                    button.addEventListener("keydown", async function (event) {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setAdminNotificationPanelVisible(false);
+                        await approveMatchDelete(Number(this.dataset.matchId));
+                    });
+                });
+                document.querySelectorAll(".admin-delete-request-reject-btn").forEach(button => {
+                    button.addEventListener("click", async function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setAdminNotificationPanelVisible(false);
+                        await rejectMatchDelete(Number(this.dataset.matchId));
+                    });
+                    button.addEventListener("keydown", async function (event) {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setAdminNotificationPanelVisible(false);
+                        await rejectMatchDelete(Number(this.dataset.matchId));
                     });
                 });
                 document.querySelectorAll(".admin-feedback-notification").forEach(button => {
@@ -4007,6 +4053,11 @@
                 return match.sport?.sport_name || match.sport_name || "Unknown Sport";
             }
 
+            function isMatchDeleteRequested(match) {
+                const value = match?.delete_requested;
+                return value === true || normalizeComparableValue(value) === "true";
+            }
+
             function getStatusBadge(status) {
                 if (status === "Ongoing") {
                     return "bg-red-100 text-red-700";
@@ -4153,7 +4204,7 @@
                     return;
                 }
 
-                const sortedMatches = [...matches].sort((a, b) => {
+                const sortByStatusAndSchedule = (a, b) => {
                     const statusOrder = { Ongoing: 0, Next: 1, Done: 2 };
                     const statusDiff = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
 
@@ -4162,10 +4213,19 @@
                     }
 
                     return new Date(a.match_time || 0) - new Date(b.match_time || 0);
-                });
+                };
 
-                overviewRecentMatchesBody.innerHTML = sortedMatches.slice(0, 8).map(match => {
-                    const deleteRequestCell = match.delete_requested ? `
+                const pendingDeleteMatches = matches
+                    .filter(match => isMatchDeleteRequested(match))
+                    .sort((a, b) => new Date(b.delete_requested_at || b.created_at || 0) - new Date(a.delete_requested_at || a.created_at || 0));
+                const regularMatches = matches
+                    .filter(match => !isMatchDeleteRequested(match))
+                    .sort(sortByStatusAndSchedule);
+                const displayLimit = Math.max(8, pendingDeleteMatches.length);
+                const displayMatches = [...pendingDeleteMatches, ...regularMatches].slice(0, displayLimit);
+
+                overviewRecentMatchesBody.innerHTML = displayMatches.map(match => {
+                    const deleteRequestCell = isMatchDeleteRequested(match) ? `
                         <div class="space-y-2">
                             <div>
                                 <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
@@ -4197,7 +4257,7 @@
                     `;
 
                     return `
-                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <tr class="border-b border-gray-100 hover:bg-gray-50 ${isMatchDeleteRequested(match) ? "bg-amber-50/60" : ""}">
                         <td class="py-3 px-4 font-medium text-gray-900">${escapeHTML(getOverviewSportName(match))}</td>
                         <td class="py-3 px-4 text-gray-600">
                             ${escapeHTML(getOverviewTeamName(match, "one"))}
@@ -4429,7 +4489,7 @@
                 const upcomingMatches = matches.filter(match => match.status === "Next").length;
                 const activeGames = matches.filter(match => match.status === "Ongoing").length;
                 const completedMatches = matches.filter(match => match.status === "Done").length;
-                adminPendingDeleteRequests = matches.filter(match => match.delete_requested);
+                adminPendingDeleteRequests = matches.filter(match => isMatchDeleteRequested(match));
                 updateAdminMessageNotification();
 
                 const approvedParticipants = participants.filter(participant => participant.status === "Approved").length;
