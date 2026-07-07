@@ -125,9 +125,25 @@
 
             .notification-overlay-panel {
                 position: fixed !important;
-                top: calc(var(--admin-header-height, 5.5rem) + 0.75rem) !important;
-                right: 1rem !important;
-                z-index: 1000 !important;
+                top: max(0.75rem, env(safe-area-inset-top)) !important;
+                right: max(0.75rem, env(safe-area-inset-right)) !important;
+                z-index: 5000 !important;
+                max-height: calc(100dvh - 1.5rem) !important;
+                overscroll-behavior: contain;
+                isolation: isolate;
+            }
+
+            #notificationList {
+                max-height: calc(100dvh - 7rem) !important;
+            }
+
+            @media (max-width: 480px) {
+                .notification-overlay-panel {
+                    left: max(0.75rem, env(safe-area-inset-left)) !important;
+                    right: max(0.75rem, env(safe-area-inset-right)) !important;
+                    width: auto !important;
+                    max-width: none !important;
+                }
             }
 
             #sidebarToggle {
