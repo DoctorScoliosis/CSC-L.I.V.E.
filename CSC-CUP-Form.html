@@ -196,6 +196,22 @@
             box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.52);
         }
 
+        .registration-success-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.68);
+            backdrop-filter: blur(5px);
+        }
+
+        .registration-success-modal.is-open {
+            display: flex;
+        }
+
         @media (max-width: 640px) {
             .registration-shell {
                 padding: 0.75rem;
@@ -366,6 +382,17 @@
         </div>
     </div>
 
+    <div id="successModal" class="registration-success-modal" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
+        <div class="w-full max-w-lg rounded-3xl border border-emerald-100 bg-white p-6 text-center shadow-2xl sm:p-8">
+            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl font-black text-emerald-700">✓</div>
+            <h2 id="successModalTitle" class="text-2xl font-black text-slate-950">Registration Submitted</h2>
+            <p id="successModalMessage" class="mt-4 text-sm font-bold leading-relaxed text-slate-700 sm:text-base"></p>
+            <button id="closeSuccessModal" type="button" class="mt-6 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-800 sm:w-auto sm:min-w-32">
+                Done
+            </button>
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -388,6 +415,10 @@
         const cameraOverlayLabel = document.getElementById("cameraOverlayLabel");
         const cancelCameraOverlay = document.getElementById("cancelCameraOverlay");
         const captureCameraOverlay = document.getElementById("captureCameraOverlay");
+        const successModal = document.getElementById("successModal");
+        const successModalMessage = document.getElementById("successModalMessage");
+        const closeSuccessModal = document.getElementById("closeSuccessModal");
+        const REGISTRATION_SUCCESS_MESSAGE = "Your registration has been submitted successfully. The CSC will review your registration. If your registration is forfeited or rejected, your team president will be notified. If you do not receive any notice from your president, your registration will be considered approved.";
         let activeCameraType = null;
         let activeCameraStream = null;
 
@@ -432,6 +463,18 @@
         function clearAlert() {
             formAlert.classList.add("hidden");
             formAlert.textContent = "";
+        }
+
+        function openSuccessModal() {
+            successModalMessage.textContent = REGISTRATION_SUCCESS_MESSAGE;
+            successModal.classList.add("is-open");
+            document.body.classList.add("overflow-hidden");
+            closeSuccessModal.focus();
+        }
+
+        function closeSuccessModalFunction() {
+            successModal.classList.remove("is-open");
+            document.body.classList.remove("overflow-hidden");
         }
 
         function stopCamera(type) {
@@ -667,7 +710,8 @@
                     document.querySelector(`[data-camera-retake="${type}"]`)?.classList.add("hidden");
                 });
                 await loadTeams();
-                setAlert("Registration submitted successfully. Please wait for admin review.", "success");
+                setAlert(REGISTRATION_SUCCESS_MESSAGE, "success");
+                openSuccessModal();
             } catch (error) {
                 console.error("Registration error:", error);
                 setAlert(getRegistrationErrorMessage(error, document.getElementById("idNumber").value.trim()));
@@ -687,6 +731,17 @@
 
         captureCameraOverlay.addEventListener("click", () => capturePhoto());
         cancelCameraOverlay.addEventListener("click", () => stopCamera());
+        closeSuccessModal.addEventListener("click", closeSuccessModalFunction);
+        successModal.addEventListener("click", event => {
+            if (event.target === successModal) {
+                closeSuccessModalFunction();
+            }
+        });
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape" && successModal.classList.contains("is-open")) {
+                closeSuccessModalFunction();
+            }
+        });
 
         window.addEventListener("beforeunload", () => {
             Object.keys(cameras).forEach(stopCamera);
