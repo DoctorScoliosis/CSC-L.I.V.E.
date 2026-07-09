@@ -1770,21 +1770,23 @@
                 </div>
 
                 <div class="responsive-table-card p-6 bg-white border-0 shadow-md rounded-lg overflow-x-auto">
-                    <table class="w-full min-w-[760px]">
+                    <table class="w-full min-w-[980px]">
                         <thead>
                             <tr class="border-b border-gray-200">
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
-                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Student ID</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Course</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Age</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">ID Number</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Team</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Created</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Date Registered</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
                             </tr>
                         </thead>
 
                         <tbody id="participantsTableBody">
                             <tr>
-                                <td colspan="6" class="py-4 px-4 text-gray-600">
+                                <td colspan="8" class="py-4 px-4 text-gray-600">
                                     Loading participants...
                                 </td>
                             </tr>
@@ -2483,6 +2485,47 @@
         </div>
     </div>
 
+    <div
+        id="participantDetailsModal"
+        class="dashboard-modal-overlay fixed inset-0 z-[1000] hidden items-center justify-center bg-black bg-opacity-60 p-4">
+        <div class="dashboard-modal-panel modal-panel max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                <div>
+                    <h2 id="participantDetailsTitle" class="text-xl font-black text-gray-900">Participant Details</h2>
+                    <p class="text-xs font-semibold text-gray-500">Review registration details and captured documents.</p>
+                </div>
+                <button type="button" id="closeParticipantDetailsModal" class="text-3xl leading-none text-gray-500 hover:text-gray-900">&times;</button>
+            </div>
+
+            <div class="max-h-[calc(90vh-76px)] overflow-y-auto p-5">
+                <div id="participantDetailsContent" class="space-y-5"></div>
+
+                <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <h3 class="mb-3 text-sm font-black uppercase tracking-widest text-slate-700">Admin Review</h3>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <button type="button" data-participant-review-status="approved" class="participant-review-status-btn rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700">Approved</button>
+                        <button type="button" data-participant-review-status="pending" class="participant-review-status-btn rounded-xl bg-amber-500 px-4 py-3 text-sm font-black text-white hover:bg-amber-600">Pending</button>
+                        <button type="button" data-participant-review-status="rejected" class="participant-review-status-btn rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-700">Rejected</button>
+                    </div>
+                    <label class="mt-4 block">
+                        <span class="mb-1 block text-sm font-bold text-slate-700">Rejection Reason</span>
+                        <textarea id="participantRejectionReason" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder="Required when rejecting a participant."></textarea>
+                    </label>
+                    <p id="participantReviewStatus" class="mt-3 text-sm font-bold"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div
+        id="participantImageViewerModal"
+        class="dashboard-modal-overlay fixed inset-0 z-[1100] hidden items-center justify-center bg-black bg-opacity-80 p-4">
+        <div class="relative max-h-[94vh] w-full max-w-5xl">
+            <button type="button" id="closeParticipantImageViewer" class="absolute right-2 top-2 z-10 rounded-full bg-white px-3 py-1 text-2xl font-black leading-none text-gray-900 shadow">&times;</button>
+            <img id="participantImageViewerImage" alt="Participant document preview" class="mx-auto max-h-[94vh] w-auto max-w-full rounded-2xl bg-white object-contain shadow-2xl">
+        </div>
+    </div>
+
     <!-- Attendance checker is now a separate tab instead of a modal. -->
 
     <!-- Dashboard Navigation and Auth Script -->
@@ -2730,6 +2773,15 @@
             const participantStatus = document.getElementById("participantStatus");
             const participantsTableBody = document.getElementById("participantsTableBody");
             const participantTeamFilter = document.getElementById("participantTeamFilter");
+            const participantDetailsModal = document.getElementById("participantDetailsModal");
+            const participantDetailsTitle = document.getElementById("participantDetailsTitle");
+            const participantDetailsContent = document.getElementById("participantDetailsContent");
+            const closeParticipantDetailsModal = document.getElementById("closeParticipantDetailsModal");
+            const participantRejectionReason = document.getElementById("participantRejectionReason");
+            const participantReviewStatus = document.getElementById("participantReviewStatus");
+            const participantImageViewerModal = document.getElementById("participantImageViewerModal");
+            const participantImageViewerImage = document.getElementById("participantImageViewerImage");
+            const closeParticipantImageViewer = document.getElementById("closeParticipantImageViewer");
             const printParticipantsButton = document.getElementById("printParticipantsButton");
             const attendanceForm = document.getElementById("attendanceForm");
             const attendanceStudentId = document.getElementById("attendanceStudentId");
@@ -4688,9 +4740,9 @@
                 adminPendingDeleteRequests = matches.filter(match => isMatchDeleteRequested(match));
                 updateAdminMessageNotification();
 
-                const approvedParticipants = participants.filter(participant => participant.status === "Approved").length;
-                const pendingParticipants = participants.filter(participant => participant.status === "Pending").length;
-                const rejectedParticipants = participants.filter(participant => participant.status === "Rejected").length;
+                const approvedParticipants = participants.filter(participant => normalizeParticipantStatus(participant.status) === "approved").length;
+                const pendingParticipants = participants.filter(participant => normalizeParticipantStatus(participant.status) === "pending").length;
+                const rejectedParticipants = participants.filter(participant => normalizeParticipantStatus(participant.status) === "rejected").length;
 
                 const uniqueMatchDays = new Set(
                     matches
@@ -4974,7 +5026,7 @@
 
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="py-4 px-4 text-red-600">
+                            <td colspan="8" class="py-4 px-4 text-red-600">
                                 Error loading sports. Run the SQL below first, then check your Supabase RLS policies.
                             </td>
                         </tr>
@@ -4998,7 +5050,7 @@
                 if (sportsData.length === 0) {
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="py-4 px-4 text-gray-600">
+                            <td colspan="8" class="py-4 px-4 text-gray-600">
                                 No sports added yet.
                             </td>
                         </tr>
@@ -5175,19 +5227,57 @@
             }
 
             function getParticipantStatusClass(status) {
-                if (status === "Approved") {
+                const normalizedStatus = normalizeParticipantStatus(status);
+
+                if (normalizedStatus === "approved") {
                     return "bg-green-100 text-green-800";
                 }
 
-                if (status === "Pending") {
+                if (normalizedStatus === "pending") {
                     return "bg-yellow-100 text-yellow-800";
                 }
 
                 return "bg-red-100 text-red-800";
             }
 
+            function normalizeParticipantStatus(status) {
+                return normalizeComparableValue(status || "pending");
+            }
+
+            function getParticipantStatusLabel(status) {
+                const normalizedStatus = normalizeParticipantStatus(status);
+
+                if (normalizedStatus === "approved") return "Approved";
+                if (normalizedStatus === "rejected") return "Rejected";
+                return "Pending";
+            }
+
             function normalizeParticipantTeam(team) {
                 return String(team || "").trim();
+            }
+
+            function getParticipantDisplayName(participant) {
+                return participant.full_name || participant.name || "Unnamed participant";
+            }
+
+            function getParticipantCourse(participant) {
+                return participant.course || "-";
+            }
+
+            function getParticipantAge(participant) {
+                return participant.age ?? "-";
+            }
+
+            function getParticipantIdNumber(participant) {
+                return participant.id_number || participant.student_id || "-";
+            }
+
+            function getParticipantTeamName(participant) {
+                return participant.team_name || participant.team || "-";
+            }
+
+            function getParticipantPhotoUrl(participant, key) {
+                return participant[key] || "";
             }
 
             function getParticipantTeamFilterValue() {
@@ -5202,7 +5292,7 @@
                 }
 
                 return participantsData.filter(participant => {
-                    return normalizeParticipantTeam(participant.team).toLowerCase() === selectedTeam.toLowerCase();
+                    return normalizeParticipantTeam(getParticipantTeamName(participant)).toLowerCase() === selectedTeam.toLowerCase();
                 });
             }
 
@@ -5222,7 +5312,7 @@
                 });
 
                 participantsData.forEach(participant => {
-                    const teamName = normalizeParticipantTeam(participant.team);
+                    const teamName = normalizeParticipantTeam(getParticipantTeamName(participant));
                     if (teamName) {
                         teamNames.add(teamName);
                     }
@@ -5788,10 +5878,10 @@
             function openEditParticipantModal(participant) {
                 participantModalTitle.textContent = "Edit Participant";
                 participantId.value = participant.id;
-                participantName.value = participant.name || "";
-                participantStudentId.value = participant.student_id || "";
-                renderParticipantTeamOptions(participant.team || "");
-                participantStatus.value = participant.status || "Pending";
+                participantName.value = getParticipantDisplayName(participant) === "Unnamed participant" ? "" : getParticipantDisplayName(participant);
+                participantStudentId.value = getParticipantIdNumber(participant) === "-" ? "" : getParticipantIdNumber(participant);
+                renderParticipantTeamOptions(getParticipantTeamName(participant) === "-" ? "" : getParticipantTeamName(participant));
+                participantStatus.value = getParticipantStatusLabel(participant.status);
 
                 participantModal.classList.remove("hidden");
                 participantModal.classList.add("flex");
@@ -5828,7 +5918,7 @@
                 if (participantsData.length === 0) {
                     participantsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="py-4 px-4 text-gray-600">
+                            <td colspan="8" class="py-4 px-4 text-gray-600">
                                 Loading participants...
                             </td>
                         </tr>
@@ -5837,7 +5927,7 @@
 
                 const { data, error } = await supabase
                     .from(PARTICIPANTS_TABLE)
-                    .select("id, name, student_id, team, status, created_at")
+                    .select("*")
                     .order("created_at", { ascending: false });
 
                 if (error) {
@@ -5867,7 +5957,7 @@
                 if (participantsData.length === 0) {
                     participantsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="py-4 px-4 text-gray-600">
+                            <td colspan="8" class="py-4 px-4 text-gray-600">
                                 No participants found.
                             </td>
                         </tr>
@@ -5878,7 +5968,7 @@
                 if (filteredParticipants.length === 0) {
                     participantsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="py-4 px-4 text-gray-600">
+                            <td colspan="8" class="py-4 px-4 text-gray-600">
                                 No participants found for the selected team.
                             </td>
                         </tr>
@@ -5888,24 +5978,33 @@
 
                 filteredParticipants.forEach(participant => {
                     const row = document.createElement("tr");
-                    row.className = "border-b border-gray-100 hover:bg-gray-50";
+                    row.className = "participant-row cursor-pointer border-b border-gray-100 hover:bg-blue-50";
+                    row.dataset.participantId = participant.id;
 
                     row.innerHTML = `
                         <td class="py-3 px-4 font-medium text-gray-900">
-                            ${escapeHTML(participant.name)}
+                            ${escapeHTML(getParticipantDisplayName(participant))}
                         </td>
 
                         <td class="py-3 px-4 text-gray-600">
-                            ${escapeHTML(participant.student_id)}
+                            ${escapeHTML(getParticipantCourse(participant))}
                         </td>
 
                         <td class="py-3 px-4 text-gray-600">
-                            ${escapeHTML(participant.team)}
+                            ${escapeHTML(getParticipantAge(participant))}
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            ${escapeHTML(getParticipantIdNumber(participant))}
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            ${escapeHTML(getParticipantTeamName(participant))}
                         </td>
 
                         <td class="py-3 px-4">
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getParticipantStatusClass(participant.status)}">
-                                ${escapeHTML(participant.status || "Pending")}
+                                ${escapeHTML(getParticipantStatusLabel(participant.status))}
                             </span>
                         </td>
 
@@ -5913,7 +6012,7 @@
                             ${escapeHTML(formatDateTime(participant.created_at))}
                         </td>
 
-                        <td class="py-3 px-4 space-x-2">
+                        <td class="py-3 px-4 space-x-2 whitespace-nowrap">
                             <button 
                                 type="button"
                                 data-participant-id="${participant.id}"
@@ -5933,10 +6032,23 @@
                     participantsTableBody.appendChild(row);
                 });
 
-                document.querySelectorAll(".edit-participant-btn").forEach(button => {
-                    button.addEventListener("click", function () {
+                document.querySelectorAll(".participant-row").forEach(row => {
+                    row.addEventListener("click", function () {
                         const selectedParticipant = participantsData.find(participant => {
-                            return Number(participant.id) === Number(this.dataset.participantId);
+                            return String(participant.id) === String(this.dataset.participantId);
+                        });
+
+                        if (selectedParticipant) {
+                            openParticipantDetailsModal(selectedParticipant);
+                        }
+                    });
+                });
+
+                document.querySelectorAll(".edit-participant-btn").forEach(button => {
+                    button.addEventListener("click", function (event) {
+                        event.stopPropagation();
+                        const selectedParticipant = participantsData.find(participant => {
+                            return String(participant.id) === String(this.dataset.participantId);
                         });
 
                         if (selectedParticipant) {
@@ -5946,10 +6058,143 @@
                 });
 
                 document.querySelectorAll(".delete-participant-btn").forEach(button => {
-                    button.addEventListener("click", function () {
+                    button.addEventListener("click", function (event) {
+                        event.stopPropagation();
                         deleteParticipant(this.dataset.participantId);
                     });
                 });
+            }
+
+            let activeParticipantDetailsId = null;
+
+            function renderParticipantDocumentCard(label, url) {
+                if (!url) {
+                    return `
+                        <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm font-semibold text-gray-500">
+                            ${escapeHTML(label)} not submitted.
+                        </div>
+                    `;
+                }
+
+                return `
+                    <button type="button" data-participant-image-url="${escapeHTML(url)}" class="participant-document-preview block w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 text-left shadow-sm hover:ring-4 hover:ring-blue-100">
+                        <img src="${escapeHTML(url)}" alt="${escapeHTML(label)}" class="h-56 w-full object-cover">
+                        <span class="block px-4 py-3 text-sm font-black text-gray-800">${escapeHTML(label)}</span>
+                    </button>
+                `;
+            }
+
+            function openParticipantDetailsModal(participant) {
+                activeParticipantDetailsId = participant.id;
+                participantDetailsTitle.textContent = getParticipantDisplayName(participant);
+                participantRejectionReason.value = participant.rejection_reason || "";
+                participantReviewStatus.textContent = "";
+                participantDetailsContent.innerHTML = `
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div class="rounded-2xl border border-gray-200 bg-white p-4">
+                            <h3 class="mb-3 text-sm font-black uppercase tracking-widest text-gray-500">Registration Details</h3>
+                            <dl class="grid grid-cols-1 gap-3 text-sm">
+                                <div><dt class="font-bold text-gray-500">Full Name</dt><dd class="font-black text-gray-900">${escapeHTML(getParticipantDisplayName(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Course</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantCourse(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Age</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantAge(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">ID Number</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantIdNumber(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Team Joined</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantTeamName(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Current Status</dt><dd><span class="inline-flex rounded-full px-3 py-1 text-xs font-black ${getParticipantStatusClass(participant.status)}">${escapeHTML(getParticipantStatusLabel(participant.status))}</span></dd></div>
+                                <div><dt class="font-bold text-gray-500">Date Registered</dt><dd class="font-semibold text-gray-900">${escapeHTML(formatDateTime(participant.created_at))}</dd></div>
+                            </dl>
+                        </div>
+                        <div class="rounded-2xl border border-gray-200 bg-white p-4">
+                            <h3 class="mb-3 text-sm font-black uppercase tracking-widest text-gray-500">Review Details</h3>
+                            <dl class="grid grid-cols-1 gap-3 text-sm">
+                                <div><dt class="font-bold text-gray-500">Reviewed By</dt><dd class="font-semibold text-gray-900">${escapeHTML(participant.reviewed_by_name || "-")}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Reviewed At</dt><dd class="font-semibold text-gray-900">${escapeHTML(formatDateTime(participant.reviewed_at))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Rejection Reason</dt><dd class="whitespace-pre-wrap font-semibold text-gray-900">${escapeHTML(participant.rejection_reason || "-")}</dd></div>
+                            </dl>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        ${renderParticipantDocumentCard("Parent Consent Photo", getParticipantPhotoUrl(participant, "parent_consent_photo"))}
+                        ${renderParticipantDocumentCard("Medical Certificate Photo", getParticipantPhotoUrl(participant, "medical_certificate_photo"))}
+                    </div>
+                `;
+
+                participantDetailsContent.querySelectorAll(".participant-document-preview").forEach(button => {
+                    button.addEventListener("click", () => openParticipantImageViewer(button.dataset.participantImageUrl));
+                });
+
+                participantDetailsModal.classList.remove("hidden");
+                participantDetailsModal.classList.add("flex");
+            }
+
+            function closeParticipantDetailsModalFunction() {
+                participantDetailsModal.classList.add("hidden");
+                participantDetailsModal.classList.remove("flex");
+                activeParticipantDetailsId = null;
+                participantDetailsContent.innerHTML = "";
+                participantReviewStatus.textContent = "";
+            }
+
+            function openParticipantImageViewer(url) {
+                if (!url) return;
+                participantImageViewerImage.src = url;
+                participantImageViewerModal.classList.remove("hidden");
+                participantImageViewerModal.classList.add("flex");
+            }
+
+            function closeParticipantImageViewerFunction() {
+                participantImageViewerModal.classList.add("hidden");
+                participantImageViewerModal.classList.remove("flex");
+                participantImageViewerImage.removeAttribute("src");
+            }
+
+            async function updateParticipantReviewStatus(status) {
+                if (!activeParticipantDetailsId) return;
+
+                const normalizedStatus = normalizeParticipantStatus(status);
+                const rejectionReason = participantRejectionReason.value.trim();
+
+                if (normalizedStatus === "rejected" && !rejectionReason) {
+                    participantReviewStatus.className = "mt-3 text-sm font-bold text-red-600";
+                    participantReviewStatus.textContent = "Please enter a rejection reason before rejecting.";
+                    participantRejectionReason.focus();
+                    return;
+                }
+
+                const adminUser = getStoredAdminUser();
+                const updateData = {
+                    status: normalizedStatus,
+                    reviewed_by: adminUser?.id || adminUser?.email || null,
+                    reviewed_by_name: adminUser?.fullName || adminUser?.full_name || adminUser?.email || "Admin",
+                    reviewed_at: new Date().toISOString(),
+                    rejection_reason: normalizedStatus === "rejected" ? rejectionReason : null
+                };
+
+                participantReviewStatus.className = "mt-3 text-sm font-bold text-blue-700";
+                participantReviewStatus.textContent = "Saving review...";
+
+                const { error } = await supabase
+                    .from(PARTICIPANTS_TABLE)
+                    .update(updateData)
+                    .eq("id", activeParticipantDetailsId);
+
+                if (error) {
+                    console.error("Participant review update error:", error.message || error);
+                    participantReviewStatus.className = "mt-3 text-sm font-bold text-red-600";
+                    participantReviewStatus.textContent = error.message || "Failed to update participant review.";
+                    return;
+                }
+
+                participantReviewStatus.className = "mt-3 text-sm font-bold text-green-700";
+                participantReviewStatus.textContent = "Participant review updated.";
+                await Promise.all([
+                    loadParticipants(),
+                    loadAdminOverviewCounts()
+                ]);
+
+                const updatedParticipant = participantsData.find(participant => String(participant.id) === String(activeParticipantDetailsId));
+                if (updatedParticipant) {
+                    openParticipantDetailsModal(updatedParticipant);
+                }
             }
 
             async function saveParticipant(event) {
@@ -5957,9 +6202,12 @@
 
                 const participantData = {
                     name: participantName.value.trim(),
+                    full_name: participantName.value.trim(),
                     student_id: participantStudentId.value.trim(),
+                    id_number: participantStudentId.value.trim(),
                     team: participantTeam.value.trim(),
-                    status: participantStatus.value
+                    team_name: participantTeam.value.trim(),
+                    status: normalizeParticipantStatus(participantStatus.value)
                 };
 
                 if (!participantData.name || !participantData.student_id || !participantData.team) {
@@ -5969,8 +6217,8 @@
 
                 const { data: existingParticipant, error: duplicateCheckError } = await supabase
                     .from(PARTICIPANTS_TABLE)
-                    .select("id, name, student_id")
-                    .eq("student_id", participantData.student_id)
+                    .select("id, name, full_name, student_id, id_number")
+                    .or(`student_id.eq.${participantData.student_id},id_number.eq.${participantData.id_number}`)
                     .limit(1)
                     .maybeSingle();
 
@@ -5981,7 +6229,7 @@
                 }
 
                 if (existingParticipant && String(existingParticipant.id) !== String(participantId.value || "")) {
-                    alert(`Student ID ${participantData.student_id} is already assigned to ${existingParticipant.name || "another participant"}.`);
+                    alert(`Student ID ${participantData.student_id} is already assigned to ${existingParticipant.full_name || existingParticipant.name || "another participant"}.`);
                     participantStudentId.focus();
                     return;
                 }
@@ -6868,6 +7116,21 @@
             openParticipantModalButton.addEventListener("click", openAddParticipantModal);
             closeParticipantModalButton.addEventListener("click", closeParticipantModalFunction);
             cancelParticipantModal.addEventListener("click", closeParticipantModalFunction);
+            closeParticipantDetailsModal.addEventListener("click", closeParticipantDetailsModalFunction);
+            participantDetailsModal.addEventListener("click", function (event) {
+                if (event.target === participantDetailsModal) {
+                    closeParticipantDetailsModalFunction();
+                }
+            });
+            document.querySelectorAll(".participant-review-status-btn").forEach(button => {
+                button.addEventListener("click", () => updateParticipantReviewStatus(button.dataset.participantReviewStatus));
+            });
+            closeParticipantImageViewer.addEventListener("click", closeParticipantImageViewerFunction);
+            participantImageViewerModal.addEventListener("click", function (event) {
+                if (event.target === participantImageViewerModal) {
+                    closeParticipantImageViewerFunction();
+                }
+            });
             closeAccountSportEditModal.addEventListener("click", closeAccountSportEditModalFunction);
             cancelAccountSportEditModal.addEventListener("click", closeAccountSportEditModalFunction);
             accountSportEditModal.addEventListener("click", function (event) {

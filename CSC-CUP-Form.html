@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSC Cup Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            background:
+                linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.94)),
+                url("./dashboard-backgrounds/56435184_2377398058971412_6905733492668104704_n.jpg") center/cover fixed;
+        }
+
+        .camera-preview {
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="text-slate-900">
+    <main class="mx-auto flex min-h-screen w-full max-w-4xl items-center px-4 py-6 sm:py-10">
+        <section class="w-full overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-2xl shadow-blue-950/10 backdrop-blur">
+            <div class="bg-gradient-to-r from-blue-800 via-blue-700 to-yellow-500 px-5 py-6 text-white sm:px-8">
+                <div class="flex items-center gap-4">
+                    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white p-2 shadow-lg">
+                        <img src="Adventist_University_of_the_Philippines_logo.png" alt="AUP Logo" class="h-full w-full object-contain">
+                    </div>
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-[0.25em] text-yellow-100">Student Registration</p>
+                        <h1 class="text-2xl font-black leading-tight sm:text-4xl">CSC Cup Registration</h1>
+                        <p class="mt-1 max-w-2xl text-sm font-semibold text-blue-50">Complete the form and capture both required documents using your device camera.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="registrationForm" class="space-y-6 p-5 sm:p-8">
+                <div id="formAlert" class="hidden rounded-2xl border px-4 py-3 text-sm font-bold"></div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-black text-slate-700">Full Name</span>
+                        <input id="fullName" type="text" required maxlength="160" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-black text-slate-700">Course</span>
+                        <input id="course" type="text" required maxlength="120" placeholder="Example: BSIT" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-black text-slate-700">Age</span>
+                        <input id="age" type="number" required min="1" max="120" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                    </label>
+
+                    <label class="block">
+                        <span class="mb-1 block text-sm font-black text-slate-700">ID Number</span>
+                        <input id="idNumber" type="text" required maxlength="80" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                    </label>
+
+                    <label class="block sm:col-span-2">
+                        <span class="mb-1 block text-sm font-black text-slate-700">Team to Join</span>
+                        <select id="teamSelect" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                            <option value="">Loading teams...</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div class="mb-3">
+                            <h2 class="text-lg font-black text-slate-950">Notarized Parent Consent</h2>
+                            <p class="text-xs font-semibold text-slate-500">Camera capture only. Gallery uploads are not accepted.</p>
+                        </div>
+                        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                            <video id="parentVideo" class="camera-preview hidden w-full bg-black" autoplay playsinline muted></video>
+                            <canvas id="parentCanvas" class="hidden"></canvas>
+                            <img id="parentPreview" alt="Parent consent preview" class="camera-preview hidden w-full">
+                            <div id="parentPlaceholder" class="flex aspect-[4/3] items-center justify-center p-6 text-center text-sm font-bold text-slate-400">No parent consent photo captured yet.</div>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button type="button" data-camera-start="parent" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Open Camera</button>
+                            <button type="button" data-camera-capture="parent" class="hidden rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-700">Take Picture</button>
+                            <button type="button" data-camera-retake="parent" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-900">Retake</button>
+                        </div>
+                    </article>
+
+                    <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div class="mb-3">
+                            <h2 class="text-lg font-black text-slate-950">Medical Certificate</h2>
+                            <p class="text-xs font-semibold text-slate-500">Camera capture only. Gallery uploads are not accepted.</p>
+                        </div>
+                        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                            <video id="medicalVideo" class="camera-preview hidden w-full bg-black" autoplay playsinline muted></video>
+                            <canvas id="medicalCanvas" class="hidden"></canvas>
+                            <img id="medicalPreview" alt="Medical certificate preview" class="camera-preview hidden w-full">
+                            <div id="medicalPlaceholder" class="flex aspect-[4/3] items-center justify-center p-6 text-center text-sm font-bold text-slate-400">No medical certificate photo captured yet.</div>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button type="button" data-camera-start="medical" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Open Camera</button>
+                            <button type="button" data-camera-capture="medical" class="hidden rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black text-white hover:bg-emerald-700">Take Picture</button>
+                            <button type="button" data-camera-retake="medical" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-900">Retake</button>
+                        </div>
+                    </article>
+                </div>
+
+                <button id="submitButton" type="submit" class="w-full rounded-2xl bg-gradient-to-r from-blue-800 to-blue-600 px-5 py-4 text-base font-black text-white shadow-lg shadow-blue-900/20 transition hover:from-blue-900 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
+                    Register for CSC Cup
+                </button>
+            </form>
+        </section>
+    </main>
+
+    <script type="module">
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+        const SUPABASE_URL = "https://unveyndaaznxgqojwjki.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudmV5bmRhYXpueGdxb2p3amtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MzQyNzUsImV4cCI6MjA5NDIxMDI3NX0.2RUriqqq9kITnl8uPZSdiSrXuo8BhD9nrzqHFUwl2yU";
+        const TEAMS_TABLE = "sports_leaderboard";
+        const PARTICIPANTS_TABLE = "participants";
+        const DOCUMENTS_BUCKET = "participant-documents";
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { persistSession: true, autoRefreshToken: true }
+        });
+
+        const form = document.getElementById("registrationForm");
+        const formAlert = document.getElementById("formAlert");
+        const submitButton = document.getElementById("submitButton");
+        const teamSelect = document.getElementById("teamSelect");
+
+        const cameras = {
+            parent: {
+                video: document.getElementById("parentVideo"),
+                canvas: document.getElementById("parentCanvas"),
+                preview: document.getElementById("parentPreview"),
+                placeholder: document.getElementById("parentPlaceholder"),
+                blob: null,
+                stream: null
+            },
+            medical: {
+                video: document.getElementById("medicalVideo"),
+                canvas: document.getElementById("medicalCanvas"),
+                preview: document.getElementById("medicalPreview"),
+                placeholder: document.getElementById("medicalPlaceholder"),
+                blob: null,
+                stream: null
+            }
+        };
+
+        function setAlert(message, type = "error") {
+            formAlert.textContent = message;
+            formAlert.className = `rounded-2xl border px-4 py-3 text-sm font-bold ${
+                type === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-red-200 bg-red-50 text-red-700"
+            }`;
+            formAlert.classList.remove("hidden");
+        }
+
+        function clearAlert() {
+            formAlert.classList.add("hidden");
+            formAlert.textContent = "";
+        }
+
+        function stopCamera(type) {
+            const camera = cameras[type];
+            camera.stream?.getTracks().forEach(track => track.stop());
+            camera.stream = null;
+            camera.video.srcObject = null;
+            camera.video.classList.add("hidden");
+            document.querySelector(`[data-camera-capture="${type}"]`)?.classList.add("hidden");
+        }
+
+        async function startCamera(type) {
+            clearAlert();
+            const camera = cameras[type];
+            stopCamera(type);
+
+            if (!navigator.mediaDevices?.getUserMedia) {
+                setAlert("Camera access is not supported by this browser. Please use a camera-capable mobile browser.");
+                return;
+            }
+
+            try {
+                camera.stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" } },
+                    audio: false
+                });
+                camera.video.srcObject = camera.stream;
+                camera.video.classList.remove("hidden");
+                camera.preview.classList.add("hidden");
+                camera.placeholder.classList.add("hidden");
+                document.querySelector(`[data-camera-capture="${type}"]`)?.classList.remove("hidden");
+                document.querySelector(`[data-camera-retake="${type}"]`)?.classList.add("hidden");
+            } catch (error) {
+                console.error("Camera error:", error);
+                setAlert("Unable to open the camera. Please allow camera permission and try again.");
+            }
+        }
+
+        async function capturePhoto(type) {
+            const camera = cameras[type];
+            if (!camera.stream) {
+                setAlert("Please open the camera before taking a picture.");
+                return;
+            }
+
+            const width = camera.video.videoWidth || 1280;
+            const height = camera.video.videoHeight || 960;
+            camera.canvas.width = width;
+            camera.canvas.height = height;
+            camera.canvas.getContext("2d").drawImage(camera.video, 0, 0, width, height);
+
+            camera.blob = await new Promise(resolve => camera.canvas.toBlob(resolve, "image/jpeg", 0.9));
+            camera.preview.src = URL.createObjectURL(camera.blob);
+            camera.preview.classList.remove("hidden");
+            camera.placeholder.classList.add("hidden");
+            document.querySelector(`[data-camera-retake="${type}"]`)?.classList.remove("hidden");
+            stopCamera(type);
+        }
+
+        async function loadTeams() {
+            const { data, error } = await supabase
+                .from(TEAMS_TABLE)
+                .select("id, team")
+                .order("team", { ascending: true });
+
+            if (error) {
+                console.error("Team load error:", error);
+                teamSelect.innerHTML = `<option value="">Unable to load teams</option>`;
+                setAlert("Unable to load teams. Please refresh the page or contact the CSC admin.");
+                return;
+            }
+
+            const teams = data || [];
+            teamSelect.innerHTML = `
+                <option value="">Select a team</option>
+                ${teams.map(team => `<option value="${String(team.id)}" data-name="${escapeHTML(team.team || "")}">${escapeHTML(team.team || "Unnamed team")}</option>`).join("")}
+            `;
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function getParticipantId() {
+            return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+
+        async function uploadDocument(participantId, type, blob) {
+            const path = `participants/${participantId}/${type}.jpg`;
+            const { error } = await supabase.storage
+                .from(DOCUMENTS_BUCKET)
+                .upload(path, blob, {
+                    contentType: "image/jpeg",
+                    upsert: true
+                });
+
+            if (error) {
+                throw error;
+            }
+
+            const { data } = supabase.storage.from(DOCUMENTS_BUCKET).getPublicUrl(path);
+            return data?.publicUrl || path;
+        }
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+            clearAlert();
+
+            if (!form.reportValidity()) {
+                return;
+            }
+
+            if (!cameras.parent.blob || !cameras.medical.blob) {
+                setAlert("Please take a picture of both required documents before registering.");
+                return;
+            }
+
+            const selectedTeam = teamSelect.options[teamSelect.selectedIndex];
+            const participantId = getParticipantId();
+            submitButton.disabled = true;
+            submitButton.textContent = "Submitting registration...";
+
+            try {
+                const parentConsentUrl = await uploadDocument(participantId, "parent-consent", cameras.parent.blob);
+                const medicalCertificateUrl = await uploadDocument(participantId, "medical-certificate", cameras.medical.blob);
+                const fullName = document.getElementById("fullName").value.trim();
+                const idNumber = document.getElementById("idNumber").value.trim();
+                const teamName = selectedTeam?.dataset?.name || selectedTeam?.textContent || "";
+
+                const participantRecord = {
+                    full_name: fullName,
+                    name: fullName,
+                    course: document.getElementById("course").value.trim(),
+                    age: Number(document.getElementById("age").value),
+                    id_number: idNumber,
+                    student_id: idNumber,
+                    team_id: teamSelect.value || null,
+                    team_name: teamName,
+                    team: teamName,
+                    parent_consent_photo: parentConsentUrl,
+                    medical_certificate_photo: medicalCertificateUrl,
+                    status: "pending",
+                    created_at: new Date().toISOString()
+                };
+
+                const { error } = await supabase
+                    .from(PARTICIPANTS_TABLE)
+                    .insert([participantRecord]);
+
+                if (error) {
+                    throw error;
+                }
+
+                form.reset();
+                Object.keys(cameras).forEach(type => {
+                    stopCamera(type);
+                    cameras[type].blob = null;
+                    cameras[type].preview.removeAttribute("src");
+                    cameras[type].preview.classList.add("hidden");
+                    cameras[type].placeholder.classList.remove("hidden");
+                    document.querySelector(`[data-camera-retake="${type}"]`)?.classList.add("hidden");
+                });
+                await loadTeams();
+                setAlert("Registration submitted successfully. Please wait for admin review.", "success");
+            } catch (error) {
+                console.error("Registration error:", error);
+                setAlert(error.message || "Registration failed. Please try again.");
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Register for CSC Cup";
+            }
+        });
+
+        document.querySelectorAll("[data-camera-start]").forEach(button => {
+            button.addEventListener("click", () => startCamera(button.dataset.cameraStart));
+        });
+
+        document.querySelectorAll("[data-camera-capture]").forEach(button => {
+            button.addEventListener("click", () => capturePhoto(button.dataset.cameraCapture));
+        });
+
+        document.querySelectorAll("[data-camera-retake]").forEach(button => {
+            button.addEventListener("click", () => startCamera(button.dataset.cameraRetake));
+        });
+
+        window.addEventListener("beforeunload", () => {
+            Object.keys(cameras).forEach(stopCamera);
+        });
+
+        loadTeams();
+    </script>
+</body>
+</html>
