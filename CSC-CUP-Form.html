@@ -4,13 +4,120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSC Cup Registration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const images = [
+                "./dashboard-backgrounds/56435184_2377398058971412_6905733492668104704_n.jpg",
+                "./dashboard-backgrounds/469984691_918281827068965_7471383534469226798_n.jpg",
+                "./dashboard-backgrounds/472760250_9329332677111214_8161660048911603548_n.jpg",
+                "./dashboard-backgrounds/671018030_1284495603780917_8907957753481931746_n.jpg"
+            ];
+            let index = 0;
+            let layer = "a";
+            const root = document.documentElement;
+            const apply = (name, image) => root.style.setProperty(`--dashboard-photo-url-${name}`, `url("${image}")`);
+            apply("a", images[0]);
+            apply("b", images[0]);
+            root.style.setProperty("--dashboard-photo-size", "cover");
+            window.setInterval(() => {
+                index = (index + 1) % images.length;
+                if (layer === "a") {
+                    apply("b", images[index]);
+                    document.body.classList.add("dashboard-bg-show-b");
+                    layer = "b";
+                } else {
+                    apply("a", images[index]);
+                    document.body.classList.remove("dashboard-bg-show-b");
+                    layer = "a";
+                }
+            }, 8500);
+        });
+    </script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
         body {
+            width: 100%;
             min-height: 100vh;
-            background:
-                linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.94)),
-                url("./dashboard-backgrounds/56435184_2377398058971412_6905733492668104704_n.jpg") center/cover fixed;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: #f8fafc;
+        }
+
+        h1,
+        h2,
+        .form-title {
+            font-family: Poppins, Inter, system-ui, sans-serif;
+        }
+
+        .registration-shell {
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 1rem;
+        }
+
+        .registration-card {
+            width: min(100%, 64rem);
+            overflow: hidden;
+            border-radius: 1rem;
+            border: 1.5px solid rgba(229, 231, 235, 0.8);
+            background: rgba(255, 255, 255, 0.78);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+            backdrop-filter: blur(8px);
+        }
+
+        .admin-header {
+            position: relative;
+            z-index: 2;
+            padding: 0 !important;
+            box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+        }
+
+        .admin-header-row {
+            min-height: 5.5rem;
+            align-items: stretch;
+        }
+
+        .admin-header-text {
+            min-width: 0;
+            padding: 1.75rem;
+        }
+
+        .admin-header h1 {
+            color: #1e3a8a;
+            font-size: clamp(1.25rem, 2.8vw, 1.875rem);
+            line-height: 1.15;
+            font-weight: 800;
+            margin: 0 0 0.45rem;
+        }
+
+        .admin-header p {
+            color: #1e40af;
+            font-size: clamp(0.78rem, 1.9vw, 1rem);
+            line-height: 1.45;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .registration-content {
+            background: rgba(248, 250, 252, 0.36);
+        }
+
+        .registration-content .bg-white,
+        .registration-content .bg-slate-50 {
+            backdrop-filter: blur(6px);
         }
 
         .camera-preview {
@@ -54,25 +161,56 @@
             border: 4px solid rgba(255, 255, 255, 0.92);
             box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.52);
         }
+
+        @media (max-width: 640px) {
+            .registration-shell {
+                padding: 0.75rem;
+                align-items: flex-start;
+            }
+
+            .registration-card {
+                border-radius: 0.9rem;
+            }
+
+            .admin-header-row {
+                min-height: 4.85rem;
+                align-items: center !important;
+                gap: 0.55rem;
+            }
+
+            .admin-header .admin-header-text {
+                max-width: calc(100vw - 6.6rem) !important;
+                padding: 0.8rem 0.65rem !important;
+            }
+
+            .admin-header h1 {
+                font-size: clamp(1.1rem, 5.2vw, 1.45rem);
+                margin-bottom: 0.3rem;
+            }
+
+            .admin-header p {
+                font-size: clamp(0.72rem, 3.2vw, 0.86rem);
+                line-height: 1.35;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-900">
-    <main class="mx-auto flex min-h-screen w-full max-w-4xl items-center px-4 py-6 sm:py-10">
-        <section class="w-full overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-2xl shadow-blue-950/10 backdrop-blur">
-            <div class="bg-gradient-to-r from-blue-800 via-blue-700 to-yellow-500 px-5 py-6 text-white sm:px-8">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white p-2 shadow-lg">
-                        <img src="Adventist_University_of_the_Philippines_logo.png" alt="AUP Logo" class="h-full w-full object-contain">
+    <main class="registration-shell mx-auto flex w-full items-center justify-center">
+        <section class="registration-card">
+            <div class="admin-header dashboard-header bg-yellow-400">
+                <div class="admin-header-row mb-0 flex">
+                    <div class="dashboard-header-brand" aria-hidden="true">
+                        <img src="Adventist_University_of_the_Philippines_logo.png" alt="">
                     </div>
-                    <div>
-                        <p class="text-xs font-black uppercase tracking-[0.25em] text-yellow-100">Student Registration</p>
-                        <h1 class="text-2xl font-black leading-tight sm:text-4xl">CSC Cup Registration</h1>
-                        <p class="mt-1 max-w-2xl text-sm font-semibold text-blue-50">Complete the form and capture both required documents using your device camera.</p>
+                    <div class="admin-header-text flex-1">
+                        <h1>CSC Cup Registration</h1>
+                        <p>Complete the form and capture both required documents using your device camera.</p>
                     </div>
                 </div>
             </div>
 
-            <form id="registrationForm" class="space-y-6 p-5 sm:p-8">
+            <form id="registrationForm" class="registration-content space-y-6 p-5 sm:p-8">
                 <div id="formAlert" role="alert" aria-live="assertive" class="hidden rounded-2xl border px-4 py-3 text-sm font-bold"></div>
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
