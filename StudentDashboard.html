@@ -81,6 +81,33 @@
         .leaderboard-team-cell { width: 40%; }
         .leaderboard-stat-cell { width: 16%; }
 
+        .leaderboard-points-badge {
+            max-width: 100%;
+            min-width: 2.6rem;
+            justify-content: center;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .leaderboard-points-value,
+        .team-detail-score-value {
+            display: inline-block;
+            max-width: 100%;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .leaderboard-points-small {
+            font-size: 0.78rem;
+            letter-spacing: -0.025em;
+        }
+
+        .leaderboard-points-compact {
+            font-size: 0.68rem;
+            letter-spacing: -0.045em;
+        }
+
         .leaderboard-moving-row {
             position: relative;
             z-index: 1;
@@ -137,6 +164,45 @@
             .leaderboard-table {
                 table-layout: fixed;
                 min-width: 0;
+            }
+
+            .leaderboard-table th,
+            .leaderboard-table td {
+                padding-left: clamp(0.2rem, 1.5vw, 0.45rem) !important;
+                padding-right: clamp(0.2rem, 1.5vw, 0.45rem) !important;
+            }
+
+            .leaderboard-team-cell {
+                width: 38%;
+            }
+
+            .leaderboard-stat-cell {
+                width: 16.5%;
+            }
+
+            .leaderboard-points-badge {
+                min-width: 2.05rem;
+                padding: 0.22rem 0.28rem !important;
+            }
+
+            .leaderboard-points-value {
+                font-size: clamp(0.58rem, 2.65vw, 0.72rem);
+                letter-spacing: -0.03em;
+            }
+
+            .leaderboard-points-small {
+                font-size: clamp(0.52rem, 2.35vw, 0.66rem);
+                letter-spacing: -0.055em;
+            }
+
+            .leaderboard-points-compact {
+                font-size: clamp(0.46rem, 2vw, 0.58rem);
+                letter-spacing: -0.07em;
+            }
+
+            .team-detail-score-value {
+                font-size: clamp(1.15rem, 7vw, 1.5rem) !important;
+                letter-spacing: -0.04em;
             }
 
             .mobile-table-container {
@@ -1506,6 +1572,13 @@
                     const rankLabel = index < 3
                         ? ["&#129351;", "&#129352;", "&#129353;"][index]
                         : `#${index + 1}`;
+                    const formattedPoints = Number(team.points || 0).toLocaleString();
+                    const pointDigits = formattedPoints.replace(/\D/g, "").length;
+                    const pointSizeClass = pointDigits >= 5
+                        ? "leaderboard-points-compact"
+                        : pointDigits >= 4
+                            ? "leaderboard-points-small"
+                            : "";
                     let rowClass = "hover:bg-slate-50 transition-colors";
 
                     const row = document.createElement("tr");
@@ -1524,8 +1597,8 @@
                             <span class="font-bold text-slate-900">${escapeHTML(team.team)}</span>
                         </td>
                         <td class="py-5 px-6 text-center">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-black text-sm">
-                                ${Number(team.points || 0).toLocaleString()}
+                            <span class="leaderboard-points-badge inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-black text-sm">
+                                <span class="leaderboard-points-value ${pointSizeClass}">${formattedPoints}</span>
                             </span>
                         </td>
                         <td class="py-5 px-6 text-center font-bold text-emerald-600">${Number(team.wins || 0)}</td>
@@ -1625,21 +1698,22 @@
                 matchDetailsModal.classList.remove("hidden");
                 matchDetailsModal.classList.add("flex");
                 matchDetailsTitle.textContent = `${teamName} - Performance History`;
+                const formattedTeamPoints = Number(team.points || 0).toLocaleString();
 
                 matchDetailsContent.innerHTML = `
                     <div class="space-y-8">
                         <div class="grid grid-cols-3 gap-4">
                             <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-center">
                                 <p class="text-[10px] uppercase font-bold text-blue-600 mb-1">Total Points</p>
-                                <p class="text-2xl font-black text-blue-900">${team.points}</p>
+                                <p class="team-detail-score-value text-2xl font-black text-blue-900">${formattedTeamPoints}</p>
                             </div>
                             <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
                                 <p class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Wins</p>
-                                <p class="text-2xl font-black text-emerald-900">${team.wins}</p>
+                                <p class="team-detail-score-value text-2xl font-black text-emerald-900">${Number(team.wins || 0).toLocaleString()}</p>
                             </div>
                             <div class="bg-red-50 p-4 rounded-2xl border border-red-100 text-center">
                                 <p class="text-[10px] uppercase font-bold text-red-600 mb-1">Losses</p>
-                                <p class="text-2xl font-black text-red-900">${team.losses}</p>
+                                <p class="team-detail-score-value text-2xl font-black text-red-900">${Number(team.losses || 0).toLocaleString()}</p>
                             </div>
                         </div>
 
