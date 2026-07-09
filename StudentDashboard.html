@@ -1357,6 +1357,7 @@
 
             function buildLeaderboardRows(teams, historyRows, sportsRows) {
                 const teamStats = new Map();
+                const registeredTeamAliases = new Map();
                 const sportsById = new Map();
                 const sportsByName = new Map();
 
@@ -1396,8 +1397,37 @@
                     return teamStats.get(key);
                 }
 
+                function registerTeamAliases(teamId, teamName, teamStat) {
+                    if (teamId !== null && teamId !== undefined && teamId !== "") {
+                        registeredTeamAliases.set(`id:${teamId}`, teamStat);
+                    }
+
+                    const normalizedTeamName = normalizeText(teamName);
+                    if (normalizedTeamName) {
+                        registeredTeamAliases.set(`name:${normalizedTeamName}`, teamStat);
+                    }
+                }
+
+                function getRegisteredTeamStat(teamId, teamName) {
+                    if (teamId !== null && teamId !== undefined && teamId !== "") {
+                        const byId = registeredTeamAliases.get(`id:${teamId}`);
+                        if (byId) {
+                            return byId;
+                        }
+                    }
+
+                    const normalizedTeamName = normalizeText(teamName);
+                    if (normalizedTeamName) {
+                        return registeredTeamAliases.get(`name:${normalizedTeamName}`) || null;
+                    }
+
+                    return null;
+                }
+
                 (teams || []).forEach(team => {
-                    addTeam(team.id, team.team || team.team_name || team.name, team);
+                    const teamName = team.team || team.team_name || team.name;
+                    const teamStat = addTeam(team.id, teamName, team);
+                    registerTeamAliases(team.id, teamName, teamStat);
                 });
 
                 (historyRows || []).forEach(history => {
@@ -1430,15 +1460,19 @@
                     );
 
                     if (winnerId || winnerName) {
-                        const winner = addTeam(winnerId, winnerName);
-                        winner.points += resolveHistoryPoints(history, "winner", sportsById, sportsByName);
-                        winner.wins += 1;
+                        const winner = getRegisteredTeamStat(winnerId, winnerName);
+                        if (winner) {
+                            winner.points += resolveHistoryPoints(history, "winner", sportsById, sportsByName);
+                            winner.wins += 1;
+                        }
                     }
 
                     if (loserId || loserName) {
-                        const loser = addTeam(loserId, loserName);
-                        loser.points += resolveHistoryPoints(history, "loser", sportsById, sportsByName);
-                        loser.losses += 1;
+                        const loser = getRegisteredTeamStat(loserId, loserName);
+                        if (loser) {
+                            loser.points += resolveHistoryPoints(history, "loser", sportsById, sportsByName);
+                            loser.losses += 1;
+                        }
                     }
                 });
 
