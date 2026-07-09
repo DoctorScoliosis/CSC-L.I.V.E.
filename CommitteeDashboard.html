@@ -290,6 +290,37 @@
             .leaderboard-team-cell { width: 40%; }
             .leaderboard-stat-cell { width: 16%; }
 
+            .leaderboard-points-badge {
+                max-width: 100%;
+                min-width: 2.6rem;
+                justify-content: center;
+                white-space: nowrap;
+                word-break: keep-all;
+                overflow-wrap: normal;
+                font-variant-numeric: tabular-nums;
+            }
+
+            .leaderboard-points-value,
+            .team-detail-score-value {
+                display: inline-block;
+                max-width: 100%;
+                font-variant-numeric: tabular-nums;
+                line-height: 1;
+                white-space: nowrap;
+                word-break: keep-all;
+                overflow-wrap: normal;
+            }
+
+            .leaderboard-points-small {
+                font-size: 0.78rem;
+                letter-spacing: -0.025em;
+            }
+
+            .leaderboard-points-compact {
+                font-size: 0.68rem;
+                letter-spacing: -0.045em;
+            }
+
             .leaderboard-moving-row {
                 position: relative;
                 z-index: 1;
@@ -325,6 +356,61 @@
                 .leaderboard-table {
                     table-layout: fixed;
                     min-width: 0;
+                }
+
+                .leaderboard-table th,
+                .leaderboard-table td {
+                    padding-left: clamp(0.2rem, 1.5vw, 0.45rem) !important;
+                    padding-right: clamp(0.2rem, 1.5vw, 0.45rem) !important;
+                }
+
+                .leaderboard-team-cell {
+                    width: 34%;
+                }
+
+                .leaderboard-stat-cell {
+                    width: 18%;
+                }
+
+                .leaderboard-table th:nth-child(3),
+                .leaderboard-table td:nth-child(3) {
+                    width: 22%;
+                }
+
+                .leaderboard-table th:nth-child(4),
+                .leaderboard-table td:nth-child(4),
+                .leaderboard-table th:nth-child(5),
+                .leaderboard-table td:nth-child(5) {
+                    width: 16%;
+                }
+
+                .leaderboard-points-badge {
+                    display: inline-grid !important;
+                    place-items: center;
+                    width: min(100%, 3.45rem);
+                    min-width: 3.15rem;
+                    padding: 0.24rem 0.2rem !important;
+                    border-radius: 9999px;
+                }
+
+                .leaderboard-points-value {
+                    font-size: clamp(0.54rem, 2.45vw, 0.68rem);
+                    letter-spacing: -0.045em;
+                }
+
+                .leaderboard-points-small {
+                    font-size: clamp(0.48rem, 2.15vw, 0.6rem);
+                    letter-spacing: -0.07em;
+                }
+
+                .leaderboard-points-compact {
+                    font-size: clamp(0.42rem, 1.9vw, 0.53rem);
+                    letter-spacing: -0.085em;
+                }
+
+                .team-detail-score-value {
+                    font-size: clamp(1.15rem, 7vw, 1.5rem) !important;
+                    letter-spacing: -0.04em;
                 }
 
                 .mobile-table-container {
@@ -3807,6 +3893,7 @@
                 }
 
                 const teamStats = new Map();
+                const registeredTeamAliases = new Map();
                 const sportsById = new Map();
                 const sportsByName = new Map();
 
@@ -3892,9 +3979,36 @@
                     return side === "winner" ? 1 : 0;
                 }
 
-                    function addRegisteredTeam(team) {
-                        const teamName = team.team || team.team_name || team.name;
-                        const key = makeTeamKey(team.id, teamName);
+                function registerTeamAliases(teamId, teamName, teamStat) {
+                    if (teamId !== null && teamId !== undefined && teamId !== "") {
+                        registeredTeamAliases.set(`id:${teamId}`, teamStat);
+                    }
+
+                    const normalizedTeamName = String(teamName || "").trim().toLowerCase();
+                    if (normalizedTeamName) {
+                        registeredTeamAliases.set(`name:${normalizedTeamName}`, teamStat);
+                    }
+                }
+
+                function getRegisteredTeamStat(teamId, teamName) {
+                    if (teamId !== null && teamId !== undefined && teamId !== "") {
+                        const byId = registeredTeamAliases.get(`id:${teamId}`);
+                        if (byId) {
+                            return byId;
+                        }
+                    }
+
+                    const normalizedTeamName = String(teamName || "").trim().toLowerCase();
+                    if (normalizedTeamName) {
+                        return registeredTeamAliases.get(`name:${normalizedTeamName}`) || null;
+                    }
+
+                    return null;
+                }
+
+                function addRegisteredTeam(team) {
+                    const teamName = team.team || team.team_name || team.name;
+                    const key = makeTeamKey(team.id, teamName);
 
                     if (!teamStats.has(key)) {
                         teamStats.set(key, {
@@ -3905,27 +4019,9 @@
                             losses: getPointValue(team.losses, team.loss, team.total_losses, 0)
                         });
                     }
+
+                    registerTeamAliases(team.id, teamName, teamStats.get(key));
                 }
-
-                    function addTeamResult(teamId, teamName, pointsToAdd, winToAdd, lossToAdd) {
-                        const key = makeTeamKey(teamId, teamName);
-
-                        if (!teamStats.has(key)) {
-                            teamStats.set(key, {
-                                id: teamId || null,
-                                team: teamName || "Unknown Team",
-                                points: 0,
-                                wins: 0,
-                                losses: 0
-                            });
-                        }
-
-                        const current = teamStats.get(key);
-
-                        current.points += Number(pointsToAdd) || 0;
-                        current.wins += Number(winToAdd) || 0;
-                        current.losses += Number(lossToAdd) || 0;
-                    }
 
                     (teams || []).forEach(addRegisteredTeam);
 
@@ -3938,23 +4034,19 @@
                     const loserName = history.loser_team_name || history.losing_team_name || history.loser_name || history.loser;
 
                         if (winnerId || winnerName) {
-                            addTeamResult(
-                                winnerId,
-                                winnerName,
-                                winnerPoints,
-                                1,
-                                0
-                            );
+                            const winner = getRegisteredTeamStat(winnerId, winnerName);
+                            if (winner) {
+                                winner.points += Number(winnerPoints) || 0;
+                                winner.wins += 1;
+                            }
                         }
 
                         if (loserId || loserName) {
-                            addTeamResult(
-                                loserId,
-                                loserName,
-                                loserPoints,
-                                0,
-                                1
-                            );
+                            const loser = getRegisteredTeamStat(loserId, loserName);
+                            if (loser) {
+                                loser.points += Number(loserPoints) || 0;
+                                loser.losses += 1;
+                            }
                         }
                     });
 
@@ -3994,19 +4086,17 @@
                     leaderboardBody.innerHTML = "";
 
                     leaderboard.forEach((team, index) => {
-                        let medal = "";
                         let rowClass = "hover:bg-slate-50 transition-colors";
                         const rankLabel = index < 3
                             ? ["&#129351;", "&#129352;", "&#129353;"][index]
                             : `#${index + 1}`;
-
-                        if (index === 0) {
-                            medal = "🥇";
-                        } else if (index === 1) {
-                            medal = "🥈";
-                        } else if (index === 2) {
-                            medal = "🥉";
-                        }
+                        const formattedPoints = Number(team.points || 0).toLocaleString();
+                        const pointDigits = formattedPoints.replace(/\D/g, "").length;
+                        const pointSizeClass = pointDigits >= 5
+                            ? "leaderboard-points-compact"
+                            : pointDigits >= 4
+                                ? "leaderboard-points-small"
+                                : "";
 
                         const row = document.createElement("tr");
                         row.className = `leaderboard-moving-row cursor-pointer ${rowClass}`;
@@ -4029,8 +4119,8 @@
                             </td>
 
                             <td class="py-5 px-6 text-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-black text-sm">
-                                    ${Number(team.points || 0).toLocaleString()}
+                                <span class="leaderboard-points-badge inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-black text-sm">
+                                    <span class="leaderboard-points-value ${pointSizeClass}">${formattedPoints}</span>
                                 </span>
                             </td>
 
