@@ -6255,26 +6255,50 @@
     <title>Participant Documents - ${escapeHTML(participantName)}</title>
     <style>
         * { box-sizing: border-box; }
-        body { margin: 24px; color: #111827; font-family: Arial, sans-serif; }
-        h1 { margin: 0 0 6px; font-size: 22px; }
-        p { margin: 0 0 18px; color: #4b5563; font-size: 13px; }
-        .document-page { break-after: page; page-break-after: always; margin-bottom: 28px; }
+        html, body { margin: 0; padding: 0; color: #111827; font-family: Arial, sans-serif; }
+        .document-page {
+            min-height: 100vh;
+            break-after: page;
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10mm;
+        }
         .document-page:last-child { break-after: auto; page-break-after: auto; }
-        h2 { margin: 0 0 12px; font-size: 16px; color: #1e3a8a; }
-        img { display: block; width: 100%; max-height: 88vh; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 10px; }
+        .document-heading { flex: 0 0 auto; }
+        h1 { margin: 0; font-size: 14px; color: #111827; }
+        h2 { margin: 2px 0 0; font-size: 12px; color: #1e3a8a; }
+        p { margin: 2px 0 0; color: #4b5563; font-size: 10px; }
+        .document-image-wrap {
+            min-height: 0;
+            flex: 1 1 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        img { display: block; width: 100%; height: 100%; max-height: calc(100vh - 34mm); object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; }
         @media print {
-            body { margin: 12mm; }
-            img { max-height: 250mm; }
+            @page { margin: 0; }
+            .document-page {
+                min-height: 100vh;
+                padding: 8mm;
+            }
+            img { max-height: calc(100vh - 28mm); }
         }
     </style>
 </head>
 <body>
-    <h1>${escapeHTML(participantName)}</h1>
-    <p>Generated ${escapeHTML(generatedAt)}. Selected document images: ${selectedItems.length}</p>
     ${selectedItems.map(item => `
         <section class="document-page">
-            <h2>${escapeHTML(item.label)}</h2>
-            <img src="${escapeHTML(item.url)}" alt="${escapeHTML(item.label)}">
+            <div class="document-heading">
+                <h1>${escapeHTML(participantName)}</h1>
+                <h2>${escapeHTML(item.label)}</h2>
+                <p>Generated ${escapeHTML(generatedAt)}</p>
+            </div>
+            <div class="document-image-wrap">
+                <img src="${escapeHTML(item.url)}" alt="${escapeHTML(item.label)}">
+            </div>
         </section>
     `).join("")}
     <script>
