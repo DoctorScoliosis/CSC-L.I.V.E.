@@ -83,6 +83,7 @@
             z-index: 2;
             padding: 0 !important;
             box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+            border-bottom: 4px solid #1d4ed8 !important;
         }
 
         .admin-header-row {
@@ -109,6 +110,38 @@
             line-height: 1.45;
             font-weight: 600;
             margin: 0;
+        }
+
+        .registration-card .registration-header-row {
+            display: grid !important;
+            grid-template-columns: 3.25rem minmax(0, 1fr);
+            align-items: center !important;
+            gap: 1rem;
+            min-height: 5.5rem;
+            padding: 0 1rem;
+            flex-wrap: nowrap !important;
+        }
+
+        .registration-card .dashboard-header-brand {
+            width: 3.25rem !important;
+            height: 3.25rem !important;
+            margin-left: 0 !important;
+            align-self: center !important;
+        }
+
+        .registration-card .dashboard-header-brand img {
+            width: 2.75rem !important;
+            height: 2.75rem !important;
+            max-width: 2.75rem !important;
+            max-height: 2.75rem !important;
+            object-fit: contain !important;
+        }
+
+        .registration-card .admin-header-text {
+            min-width: 0;
+            max-width: 100% !important;
+            padding: 1.25rem 0 !important;
+            overflow: hidden;
         }
 
         .registration-content {
@@ -172,25 +205,44 @@
                 border-radius: 0.9rem;
             }
 
-            .admin-header-row {
-                min-height: 4.85rem;
+            .registration-card .registration-header-row {
+                grid-template-columns: 2.75rem minmax(0, 1fr);
+                min-height: 4.85rem !important;
                 align-items: center !important;
-                gap: 0.55rem;
+                gap: 0.65rem !important;
+                padding: 0 0.75rem;
+                flex-wrap: nowrap !important;
             }
 
-            .admin-header .admin-header-text {
-                max-width: calc(100vw - 6.6rem) !important;
-                padding: 0.8rem 0.65rem !important;
+            .registration-card .dashboard-header-brand {
+                width: 2.75rem !important;
+                height: 2.75rem !important;
+                min-width: 2.75rem !important;
             }
 
-            .admin-header h1 {
-                font-size: clamp(1.1rem, 5.2vw, 1.45rem);
+            .registration-card .dashboard-header-brand img {
+                width: 2.35rem !important;
+                height: 2.35rem !important;
+                max-width: 2.35rem !important;
+                max-height: 2.35rem !important;
+            }
+
+            .registration-card .admin-header .admin-header-text {
+                max-width: 100% !important;
+                padding: 0.75rem 0 !important;
+            }
+
+            .registration-card .admin-header h1 {
+                font-size: clamp(1rem, 4.6vw, 1.35rem);
+                line-height: 1.12;
                 margin-bottom: 0.3rem;
+                overflow-wrap: anywhere;
             }
 
-            .admin-header p {
-                font-size: clamp(0.72rem, 3.2vw, 0.86rem);
+            .registration-card .admin-header p {
+                font-size: clamp(0.68rem, 3vw, 0.82rem);
                 line-height: 1.35;
+                overflow-wrap: anywhere;
             }
         }
     </style>
@@ -199,7 +251,7 @@
     <main class="registration-shell mx-auto flex w-full items-center justify-center">
         <section class="registration-card">
             <div class="admin-header dashboard-header bg-yellow-400">
-                <div class="admin-header-row mb-0 flex">
+                <div class="admin-header-row registration-header-row mb-0">
                     <div class="dashboard-header-brand" aria-hidden="true">
                         <img src="Adventist_University_of_the_Philippines_logo.png" alt="">
                     </div>
