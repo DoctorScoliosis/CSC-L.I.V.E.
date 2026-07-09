@@ -5276,8 +5276,42 @@
                 return participant.team_name || participant.team || "-";
             }
 
-            function getParticipantPhotoUrl(participant, key) {
-                return participant[key] || "";
+            function getParticipantPhotoUrls(participant, key) {
+                const value = participant[key];
+
+                if (!value) {
+                    return [];
+                }
+
+                if (Array.isArray(value)) {
+                    return value.filter(Boolean);
+                }
+
+                if (typeof value === "object") {
+                    return Object.values(value).filter(Boolean);
+                }
+
+                const rawValue = String(value).trim();
+
+                if (!rawValue) {
+                    return [];
+                }
+
+                if (rawValue.startsWith("{") || rawValue.startsWith("[")) {
+                    try {
+                        const parsed = JSON.parse(rawValue);
+                        if (Array.isArray(parsed)) {
+                            return parsed.filter(Boolean);
+                        }
+                        if (parsed && typeof parsed === "object") {
+                            return Object.values(parsed).filter(Boolean);
+                        }
+                    } catch (error) {
+                        console.warn("Unable to parse participant document URLs:", error);
+                    }
+                }
+
+                return [rawValue];
             }
 
             function getParticipantTeamFilterValue() {
@@ -6084,6 +6118,19 @@
                 `;
             }
 
+            function renderParticipantDocumentCards(label, urls) {
+                const list = Array.isArray(urls) ? urls.filter(Boolean) : [];
+
+                if (!list.length) {
+                    return renderParticipantDocumentCard(label, "");
+                }
+
+                return list.map((url, index) => {
+                    const pageLabel = list.length > 1 ? `${label} - Page ${index + 1}` : label;
+                    return renderParticipantDocumentCard(pageLabel, url);
+                }).join("");
+            }
+
             function openParticipantDetailsModal(participant) {
                 activeParticipantDetailsId = participant.id;
                 participantDetailsTitle.textContent = getParticipantDisplayName(participant);
@@ -6113,8 +6160,8 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        ${renderParticipantDocumentCard("Parent Consent Photo", getParticipantPhotoUrl(participant, "parent_consent_photo"))}
-                        ${renderParticipantDocumentCard("Medical Certificate Photo", getParticipantPhotoUrl(participant, "medical_certificate_photo"))}
+                        ${renderParticipantDocumentCards("Parent Consent Photo", getParticipantPhotoUrls(participant, "parent_consent_photo"))}
+                        ${renderParticipantDocumentCards("Medical Certificate Photo", getParticipantPhotoUrls(participant, "medical_certificate_photo"))}
                     </div>
                 `;
 
