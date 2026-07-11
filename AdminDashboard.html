@@ -1529,7 +1529,7 @@
                     <div class="dashboard-overview-card p-6 bg-white border-0 shadow-md rounded-lg">
                         <p class="dashboard-overview-label text-gray-600 text-sm font-medium">Today's Attendance</p>
                         <p id="adminTodayAttendance" class="dashboard-overview-value text-3xl font-bold text-blue-700 mt-2">...</p>
-                        <p class="dashboard-overview-note text-xs text-gray-500 mt-1">Worship attendance checked today</p>
+                        <p class="dashboard-overview-note text-xs text-gray-500 mt-1">Participant attendance checked today</p>
                     </div>
                 </div>
 
@@ -1563,7 +1563,7 @@
                         <div class="flex items-center justify-between gap-3 mb-4">
                             <div>
                                 <h3 class="text-xl font-bold text-gray-900">Today's Attendance Records</h3>
-                                <p class="text-xs text-gray-500">Latest worship attendance checks for today.</p>
+                                <p class="text-xs text-gray-500">Latest participant attendance checks for today.</p>
                             </div>
                         </div>
 
@@ -1811,7 +1811,7 @@
                     <div class="xl:col-span-1">
                         <div class="p-6 bg-white border-0 shadow-md rounded-lg">
                             <h3 class="text-xl font-bold text-gray-900 mb-2">
-                                Worship Attendance Checker
+                                Participant Attendance Checker
                             </h3>
 
                             <form id="attendanceForm" class="space-y-4">
@@ -2592,7 +2592,7 @@
                 teams: 'Create, edit, and manage sports teams.',
                 games: 'Create sports and configure the points assigned per game.',
                 participants: 'Add, edit, and manage registered participants.',
-                attendance: 'Check worship attendance using a Student ID.',
+                attendance: 'Check participant attendance using a Student ID.',
                 announcements: 'Create announcements for committees and students.',
                 feedback: 'Review student commendations and concerns.',
                 accounts: 'Review newly registered accounts before they can use the dashboard.',
@@ -4423,7 +4423,7 @@
                 }
 
                 if (!attendanceRows.length) {
-                    renderEmptyRow(overviewAttendanceBody, 4, "No worship attendance records checked today.");
+                    renderEmptyRow(overviewAttendanceBody, 4, "No participant attendance records checked today.");
                     return;
                 }
 
@@ -7408,10 +7408,31 @@
                         throw attendanceError;
                     }
 
+                    const attendanceDate = savedAttendance?.attendance_date || getLocalISODate();
+                    let attendanceBonusNotice = "";
+
+                    if (participant.team) {
+                        const { count: teamAttendanceCount, error: teamAttendanceError } = await supabase
+                            .from(ATTENDANCE_TABLE)
+                            .select("student_id", { count: "exact", head: true })
+                            .eq("attendance_date", attendanceDate)
+                            .eq("team", participant.team)
+                            .eq("status", "Present");
+
+                        if (teamAttendanceError) {
+                            console.warn("Unable to count team attendance bonus:", teamAttendanceError.message || teamAttendanceError);
+                        } else {
+                            const remainingAttendance = Math.max(0, 100 - Number(teamAttendanceCount || 0));
+                            attendanceBonusNotice = Number(teamAttendanceCount || 0) >= 100
+                                ? `<p class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-800">Daily team attendance bonus active: ${escapeHTML(participant.team)} has ${Number(teamAttendanceCount || 0).toLocaleString()} present records today, so +5 points will be added to the leaderboard.</p>`
+                                : `<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">${escapeHTML(participant.team)} has ${Number(teamAttendanceCount || 0).toLocaleString()}/100 present records today. ${remainingAttendance.toLocaleString()} more needed for the +5 daily team bonus.</p>`;
+                        }
+                    }
+
                     showAttendanceResult("success", `
                         <div class="space-y-3">
                             <div>
-                                <p class="text-lg font-bold">Worship attendance checked.</p>
+                                <p class="text-lg font-bold">Participant attendance checked.</p>
                                 <p class="text-sm">The participant has been marked <strong>Present</strong> in the attendance table.</p>
                             </div>
 
@@ -7441,6 +7462,8 @@
                                     <p class="font-semibold">${escapeHTML(formatDateTime(savedAttendance?.checked_at || attendanceRecord.checked_at))}</p>
                                 </div>
                             </div>
+
+                            ${attendanceBonusNotice}
 
                             <p class="text-xs text-green-700">Ready for the next attendance check. Enter another Student ID or close this window.</p>
                         </div>

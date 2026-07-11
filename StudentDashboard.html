@@ -653,6 +653,7 @@
 
             const TEAMS_TABLE = "sports_leaderboard";
             const PARTICIPANTS_TABLE = "participants";
+            const ATTENDANCE_TABLE = "attendance";
             const MATCHES_TABLE = "scheduled_matches";
             const GAME_HISTORY_TABLE = "game_history";
             const SPORTS_TABLE = "sports";
@@ -1310,15 +1311,32 @@
                         return;
                     }
 
-                    const { data: historyRows, error: historyError } = await supabase
-                        .from(GAME_HISTORY_TABLE)
-                        .select("*");
+                    const [
+                        { data: historyRows, error: historyError },
+                        { data: attendanceRows, error: attendanceError }
+                    ] = await Promise.all([
+                        supabase
+                            .from(GAME_HISTORY_TABLE)
+                            .select("*"),
+
+                        supabase
+                            .from(ATTENDANCE_TABLE)
+                            .select("student_id, participant_id, team, status, attendance_date, checked_at")
+                    ]);
 
                     if (historyError) {
                         console.warn("Leaderboard game history warning:", historyError.message || historyError);
                     }
 
-                    const leaderboardRows = buildLeaderboardRows(teams || [], historyError ? [] : (historyRows || []));
+                    if (attendanceError) {
+                        console.warn("Leaderboard attendance bonus warning:", attendanceError.message || attendanceError);
+                    }
+
+                    const leaderboardRows = buildLeaderboardRows(
+                        teams || [],
+                        historyError ? [] : (historyRows || []),
+                        attendanceError ? [] : (attendanceRows || [])
+                    );
                     const leaderboardSignature = JSON.stringify(leaderboardRows);
                     lastLeaderboardRows = leaderboardRows;
                     lastLeaderboardHistoryRows = historyError ? [] : (historyRows || []);
@@ -1347,7 +1365,7 @@
                 }
             }
 
-            function buildLeaderboardRows(teams, historyRows) {
+            function buildLeaderboardRows(teams, historyRows, attendanceRows = []) {
                 const teamStats = new Map();
                 const registeredTeamAliases = new Map();
 
@@ -1452,6 +1470,13 @@
                             loser.points += resolveHistoryPoints(history, "loser");
                             loser.losses += 1;
                         }
+                    }
+                });
+
+                buildAttendanceBonusRows(attendanceRows).forEach(bonus => {
+                    const team = getRegisteredTeamStat(null, bonus.team);
+                    if (team) {
+                        team.points += bonus.points;
                     }
                 });
 
@@ -1626,6 +1651,60 @@
                         easing: "linear"
                     });
                 });
+            }
+
+            function isPresentAttendanceStatus(status) {
+                return normalizeText(status || "Present") === "present";
+            }
+
+            function getAttendanceBonusDate(row) {
+                if (row.attendance_date) {
+                    return String(row.attendance_date).slice(0, 10);
+                }
+
+                if (row.checked_at) {
+                    return String(row.checked_at).slice(0, 10);
+                }
+
+                return "";
+            }
+
+            function buildAttendanceBonusRows(attendanceRows) {
+                const groups = new Map();
+
+                (attendanceRows || []).forEach(row => {
+                    const team = String(row.team || "").trim();
+                    const date = getAttendanceBonusDate(row);
+
+                    if (!team || !date || !isPresentAttendanceStatus(row.status)) {
+                        return;
+                    }
+
+                    const key = `${normalizeText(team)}|${date}`;
+                    if (!groups.has(key)) {
+                        groups.set(key, {
+                            team,
+                            date,
+                            students: new Set()
+                        });
+                    }
+
+                    const studentKey = String(row.student_id || row.participant_id || "").trim();
+                    if (!studentKey) {
+                        return;
+                    }
+
+                    groups.get(key).students.add(studentKey);
+                });
+
+                return [...groups.values()]
+                    .filter(group => group.students.size >= 100)
+                    .map(group => ({
+                        team: group.team,
+                        date: group.date,
+                        attendanceCount: group.students.size,
+                        points: 5
+                    }));
             }
 
             function openTeamDetails(team, historyRows) {
@@ -2085,6 +2164,9 @@
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: PARTICIPANTS_TABLE }, async () => {
                     await loadStats();
+                })
+                .on("postgres_changes", { event: "*", schema: "public", table: ATTENDANCE_TABLE }, () => {
+                    scheduleLiveLeaderboardReload(150);
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: MATCHES_TABLE }, () => {
                     scheduleLiveMatchReload(0, { force: true });

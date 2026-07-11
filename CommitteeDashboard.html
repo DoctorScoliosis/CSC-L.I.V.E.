@@ -990,7 +990,7 @@
                         onclick="switchTab('verifyAttendance')"
                         class="tab-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 text-gray-700 hover:bg-gray-100"
                         data-tab="verifyAttendance">
-                        <span class="font-medium">Verify Worship Attendance</span>
+                        <span class="font-medium">Participant Checker</span>
                     </button>
 
                     <button
@@ -1367,54 +1367,110 @@
                     </div>
                 </div>
 
-                <!-- Verify Worship Attendance Tab -->
+                <!-- Participant Checker Tab -->
                 <div id="verifyAttendance" class="tab-content hidden mt-8 ml-5 mr-5">
-                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                            <div class="xl:col-span-1 p-6 bg-white border-0 shadow-md rounded-lg">
+                                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                                    Participant Checker
+                                </h2>
+                                <p class="mb-4 text-sm text-gray-500">
+                                    Check if a student is registered before verifying attendance.
+                                </p>
 
-                        <div class="xl:col-span-1 p-6 bg-white border-0 shadow-md rounded-lg">
-                            <h2 class="text-2xl font-bold text-gray-900 mb-2">
-                                Verify Worship Attendance
-                            </h2>
+                                <form id="participantCheckForm" class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                            Student ID
+                                        </label>
 
-                            <form id="verifyAttendanceForm" class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        Student ID
-                                    </label>
+                                        <input
+                                            type="text"
+                                            id="participantCheckStudentId"
+                                            required
+                                            autocomplete="off"
+                                            placeholder="Enter student ID"
+                                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-500 outline-none">
+                                    </div>
 
-                                    <input
-                                        type="text"
-                                        id="verifyStudentId"
-                                        required
-                                        autocomplete="off"
-                                        placeholder="Enter student ID"
-                                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none">
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed">
-                                    Verify Attendance
-                                </button>
-                            </form>
-                        </div>
-
-                        <div class="xl:col-span-2 p-6 bg-white border-0 shadow-md rounded-lg">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-bold text-gray-900">
-                                    Verification Result
-                                </h3>
-
-                                <button
-                                    type="button"
-                                    id="clearVerificationResult"
-                                    class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium">
-                                    Clear
-                                </button>
+                                    <button
+                                        type="submit"
+                                        class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed">
+                                        Check Registration
+                                    </button>
+                                </form>
                             </div>
 
-                            <div id="verifyAttendanceResult" class="rounded-lg border border-gray-200 bg-gray-50 p-6 text-gray-600">
-                                Enter a student ID to verify if the player is allowed to play.
+                            <div class="xl:col-span-2 p-6 bg-white border-0 shadow-md rounded-lg">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xl font-bold text-gray-900">
+                                        Registration Result
+                                    </h3>
+
+                                    <button
+                                        type="button"
+                                        id="clearParticipantCheckResult"
+                                        class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium">
+                                        Clear
+                                    </button>
+                                </div>
+
+                                <div id="participantCheckResult" class="rounded-lg border border-gray-200 bg-gray-50 p-6 text-gray-600">
+                                    Enter a student ID to check if the participant is registered.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                            <div class="xl:col-span-1 p-6 bg-white border-0 shadow-md rounded-lg">
+                                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                                    Verify Attendance
+                                </h2>
+                                <p class="mb-4 text-sm text-gray-500">
+                                    Confirm if the registered participant is present today.
+                                </p>
+
+                                <form id="verifyAttendanceForm" class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                            Student ID
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            id="verifyStudentId"
+                                            required
+                                            autocomplete="off"
+                                            placeholder="Enter student ID"
+                                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed">
+                                        Verify Attendance
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div class="xl:col-span-2 p-6 bg-white border-0 shadow-md rounded-lg">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xl font-bold text-gray-900">
+                                        Attendance Result
+                                    </h3>
+
+                                    <button
+                                        type="button"
+                                        id="clearVerificationResult"
+                                        class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium">
+                                        Clear
+                                    </button>
+                                </div>
+
+                                <div id="verifyAttendanceResult" class="rounded-lg border border-gray-200 bg-gray-50 p-6 text-gray-600">
+                                    Enter a student ID to verify if the participant attended today.
+                                </div>
                             </div>
                         </div>
 
@@ -1895,7 +1951,7 @@
                 const titles = {
                     overview: 'Committee Dashboard',
                     leaderboard: 'Leaderboard',
-                    verifyAttendance: 'Verify Worship Attendance',
+                    verifyAttendance: 'Participant Checker',
                     matches: 'Match Management',
                     contacts: 'Committee Contacts',
                     about: 'About L.I.V.E.'
@@ -1904,7 +1960,7 @@
                 const descs = {
                     overview: 'Monitor sports activities and team performance.',
                     leaderboard: 'View real-time team rankings and scores.',
-                    verifyAttendance: 'Check if a player attended worship and is allowed to play.',
+                    verifyAttendance: 'Check participant registration and attendance credibility.',
                     matches: 'Schedule matches and declare winners before marking games as done.',
                     contacts: 'Find sport committee personnel and message them in realtime.',
                     about: 'Learn about the League Information & Viewing Engine.'
@@ -2139,6 +2195,10 @@
                 const verifyStudentId = document.getElementById("verifyStudentId");
                 const verifyAttendanceResult = document.getElementById("verifyAttendanceResult");
                 const clearVerificationResult = document.getElementById("clearVerificationResult");
+                const participantCheckForm = document.getElementById("participantCheckForm");
+                const participantCheckStudentId = document.getElementById("participantCheckStudentId");
+                const participantCheckResult = document.getElementById("participantCheckResult");
+                const clearParticipantCheckResult = document.getElementById("clearParticipantCheckResult");
 
                 const openMatchModal = document.getElementById("openMatchModal");
                 const closeMatchModal = document.getElementById("closeMatchModal");
@@ -3867,11 +3927,13 @@
                         Leaderboard source of truth:
                         - Teams are listed from sports_leaderboard only to get the registered team names.
                         - Points, wins, and losses are computed directly from game_history.
+                        - Attendance adds a derived +5 bonus per team/day with 100+ present records.
                         - It does NOT read sports_leaderboard.points / wins / losses anymore.
                     */
                 const [
                     { data: teams, error: teamsError },
-                    { data: historyRows, error: historyError }
+                    { data: historyRows, error: historyError },
+                    { data: attendanceRows, error: attendanceError }
                 ] = await Promise.all([
                     supabase
                         .from(TEAMS_TABLE)
@@ -3880,8 +3942,16 @@
 
                     supabase
                         .from(GAME_HISTORY_TABLE)
-                        .select("*")
+                        .select("*"),
+
+                    supabase
+                        .from(ATTENDANCE_TABLE)
+                        .select("student_id, participant_id, team, status, attendance_date, checked_at")
                 ]);
+
+                    if (attendanceError) {
+                        console.warn("Leaderboard attendance bonus warning:", attendanceError.message || attendanceError);
+                    }
 
                     if (teamsError) {
                         console.error("Leaderboard teams error:", teamsError.message || teamsError);
@@ -3955,6 +4025,56 @@
                     return 0;
                 }
 
+                function getAttendanceBonusDate(row) {
+                    if (row.attendance_date) {
+                        return String(row.attendance_date).slice(0, 10);
+                    }
+
+                    if (row.checked_at) {
+                        return String(row.checked_at).slice(0, 10);
+                    }
+
+                    return "";
+                }
+
+                function buildAttendanceBonusRows(attendanceRows) {
+                    const groups = new Map();
+
+                    (attendanceRows || []).forEach(row => {
+                        const team = String(row.team || "").trim();
+                        const date = getAttendanceBonusDate(row);
+
+                        if (!team || !date || normalizeStatus(row.status || "Present") !== "present") {
+                            return;
+                        }
+
+                        const key = `${team.toLowerCase()}|${date}`;
+                        if (!groups.has(key)) {
+                            groups.set(key, {
+                                team,
+                                date,
+                                students: new Set()
+                            });
+                        }
+
+                        const studentKey = String(row.student_id || row.participant_id || "").trim();
+                        if (!studentKey) {
+                            return;
+                        }
+
+                        groups.get(key).students.add(studentKey);
+                    });
+
+                    return [...groups.values()]
+                        .filter(group => group.students.size >= 100)
+                        .map(group => ({
+                            team: group.team,
+                            date: group.date,
+                            attendanceCount: group.students.size,
+                            points: 5
+                        }));
+                }
+
                 function registerTeamAliases(teamId, teamName, teamStat) {
                     if (teamId !== null && teamId !== undefined && teamId !== "") {
                         registeredTeamAliases.set(`id:${teamId}`, teamStat);
@@ -4023,6 +4143,13 @@
                                 loser.points += Number(loserPoints) || 0;
                                 loser.losses += 1;
                             }
+                        }
+                    });
+
+                    buildAttendanceBonusRows(attendanceError ? [] : (attendanceRows || [])).forEach(bonus => {
+                        const team = getRegisteredTeamStat(null, bonus.team);
+                        if (team) {
+                            team.points += bonus.points;
                         }
                     });
 
@@ -4306,6 +4433,169 @@
                     historyModal.classList.remove("flex");
                 }
 
+                function getParticipantDisplayName(participant) {
+                    return participant?.full_name || participant?.name || participant?.participant_name || "No name";
+                }
+
+                function getParticipantTeamName(participant) {
+                    return participant?.team_name || participant?.team || "No team";
+                }
+
+                function getParticipantIdNumber(participant) {
+                    return participant?.id_number || participant?.student_id || "-";
+                }
+
+                function getParticipantGameScopeLabel(participant) {
+                    const scope = String(participant?.game_scope || "").trim().toLowerCase();
+                    if (scope === "major") return "Major game only";
+                    if (scope === "minor") return "Minor game only";
+                    if (scope === "both") return "Both major and minor game";
+                    return participant?.game_scope || "-";
+                }
+
+                function getParticipantImportLabel(participant) {
+                    return participant?.is_import ? "Yes" : "No";
+                }
+
+                function setParticipantCheckResult(type, htmlContent) {
+                    participantCheckResult.className = "rounded-lg border p-6";
+
+                    if (type === "registered") {
+                        participantCheckResult.classList.add("bg-green-50", "border-green-200", "text-green-900");
+                    } else if (type === "missing") {
+                        participantCheckResult.classList.add("bg-red-50", "border-red-200", "text-red-900");
+                    } else {
+                        participantCheckResult.classList.add("bg-gray-50", "border-gray-200", "text-gray-600");
+                    }
+
+                    participantCheckResult.innerHTML = htmlContent;
+                }
+
+                function clearParticipantCheck() {
+                    participantCheckStudentId.value = "";
+                    setParticipantCheckResult("neutral", `
+                        Enter a student ID to check if the participant is registered.
+                    `);
+                    setTimeout(() => participantCheckStudentId.focus(), 50);
+                }
+
+                async function checkParticipantRegistration(event) {
+                    event.preventDefault();
+
+                    const studentId = participantCheckStudentId.value.trim();
+                    const submitButton = participantCheckForm.querySelector('button[type="submit"]');
+
+                    if (!studentId) {
+                        setParticipantCheckResult("missing", `
+                            <p class="text-lg font-bold">Student ID is required.</p>
+                            <p>Please enter a student ID before checking registration.</p>
+                        `);
+                        participantCheckStudentId.focus();
+                        return;
+                    }
+
+                    submitButton.disabled = true;
+                    submitButton.textContent = "Checking...";
+
+                    try {
+                        const { data: participant, error } = await supabase
+                            .from(PARTICIPANTS_TABLE)
+                            .select("*")
+                            .eq("student_id", studentId)
+                            .maybeSingle();
+
+                        if (error) {
+                            throw error;
+                        }
+
+                        if (!participant) {
+                            setParticipantCheckResult("missing", `
+                                <div class="space-y-3">
+                                    <p class="text-2xl font-bold">Participant is not registered.</p>
+                                    <p>No participant record matched Student ID <strong>${escapeHTML(studentId)}</strong>.</p>
+                                </div>
+                            `);
+                            participantCheckForm.reset();
+                            setTimeout(() => participantCheckStudentId.focus(), 50);
+                            return;
+                        }
+
+                        setParticipantCheckResult("registered", `
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="text-2xl font-bold">Participant is registered.</p>
+                                    <p class="text-sm">Registration record found in the participants database.</p>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white bg-opacity-80 rounded-lg p-4 border border-green-100">
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Name</p>
+                                        <p class="font-semibold">${escapeHTML(getParticipantDisplayName(participant))}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Student ID</p>
+                                        <p class="font-semibold">${escapeHTML(getParticipantIdNumber(participant))}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Team</p>
+                                        <p class="font-semibold">${escapeHTML(getParticipantTeamName(participant))}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Status</p>
+                                        <p class="font-semibold">${escapeHTML(participant.status || "-")}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Course</p>
+                                        <p class="font-semibold">${escapeHTML(participant.course || "-")}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Playing In</p>
+                                        <p class="font-semibold">${escapeHTML(getParticipantGameScopeLabel(participant))}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Major Sport</p>
+                                        <p class="font-semibold">${escapeHTML(participant.major_sport_name || "-")}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Minor Sport</p>
+                                        <p class="font-semibold">${escapeHTML(participant.minor_sport_name || "-")}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Import Player</p>
+                                        <p class="font-semibold">${escapeHTML(getParticipantImportLabel(participant))}</p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-green-700">Registered At</p>
+                                        <p class="font-semibold">${escapeHTML(formatDateTime(participant.created_at))}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+
+                        participantCheckForm.reset();
+                        setTimeout(() => participantCheckStudentId.focus(), 50);
+                    } catch (err) {
+                        console.error("Participant checker error:", err.message || err);
+                        setParticipantCheckResult("missing", `
+                            <p class="text-lg font-bold">Failed to check participant.</p>
+                            <p>${escapeHTML(err.message || "Please check the participants table and RLS policies.")}</p>
+                        `);
+                        setTimeout(() => participantCheckStudentId.focus(), 50);
+                    } finally {
+                        submitButton.disabled = false;
+                        submitButton.textContent = "Check Registration";
+                    }
+                }
+
                 function setVerificationResult(type, htmlContent) {
                     verifyAttendanceResult.className = "rounded-lg border p-6";
 
@@ -4323,12 +4613,12 @@
                 function clearVerifyResult() {
                     verifyStudentId.value = "";
                     setVerificationResult("neutral", `
-                        Enter a student ID to verify if the player is allowed to play.
+                        Enter a student ID to verify if the participant attended today.
                     `);
                     setTimeout(() => verifyStudentId.focus(), 50);
                 }
 
-                async function verifyWorshipAttendance(event) {
+                async function verifyParticipantAttendance(event) {
                     event.preventDefault();
 
                     const studentId = verifyStudentId.value.trim();
@@ -4360,7 +4650,7 @@
                         if (!participant) {
                             setVerificationResult("denied", `
                                 <div class="space-y-3">
-                                    <p class="text-2xl font-bold">Player is not allowed to play.</p>
+                                    <p class="text-2xl font-bold">Participant is not registered.</p>
                                     <p>No registered participant matched Student ID <strong>${escapeHTML(studentId)}</strong>.</p>
                                 </div>
                             `);
@@ -4389,8 +4679,8 @@
                             setVerificationResult("allowed", `
                                 <div class="space-y-4">
                                     <div>
-                                        <p class="text-2xl font-bold">Player is allowed to play.</p>
-                                        <p class="text-sm">Worship attendance is marked <strong>Present</strong> for today.</p>
+                                        <p class="text-2xl font-bold">Participant attendance is verified.</p>
+                                        <p class="text-sm">Attendance is marked <strong>Present</strong> for today.</p>
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white bg-opacity-80 rounded-lg p-4 border border-green-100">
@@ -4432,8 +4722,8 @@
                             setVerificationResult("denied", `
                                 <div class="space-y-4">
                                     <div>
-                                        <p class="text-2xl font-bold">Player is not allowed to play.</p>
-                                        <p class="text-sm">Worship attendance is not marked <strong>Present</strong> for today.</p>
+                                        <p class="text-2xl font-bold">Participant attendance is not verified.</p>
+                                        <p class="text-sm">Attendance is not marked <strong>Present</strong> for today.</p>
                                     </div>
 
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white bg-opacity-80 rounded-lg p-4 border border-red-100">
@@ -5782,7 +6072,9 @@
                     }
                 });
 
-                verifyAttendanceForm.addEventListener("submit", verifyWorshipAttendance);
+                participantCheckForm.addEventListener("submit", checkParticipantRegistration);
+                clearParticipantCheckResult.addEventListener("click", clearParticipantCheck);
+                verifyAttendanceForm.addEventListener("submit", verifyParticipantAttendance);
                 clearVerificationResult.addEventListener("click", clearVerifyResult);
 
                 let committeeLastInteractionAt = 0;
@@ -6032,9 +6324,10 @@
                             schema: "public",
                             table: ATTENDANCE_TABLE
                         },
-                        function () {
-                            /* Verification is manual, but this keeps the subscription active. */
-                        }
+                        () => scheduleCommitteeRealtimeReload({
+                            overview: true,
+                            leaderboard: true
+                        })
                     )
                     .on(
                         "postgres_changes",
