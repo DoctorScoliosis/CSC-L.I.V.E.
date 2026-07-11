@@ -12,6 +12,16 @@ create table if not exists public.participants (
     created_at timestamptz default now()
 );
 
+create table if not exists public.sports (
+    id bigserial primary key,
+    sport_name text not null,
+    points_per_game numeric not null default 0,
+    winner_points numeric not null default 0,
+    loser_points numeric not null default 0,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
 alter table public.participants
     add column if not exists full_name text,
     add column if not exists course text,
@@ -19,6 +29,11 @@ alter table public.participants
     add column if not exists id_number text,
     add column if not exists team_id text,
     add column if not exists team_name text,
+    add column if not exists game_scope text,
+    add column if not exists major_sport_id text,
+    add column if not exists major_sport_name text,
+    add column if not exists minor_sport_id text,
+    add column if not exists minor_sport_name text,
     add column if not exists parent_consent_photo text,
     add column if not exists medical_certificate_photo text,
     add column if not exists reviewed_by text,
@@ -33,6 +48,26 @@ alter table public.participants
 alter table public.participants
     add constraint participants_status_check
     check (lower(status) in ('pending', 'approved', 'rejected'));
+
+alter table public.participants
+    drop constraint if exists participants_game_scope_check;
+
+alter table public.participants
+    add constraint participants_game_scope_check
+    check (
+        game_scope is null
+        or lower(game_scope) in ('major', 'minor', 'both')
+    );
+
+alter table public.sports
+    add column if not exists game_type text not null default 'major';
+
+alter table public.sports
+    drop constraint if exists sports_game_type_check;
+
+alter table public.sports
+    add constraint sports_game_type_check
+    check (lower(game_type) in ('major', 'minor'));
 
 create unique index if not exists participants_id_number_unique
     on public.participants (id_number)
@@ -58,6 +93,22 @@ values ('participant-documents', 'participant-documents', true)
 on conflict (id) do update set public = true;
 
 alter table public.participants enable row level security;
+alter table public.sports enable row level security;
+
+drop policy if exists "Public can read sports for registration" on public.sports;
+create policy "Public can read sports for registration"
+on public.sports
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Authenticated users can manage sports" on public.sports;
+create policy "Authenticated users can manage sports"
+on public.sports
+for all
+to authenticated
+using (true)
+with check (true);
 
 drop policy if exists "Public can submit participant registrations" on public.participants;
 create policy "Public can submit participant registrations"

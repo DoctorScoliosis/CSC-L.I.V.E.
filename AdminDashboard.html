@@ -1712,6 +1712,7 @@
                         <thead>
                             <tr class="border-b border-gray-200">
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Sport</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Points Per Game</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Winner Points</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Loser Points</th>
@@ -1722,7 +1723,7 @@
 
                         <tbody id="sportsTableBody">
                             <tr>
-                                <td colspan="6" class="py-4 px-4 text-gray-600">
+                                <td colspan="7" class="py-4 px-4 text-gray-600">
                                     Loading sports...
                                 </td>
                             </tr>
@@ -1770,7 +1771,7 @@
                 </div>
 
                 <div class="responsive-table-card p-6 bg-white border-0 shadow-md rounded-lg overflow-x-auto">
-                    <table class="w-full min-w-[980px]">
+                    <table class="w-full min-w-[1280px]">
                         <thead>
                             <tr class="border-b border-gray-200">
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
@@ -1778,6 +1779,9 @@
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Age</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">ID Number</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Team</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Playing In</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Major Sport</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Minor Sport</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Date Registered</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
@@ -1786,7 +1790,7 @@
 
                         <tbody id="participantsTableBody">
                             <tr>
-                                <td colspan="8" class="py-4 px-4 text-gray-600">
+                                <td colspan="11" class="py-4 px-4 text-gray-600">
                                     Loading participants...
                                 </td>
                             </tr>
@@ -2279,6 +2283,20 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Game Type
+                    </label>
+
+                    <select
+                        id="sportGameTypeInput"
+                        required
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option value="major">Major Game</option>
+                        <option value="minor">Minor Game</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
                         Points Per Game
                     </label>
 
@@ -2757,6 +2775,7 @@
             const sportForm = document.getElementById("sportForm");
             const sportId = document.getElementById("sportId");
             const sportNameInput = document.getElementById("sportNameInput");
+            const sportGameTypeInput = document.getElementById("sportGameTypeInput");
             const pointsPerGameInput = document.getElementById("pointsPerGameInput");
             const loserPointsInput = document.getElementById("loserPointsInput");
             const sportsTableBody = document.getElementById("sportsTableBody");
@@ -4991,6 +5010,7 @@
                 sportModalTitle.textContent = "Add New Sport";
                 sportForm.reset();
                 sportId.value = "";
+                sportGameTypeInput.value = "major";
                 pointsPerGameInput.value = "";
                 loserPointsInput.value = "";
 
@@ -5002,6 +5022,7 @@
                 sportModalTitle.textContent = "Edit Sport";
                 sportId.value = sport.id;
                 sportNameInput.value = sport.sport_name;
+                sportGameTypeInput.value = normalizeGameType(sport.game_type || sport.sport_type || sport.category_type);
                 pointsPerGameInput.value = sport.points_per_game;
                 loserPointsInput.value = sport.loser_points;
 
@@ -5019,7 +5040,7 @@
             async function loadSports() {
                 const { data, error } = await supabase
                     .from(SPORTS_TABLE)
-                    .select("id, sport_name, points_per_game, winner_points, loser_points, created_at, updated_at")
+                    .select("id, sport_name, game_type, points_per_game, winner_points, loser_points, created_at, updated_at")
                     .order("sport_name", { ascending: true });
 
                 if (error) {
@@ -5027,7 +5048,7 @@
 
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="8" class="py-4 px-4 text-red-600">
+                            <td colspan="7" class="py-4 px-4 text-red-600">
                                 Error loading sports. Run the SQL below first, then check your Supabase RLS policies.
                             </td>
                         </tr>
@@ -5051,7 +5072,7 @@
                 if (sportsData.length === 0) {
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="8" class="py-4 px-4 text-gray-600">
+                            <td colspan="7" class="py-4 px-4 text-gray-600">
                                 No sports added yet.
                             </td>
                         </tr>
@@ -5066,6 +5087,12 @@
                     row.innerHTML = `
                         <td class="py-3 px-4 font-medium text-gray-900">
                             ${escapeHTML(sport.sport_name)}
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold ${normalizeGameType(sport.game_type) === "minor" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}">
+                                ${escapeHTML(getSportGameTypeLabel(sport.game_type))}
+                            </span>
                         </td>
 
                         <td class="py-3 px-4 text-gray-600">
@@ -5135,6 +5162,7 @@
 
                         alert(
                             `Sport: ${selectedSport.sport_name}\n` +
+                            `Type: ${getSportGameTypeLabel(selectedSport.game_type)}\n` +
                             `Points Per Game: ${selectedSport.points_per_game}\n` +
                             `Winner Points: ${selectedSport.winner_points}\n` +
                             `Loser Points: ${selectedSport.loser_points}`
@@ -5153,6 +5181,7 @@
                 event.preventDefault();
 
                 const sportName = sportNameInput.value.trim();
+                const gameType = normalizeGameType(sportGameTypeInput.value);
                 const pointsPerGame = toNumber(pointsPerGameInput.value);
                 const winnerPoints = pointsPerGame;
                 const loserPoints = toNumber(loserPointsInput.value);
@@ -5169,6 +5198,7 @@
 
                 const sportData = {
                     sport_name: sportName,
+                    game_type: gameType,
                     points_per_game: pointsPerGame,
                     winner_points: winnerPoints,
                     loser_points: loserPoints
@@ -5275,6 +5305,45 @@
 
             function getParticipantTeamName(participant) {
                 return participant.team_name || participant.team || "-";
+            }
+
+            function normalizeGameType(value) {
+                const normalized = String(value || "").trim().toLowerCase();
+                return normalized === "minor" ? "minor" : "major";
+            }
+
+            function getSportGameTypeLabel(value) {
+                return normalizeGameType(value) === "minor" ? "Minor Game" : "Major Game";
+            }
+
+            function getParticipantGameScope(participant) {
+                return participant.game_scope || participant.play_scope || participant.playing_in || "";
+            }
+
+            function getParticipantGameScopeLabel(participant) {
+                const scope = String(getParticipantGameScope(participant)).trim().toLowerCase();
+
+                if (scope === "major") {
+                    return "Major Game Only";
+                }
+
+                if (scope === "minor") {
+                    return "Minor Game Only";
+                }
+
+                if (scope === "both") {
+                    return "Both Major and Minor Game";
+                }
+
+                return "-";
+            }
+
+            function getParticipantMajorSportName(participant) {
+                return participant.major_sport_name || participant.major_game_name || participant.selected_major_sport || "-";
+            }
+
+            function getParticipantMinorSportName(participant) {
+                return participant.minor_sport_name || participant.minor_game_name || participant.selected_minor_sport || "-";
             }
 
             function getParticipantPhotoUrls(participant, key) {
@@ -5411,7 +5480,7 @@
                 const thead = printDocument.createElement("thead");
                 const headerRow = printDocument.createElement("tr");
 
-                ["#", "Name", "Student ID", "Team", "Status", "Created"].forEach(label => {
+                ["#", "Name", "Student ID", "Team", "Playing In", "Major Sport", "Minor Sport", "Status", "Created"].forEach(label => {
                     const th = printDocument.createElement("th");
                     th.textContent = label;
                     headerRow.appendChild(th);
@@ -5425,7 +5494,7 @@
                 if (filteredParticipants.length === 0) {
                     const row = printDocument.createElement("tr");
                     const cell = printDocument.createElement("td");
-                    cell.colSpan = 6;
+                    cell.colSpan = 9;
                     cell.className = "empty";
                     cell.textContent = "No participants found for this filter.";
                     row.appendChild(cell);
@@ -5435,9 +5504,12 @@
                         const row = printDocument.createElement("tr");
                         [
                             index + 1,
-                            participant.name || "",
-                            participant.student_id || "",
-                            participant.team || "",
+                            getParticipantDisplayName(participant),
+                            getParticipantIdNumber(participant),
+                            getParticipantTeamName(participant),
+                            getParticipantGameScopeLabel(participant),
+                            getParticipantMajorSportName(participant),
+                            getParticipantMinorSportName(participant),
                             participant.status || "Pending",
                             formatDateTime(participant.created_at)
                         ].forEach(value => {
@@ -5953,7 +6025,7 @@
                 if (participantsData.length === 0) {
                     participantsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="8" class="py-4 px-4 text-gray-600">
+                            <td colspan="11" class="py-4 px-4 text-gray-600">
                                 Loading participants...
                             </td>
                         </tr>
@@ -5970,7 +6042,7 @@
 
                     participantsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="py-4 px-4 text-red-600">
+                            <td colspan="11" class="py-4 px-4 text-red-600">
                                 Error loading participants. Check your participants table and RLS policies.
                             </td>
                         </tr>
@@ -5992,7 +6064,7 @@
                 if (participantsData.length === 0) {
                     participantsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="8" class="py-4 px-4 text-gray-600">
+                            <td colspan="11" class="py-4 px-4 text-gray-600">
                                 No participants found.
                             </td>
                         </tr>
@@ -6003,7 +6075,7 @@
                 if (filteredParticipants.length === 0) {
                     participantsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="8" class="py-4 px-4 text-gray-600">
+                            <td colspan="11" class="py-4 px-4 text-gray-600">
                                 No participants found for the selected team.
                             </td>
                         </tr>
@@ -6035,6 +6107,18 @@
 
                         <td class="py-3 px-4 text-gray-600">
                             ${escapeHTML(getParticipantTeamName(participant))}
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            ${escapeHTML(getParticipantGameScopeLabel(participant))}
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            ${escapeHTML(getParticipantMajorSportName(participant))}
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            ${escapeHTML(getParticipantMinorSportName(participant))}
                         </td>
 
                         <td class="py-3 px-4">
@@ -6157,6 +6241,9 @@
                                 <div><dt class="font-bold text-gray-500">Age</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantAge(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">ID Number</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantIdNumber(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Team Joined</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantTeamName(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Playing In</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantGameScopeLabel(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Major Sport</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantMajorSportName(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Minor Sport</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantMinorSportName(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Current Status</dt><dd><span class="inline-flex rounded-full px-3 py-1 text-xs font-black ${getParticipantStatusClass(participant.status)}">${escapeHTML(getParticipantStatusLabel(participant.status))}</span></dd></div>
                                 <div><dt class="font-bold text-gray-500">Date Registered</dt><dd class="font-semibold text-gray-900">${escapeHTML(formatDateTime(participant.created_at))}</dd></div>
                             </dl>

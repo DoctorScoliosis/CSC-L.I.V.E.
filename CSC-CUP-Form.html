@@ -309,6 +309,30 @@
                             <option value="">Loading teams...</option>
                         </select>
                     </label>
+
+                    <label class="block sm:col-span-2">
+                        <span class="mb-1 block text-sm font-black text-slate-700">You are going to play in</span>
+                        <select id="gameScopeSelect" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                            <option value="">Select game category</option>
+                            <option value="major">Major game Only</option>
+                            <option value="minor">Minor game Only</option>
+                            <option value="both">Both major and minor game</option>
+                        </select>
+                    </label>
+
+                    <label id="majorSportField" class="hidden block">
+                        <span class="mb-1 block text-sm font-black text-slate-700">Major Game</span>
+                        <select id="majorSportSelect" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                            <option value="">Select a major game</option>
+                        </select>
+                    </label>
+
+                    <label id="minorSportField" class="hidden block">
+                        <span class="mb-1 block text-sm font-black text-slate-700">Minor Game</span>
+                        <select id="minorSportSelect" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                            <option value="">Select a minor game</option>
+                        </select>
+                    </label>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -399,6 +423,7 @@
         const SUPABASE_URL = "https://unveyndaaznxgqojwjki.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudmV5bmRhYXpueGdxb2p3amtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MzQyNzUsImV4cCI6MjA5NDIxMDI3NX0.2RUriqqq9kITnl8uPZSdiSrXuo8BhD9nrzqHFUwl2yU";
         const TEAMS_TABLE = "sports_leaderboard";
+        const SPORTS_TABLE = "sports";
         const PARTICIPANTS_TABLE = "participants";
         const DOCUMENTS_BUCKET = "participant-documents";
 
@@ -410,6 +435,11 @@
         const formAlert = document.getElementById("formAlert");
         const submitButton = document.getElementById("submitButton");
         const teamSelect = document.getElementById("teamSelect");
+        const gameScopeSelect = document.getElementById("gameScopeSelect");
+        const majorSportField = document.getElementById("majorSportField");
+        const majorSportSelect = document.getElementById("majorSportSelect");
+        const minorSportField = document.getElementById("minorSportField");
+        const minorSportSelect = document.getElementById("minorSportSelect");
         const cameraOverlay = document.getElementById("cameraOverlay");
         const cameraOverlayVideo = document.getElementById("cameraOverlayVideo");
         const cameraOverlayLabel = document.getElementById("cameraOverlayLabel");
@@ -421,6 +451,7 @@
         const REGISTRATION_SUCCESS_MESSAGE = "Your registration has been submitted successfully. The CSC will review your registration. If your registration is forfeited or rejected, your team president will be notified. If you do not receive any notice from your president, your registration will be considered approved.";
         let activeCameraType = null;
         let activeCameraStream = null;
+        let sportsData = [];
 
         const cameras = {
             parentPage1: {
@@ -594,6 +625,71 @@
             `;
         }
 
+        function normalizeGameType(value) {
+            const normalized = String(value || "").trim().toLowerCase();
+            return normalized === "minor" ? "minor" : "major";
+        }
+
+        function getSportName(sport) {
+            return sport?.sport_name || sport?.name || sport?.game_name || "Unnamed game";
+        }
+
+        function renderSportSelect(select, type) {
+            const sports = sportsData
+                .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === type)
+                .sort((a, b) => getSportName(a).localeCompare(getSportName(b)));
+            const label = type === "major" ? "major game" : "minor game";
+
+            select.innerHTML = `
+                <option value="">${sports.length ? `Select a ${label}` : `No ${label}s listed yet`}</option>
+                ${sports.map(sport => `
+                    <option value="${String(sport.id)}" data-name="${escapeHTML(getSportName(sport))}">
+                        ${escapeHTML(getSportName(sport))}
+                    </option>
+                `).join("")}
+            `;
+        }
+
+        function updateSportSelectionVisibility() {
+            const scope = gameScopeSelect.value;
+            const showMajor = scope === "major" || scope === "both";
+            const showMinor = scope === "minor" || scope === "both";
+
+            majorSportField.classList.toggle("hidden", !showMajor);
+            minorSportField.classList.toggle("hidden", !showMinor);
+            majorSportSelect.required = showMajor;
+            minorSportSelect.required = showMinor;
+
+            if (!showMajor) {
+                majorSportSelect.value = "";
+            }
+
+            if (!showMinor) {
+                minorSportSelect.value = "";
+            }
+        }
+
+        async function loadSports() {
+            const { data, error } = await supabase
+                .from(SPORTS_TABLE)
+                .select("id, sport_name, game_type")
+                .order("sport_name", { ascending: true });
+
+            if (error) {
+                console.error("Sports load error:", error);
+                sportsData = [];
+                renderSportSelect(majorSportSelect, "major");
+                renderSportSelect(minorSportSelect, "minor");
+                setAlert("Unable to load major/minor games. Please refresh the page or contact the CSC admin.");
+                return;
+            }
+
+            sportsData = data || [];
+            renderSportSelect(majorSportSelect, "major");
+            renderSportSelect(minorSportSelect, "minor");
+            updateSportSelectionVisibility();
+        }
+
         function escapeHTML(value) {
             return String(value ?? "")
                 .replaceAll("&", "&amp;")
@@ -660,7 +756,25 @@
                 return;
             }
 
+            const gameScope = gameScopeSelect.value;
+            const requiresMajor = gameScope === "major" || gameScope === "both";
+            const requiresMinor = gameScope === "minor" || gameScope === "both";
+
+            if (requiresMajor && !majorSportSelect.value) {
+                setAlert("Please select one major game.");
+                majorSportSelect.focus();
+                return;
+            }
+
+            if (requiresMinor && !minorSportSelect.value) {
+                setAlert("Please select one minor game.");
+                minorSportSelect.focus();
+                return;
+            }
+
             const selectedTeam = teamSelect.options[teamSelect.selectedIndex];
+            const selectedMajorSport = majorSportSelect.options[majorSportSelect.selectedIndex];
+            const selectedMinorSport = minorSportSelect.options[minorSportSelect.selectedIndex];
             const participantId = getParticipantId();
             submitButton.disabled = true;
             submitButton.textContent = "Submitting registration...";
@@ -669,6 +783,8 @@
                 const fullName = document.getElementById("fullName").value.trim();
                 const idNumber = document.getElementById("idNumber").value.trim();
                 const teamName = selectedTeam?.dataset?.name || selectedTeam?.textContent || "";
+                const majorSportName = requiresMajor ? (selectedMajorSport?.dataset?.name || selectedMajorSport?.textContent || "") : "";
+                const minorSportName = requiresMinor ? (selectedMinorSport?.dataset?.name || selectedMinorSport?.textContent || "") : "";
                 const parentConsentPage1Url = await uploadDocument(participantId, "parent-consent-page-1", cameras.parentPage1.blob);
                 const parentConsentPage2Url = await uploadDocument(participantId, "parent-consent-page-2", cameras.parentPage2.blob);
                 const medicalCertificateUrl = await uploadDocument(participantId, "medical-certificate", cameras.medical.blob);
@@ -683,6 +799,11 @@
                     team_id: teamSelect.value || null,
                     team_name: teamName,
                     team: teamName,
+                    game_scope: gameScope,
+                    major_sport_id: requiresMajor ? majorSportSelect.value : null,
+                    major_sport_name: majorSportName,
+                    minor_sport_id: requiresMinor ? minorSportSelect.value : null,
+                    minor_sport_name: minorSportName,
                     parent_consent_photo: JSON.stringify({
                         page1: parentConsentPage1Url,
                         page2: parentConsentPage2Url
@@ -710,6 +831,7 @@
                     document.querySelector(`[data-camera-retake="${type}"]`)?.classList.add("hidden");
                 });
                 await loadTeams();
+                await loadSports();
                 setAlert(REGISTRATION_SUCCESS_MESSAGE, "success");
                 openSuccessModal();
             } catch (error) {
@@ -729,6 +851,7 @@
             button.addEventListener("click", () => startCamera(button.dataset.cameraRetake));
         });
 
+        gameScopeSelect.addEventListener("change", updateSportSelectionVisibility);
         captureCameraOverlay.addEventListener("click", () => capturePhoto());
         cancelCameraOverlay.addEventListener("click", () => stopCamera());
         closeSuccessModal.addEventListener("click", closeSuccessModalFunction);
@@ -747,7 +870,7 @@
             Object.keys(cameras).forEach(stopCamera);
         });
 
-        loadTeams();
+        Promise.all([loadTeams(), loadSports()]);
     </script>
 </body>
 </html>
