@@ -5346,6 +5346,16 @@
                 return participant.minor_sport_name || participant.minor_game_name || participant.selected_minor_sport || "-";
             }
 
+            function isParticipantImport(participant) {
+                const value = participant.is_import ?? participant.import_player ?? participant.isImport;
+
+                if (typeof value === "boolean") {
+                    return value;
+                }
+
+                return ["true", "yes", "1", "import"].includes(String(value || "").trim().toLowerCase());
+            }
+
             function getParticipantPhotoUrls(participant, key) {
                 const value = participant[key];
 
@@ -6244,6 +6254,7 @@
                                 <div><dt class="font-bold text-gray-500">Playing In</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantGameScopeLabel(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Major Sport</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantMajorSportName(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Minor Sport</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantMinorSportName(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Import Player</dt><dd class="font-semibold text-gray-900">${isParticipantImport(participant) ? "Yes" : "No"}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Current Status</dt><dd><span class="inline-flex rounded-full px-3 py-1 text-xs font-black ${getParticipantStatusClass(participant.status)}">${escapeHTML(getParticipantStatusLabel(participant.status))}</span></dd></div>
                                 <div><dt class="font-bold text-gray-500">Date Registered</dt><dd class="font-semibold text-gray-900">${escapeHTML(formatDateTime(participant.created_at))}</dd></div>
                             </dl>
@@ -6271,6 +6282,7 @@
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         ${renderParticipantDocumentCards("Parent Consent Photo", getParticipantPhotoUrls(participant, "parent_consent_photo"))}
                         ${renderParticipantDocumentCards("Medical Certificate Photo", getParticipantPhotoUrls(participant, "medical_certificate_photo"))}
+                        ${isParticipantImport(participant) ? renderParticipantDocumentCards("Import Form with Signatures", getParticipantPhotoUrls(participant, "import_form_photo")) : ""}
                     </div>
                 `;
 
@@ -6570,7 +6582,8 @@
             function getParticipantDocumentStoragePaths(participant) {
                 const urls = [
                     ...getParticipantPhotoUrls(participant, "parent_consent_photo"),
-                    ...getParticipantPhotoUrls(participant, "medical_certificate_photo")
+                    ...getParticipantPhotoUrls(participant, "medical_certificate_photo"),
+                    ...getParticipantPhotoUrls(participant, "import_form_photo")
                 ];
 
                 return Array.from(new Set(urls.map(getParticipantDocumentStoragePath).filter(Boolean)));

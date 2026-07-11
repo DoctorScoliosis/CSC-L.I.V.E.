@@ -333,6 +333,14 @@
                             <option value="">Select a minor game</option>
                         </select>
                     </label>
+
+                    <label class="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 sm:col-span-2">
+                        <input id="isImportCheckbox" type="checkbox" class="mt-1 h-5 w-5 rounded border-slate-300 text-blue-700 focus:ring-blue-500">
+                        <span>
+                            <span class="block text-sm font-black text-slate-800">I am an import player</span>
+                            <span class="mt-1 block text-xs font-semibold text-slate-600">Check this if you are an import. You will need to capture your Import Form with Signatures.</span>
+                        </span>
+                    </label>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -381,6 +389,22 @@
                         <div class="mt-3 flex flex-wrap gap-2">
                             <button type="button" data-camera-start="medical" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Open Camera</button>
                             <button type="button" data-camera-retake="medical" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-900">Retake</button>
+                        </div>
+                    </article>
+
+                    <article id="importFormCard" class="hidden rounded-2xl border border-blue-200 bg-blue-50 p-4 lg:col-span-3">
+                        <div class="mb-3">
+                            <h2 class="text-lg font-black text-slate-950">Import Form with Signatures</h2>
+                            <p class="text-xs font-semibold text-slate-500">Required only for import players. Capture the signed import form using your camera.</p>
+                        </div>
+                        <div class="mx-auto max-w-sm overflow-hidden rounded-2xl border border-blue-200 bg-white">
+                            <canvas id="importFormCanvas" class="hidden"></canvas>
+                            <img id="importFormPreview" alt="Import form with signatures preview" class="camera-preview hidden w-full">
+                            <div id="importFormPlaceholder" class="flex aspect-[3/4] items-center justify-center p-6 text-center text-sm font-bold text-slate-400">No import form photo captured yet.</div>
+                        </div>
+                        <div class="mt-3 flex flex-wrap justify-center gap-2">
+                            <button type="button" data-camera-start="importForm" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Open Camera</button>
+                            <button type="button" data-camera-retake="importForm" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-900">Retake</button>
                         </div>
                     </article>
                 </div>
@@ -440,6 +464,8 @@
         const majorSportSelect = document.getElementById("majorSportSelect");
         const minorSportField = document.getElementById("minorSportField");
         const minorSportSelect = document.getElementById("minorSportSelect");
+        const isImportCheckbox = document.getElementById("isImportCheckbox");
+        const importFormCard = document.getElementById("importFormCard");
         const cameraOverlay = document.getElementById("cameraOverlay");
         const cameraOverlayVideo = document.getElementById("cameraOverlayVideo");
         const cameraOverlayLabel = document.getElementById("cameraOverlayLabel");
@@ -475,6 +501,14 @@
                 canvas: document.getElementById("medicalCanvas"),
                 preview: document.getElementById("medicalPreview"),
                 placeholder: document.getElementById("medicalPlaceholder"),
+                blob: null,
+                stream: null
+            },
+            importForm: {
+                label: "Import Form with Signatures",
+                canvas: document.getElementById("importFormCanvas"),
+                preview: document.getElementById("importFormPreview"),
+                placeholder: document.getElementById("importFormPlaceholder"),
                 blob: null,
                 stream: null
             }
@@ -669,6 +703,30 @@
             }
         }
 
+        function resetCameraCapture(type) {
+            const camera = cameras[type];
+
+            if (!camera) {
+                return;
+            }
+
+            stopCamera(type);
+            camera.blob = null;
+            camera.preview.removeAttribute("src");
+            camera.preview.classList.add("hidden");
+            camera.placeholder.classList.remove("hidden");
+            document.querySelector(`[data-camera-retake="${type}"]`)?.classList.add("hidden");
+        }
+
+        function updateImportFormVisibility() {
+            const isImport = isImportCheckbox.checked;
+            importFormCard.classList.toggle("hidden", !isImport);
+
+            if (!isImport) {
+                resetCameraCapture("importForm");
+            }
+        }
+
         async function loadSports() {
             const { data, error } = await supabase
                 .from(SPORTS_TABLE)
@@ -756,6 +814,14 @@
                 return;
             }
 
+            const isImport = isImportCheckbox.checked;
+
+            if (isImport && !cameras.importForm.blob) {
+                setAlert("Please take a picture of the Import Form with Signatures.");
+                importFormCard.scrollIntoView({ behavior: "smooth", block: "center" });
+                return;
+            }
+
             const gameScope = gameScopeSelect.value;
             const requiresMajor = gameScope === "major" || gameScope === "both";
             const requiresMinor = gameScope === "minor" || gameScope === "both";
@@ -788,6 +854,9 @@
                 const parentConsentPage1Url = await uploadDocument(participantId, "parent-consent-page-1", cameras.parentPage1.blob);
                 const parentConsentPage2Url = await uploadDocument(participantId, "parent-consent-page-2", cameras.parentPage2.blob);
                 const medicalCertificateUrl = await uploadDocument(participantId, "medical-certificate", cameras.medical.blob);
+                const importFormUrl = isImport
+                    ? await uploadDocument(participantId, "import-form-with-signatures", cameras.importForm.blob)
+                    : null;
 
                 const participantRecord = {
                     full_name: fullName,
@@ -804,6 +873,8 @@
                     major_sport_name: majorSportName,
                     minor_sport_id: requiresMinor ? minorSportSelect.value : null,
                     minor_sport_name: minorSportName,
+                    is_import: isImport,
+                    import_form_photo: importFormUrl,
                     parent_consent_photo: JSON.stringify({
                         page1: parentConsentPage1Url,
                         page2: parentConsentPage2Url
@@ -823,13 +894,9 @@
 
                 form.reset();
                 Object.keys(cameras).forEach(type => {
-                    stopCamera(type);
-                    cameras[type].blob = null;
-                    cameras[type].preview.removeAttribute("src");
-                    cameras[type].preview.classList.add("hidden");
-                    cameras[type].placeholder.classList.remove("hidden");
-                    document.querySelector(`[data-camera-retake="${type}"]`)?.classList.add("hidden");
+                    resetCameraCapture(type);
                 });
+                updateImportFormVisibility();
                 await loadTeams();
                 await loadSports();
                 setAlert(REGISTRATION_SUCCESS_MESSAGE, "success");
@@ -852,6 +919,7 @@
         });
 
         gameScopeSelect.addEventListener("change", updateSportSelectionVisibility);
+        isImportCheckbox.addEventListener("change", updateImportFormVisibility);
         captureCameraOverlay.addEventListener("click", () => capturePhoto());
         cancelCameraOverlay.addEventListener("click", () => stopCamera());
         closeSuccessModal.addEventListener("click", closeSuccessModalFunction);
@@ -870,6 +938,7 @@
             Object.keys(cameras).forEach(stopCamera);
         });
 
+        updateImportFormVisibility();
         Promise.all([loadTeams(), loadSports()]);
     </script>
 </body>

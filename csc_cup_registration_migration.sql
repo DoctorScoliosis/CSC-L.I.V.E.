@@ -34,6 +34,8 @@ alter table public.participants
     add column if not exists major_sport_name text,
     add column if not exists minor_sport_id text,
     add column if not exists minor_sport_name text,
+    add column if not exists is_import boolean not null default false,
+    add column if not exists import_form_photo text,
     add column if not exists parent_consent_photo text,
     add column if not exists medical_certificate_photo text,
     add column if not exists reviewed_by text,
