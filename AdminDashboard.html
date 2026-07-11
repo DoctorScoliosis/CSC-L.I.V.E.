@@ -1754,6 +1754,17 @@
                             </select>
                         </div>
 
+                        <div class="flex items-center gap-2">
+                            <label for="participantSportFilter" class="text-sm font-semibold text-gray-700">
+                                Sports
+                            </label>
+                            <select
+                                id="participantSportFilter"
+                                class="min-w-[200px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                                <option value="">All Sports</option>
+                            </select>
+                        </div>
+
                         <button
                             type="button"
                             id="printParticipantsButton"
@@ -2793,6 +2804,7 @@
             const participantStatus = document.getElementById("participantStatus");
             const participantsTableBody = document.getElementById("participantsTableBody");
             const participantTeamFilter = document.getElementById("participantTeamFilter");
+            const participantSportFilter = document.getElementById("participantSportFilter");
             const participantDetailsModal = document.getElementById("participantDetailsModal");
             const participantDetailsTitle = document.getElementById("participantDetailsTitle");
             const participantDetailsContent = document.getElementById("participantDetailsContent");
@@ -5059,6 +5071,7 @@
 
                 sportsData = data || [];
                 renderSports();
+                renderParticipantSportFilter();
                 populateAdminContactGroupOptions();
 
                 if (accountApprovalsData.length > 0) {
@@ -5398,15 +5411,42 @@
                 return normalizeParticipantTeam(participantTeamFilter?.value || "");
             }
 
+            function normalizeParticipantSport(value) {
+                return String(value || "").trim();
+            }
+
+            function getParticipantSportFilterValue() {
+                return normalizeParticipantSport(participantSportFilter?.value || "");
+            }
+
+            function participantHasSport(participant, selectedSport) {
+                if (!selectedSport) {
+                    return true;
+                }
+
+                const normalizedSelectedSport = normalizeParticipantSport(selectedSport).toLowerCase();
+                const sportNames = [
+                    getParticipantMajorSportName(participant),
+                    getParticipantMinorSportName(participant)
+                ].map(name => normalizeParticipantSport(name).toLowerCase());
+
+                return sportNames.includes(normalizedSelectedSport);
+            }
+
             function getFilteredParticipants() {
                 const selectedTeam = getParticipantTeamFilterValue();
+                const selectedSport = getParticipantSportFilterValue();
 
-                if (!selectedTeam) {
+                if (!selectedTeam && !selectedSport) {
                     return participantsData;
                 }
 
                 return participantsData.filter(participant => {
-                    return normalizeParticipantTeam(getParticipantTeamName(participant)).toLowerCase() === selectedTeam.toLowerCase();
+                    const matchesTeam = !selectedTeam
+                        || normalizeParticipantTeam(getParticipantTeamName(participant)).toLowerCase() === selectedTeam.toLowerCase();
+                    const matchesSport = participantHasSport(participant, selectedSport);
+
+                    return matchesTeam && matchesSport;
                 });
             }
 
@@ -5448,10 +5488,61 @@
                 }
             }
 
+            function renderParticipantSportFilter() {
+                if (!participantSportFilter) {
+                    return;
+                }
+
+                const currentValue = getParticipantSportFilterValue();
+                const sportNames = new Set();
+
+                sportsData.forEach(sport => {
+                    const sportName = normalizeParticipantSport(sport?.sport_name || sport?.name || sport?.game_name);
+                    if (sportName) {
+                        sportNames.add(sportName);
+                    }
+                });
+
+                participantsData.forEach(participant => {
+                    [getParticipantMajorSportName(participant), getParticipantMinorSportName(participant)].forEach(sportName => {
+                        const normalizedSportName = normalizeParticipantSport(sportName);
+                        if (normalizedSportName && normalizedSportName !== "-") {
+                            sportNames.add(normalizedSportName);
+                        }
+                    });
+                });
+
+                const sortedSports = Array.from(sportNames).sort((a, b) => a.localeCompare(b));
+
+                participantSportFilter.innerHTML = `
+                    <option value="">All Sports</option>
+                    ${sortedSports.map(sportName => `
+                        <option value="${escapeHTML(sportName)}" ${sportName === currentValue ? "selected" : ""}>
+                            ${escapeHTML(sportName)}
+                        </option>
+                    `).join("")}
+                `;
+
+                if (currentValue && !sportNames.has(currentValue)) {
+                    participantSportFilter.value = "";
+                }
+            }
+
             function printFilteredParticipants() {
                 const filteredParticipants = getFilteredParticipants();
                 const selectedTeam = getParticipantTeamFilterValue();
-                const title = selectedTeam ? `Participants - ${selectedTeam}` : "Participants - All Teams";
+                const selectedSport = getParticipantSportFilterValue();
+                const titleParts = ["Participants"];
+
+                if (selectedTeam) {
+                    titleParts.push(selectedTeam);
+                }
+
+                if (selectedSport) {
+                    titleParts.push(selectedSport);
+                }
+
+                const title = titleParts.join(" - ") + (!selectedTeam && !selectedSport ? " - All Teams and Sports" : "");
                 const generatedAt = new Date().toLocaleString();
 
                 const printWindow = window.open("", "_blank", "width=1000,height=700");
@@ -6063,6 +6154,7 @@
 
                 participantsData = data || [];
                 renderParticipantTeamFilter();
+                renderParticipantSportFilter();
                 renderPrintTeamOptions();
                 renderParticipants();
             }
@@ -7488,6 +7580,7 @@
                 }
             });
             participantTeamFilter.addEventListener("change", renderParticipants);
+            participantSportFilter.addEventListener("change", renderParticipants);
             printParticipantsButton.addEventListener("click", printFilteredParticipants);
             printBestPlayersButton.addEventListener("click", printBestPlayers);
             printCollegeHistoryButton.addEventListener("click", printCollegeHistory);
