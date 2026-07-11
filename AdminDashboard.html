@@ -1639,23 +1639,21 @@
 
                     <div class="responsive-table-card p-6 bg-white border-0 shadow-md rounded-lg overflow-x-auto">
                         <div class="mb-4">
-                            <h3 class="text-xl font-bold text-gray-900">Sports / Game Points Summary</h3>
-                            <p class="text-xs text-gray-500">Point settings from registered sports.</p>
+                            <h3 class="text-xl font-bold text-gray-900">Sports / Game Categories</h3>
+                            <p class="text-xs text-gray-500">Major and minor game setup from registered sports.</p>
                         </div>
 
-                        <table class="w-full min-w-[520px]">
+                        <table class="w-full min-w-[360px]">
                             <thead>
                                 <tr class="border-b border-gray-200">
                                     <th class="text-left py-3 px-4 font-semibold text-gray-700">Sport</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-gray-700">Per Game</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-gray-700">Winner</th>
-                                    <th class="text-right py-3 px-4 font-semibold text-gray-700">Loser</th>
+                                    <th class="text-right py-3 px-4 font-semibold text-gray-700">Type</th>
                                 </tr>
                             </thead>
 
                             <tbody id="overviewSportsSummaryBody">
                                 <tr>
-                                    <td colspan="4" class="py-4 px-4 text-gray-600">Loading sports summary...</td>
+                                    <td colspan="2" class="py-4 px-4 text-gray-600">Loading sports summary...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1705,7 +1703,7 @@
 
                 <div class="responsive-table-card p-6 bg-white border-0 shadow-md rounded-lg overflow-x-auto">
                     <div class="mb-4">
-                        <h3 class="text-xl font-bold text-gray-900">Sports and Game Points</h3>
+                        <h3 class="text-xl font-bold text-gray-900">Sports and Game Categories</h3>
                     </div>
 
                     <table class="w-full">
@@ -1713,9 +1711,6 @@
                             <tr class="border-b border-gray-200">
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Sport</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
-                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Points Per Game</th>
-                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Winner Points</th>
-                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Loser Points</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Updated</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
                             </tr>
@@ -1723,7 +1718,7 @@
 
                         <tbody id="sportsTableBody">
                             <tr>
-                                <td colspan="7" class="py-4 px-4 text-gray-600">
+                                <td colspan="4" class="py-4 px-4 text-gray-600">
                                     Loading sports...
                                 </td>
                             </tr>
@@ -2306,36 +2301,6 @@
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Points Per Game
-                    </label>
-
-                    <input 
-                        type="number"
-                        id="pointsPerGameInput"
-                        min="0"
-                        step="0.01"
-                        required
-                        placeholder="Example: 10"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Losing Team Points
-                    </label>
-
-                    <input 
-                        type="number"
-                        id="loserPointsInput"
-                        min="0"
-                        step="0.01"
-                        required
-                        placeholder="Example: 1"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                </div>
-
                 <div class="flex justify-end space-x-2 pt-4">
                     <button 
                         type="button"
@@ -2787,8 +2752,6 @@
             const sportId = document.getElementById("sportId");
             const sportNameInput = document.getElementById("sportNameInput");
             const sportGameTypeInput = document.getElementById("sportGameTypeInput");
-            const pointsPerGameInput = document.getElementById("pointsPerGameInput");
-            const loserPointsInput = document.getElementById("loserPointsInput");
             const sportsTableBody = document.getElementById("sportsTableBody");
 
             const openParticipantModalButton = document.getElementById("openParticipantModal");
@@ -4677,16 +4640,14 @@
                 }
 
                 if (!sports.length) {
-                    renderEmptyRow(overviewSportsSummaryBody, 4, "No sports or game categories found.");
+                    renderEmptyRow(overviewSportsSummaryBody, 2, "No sports or game categories found.");
                     return;
                 }
 
                 overviewSportsSummaryBody.innerHTML = sports.map(sport => `
                     <tr class="border-b border-gray-100 hover:bg-gray-50">
                         <td class="py-3 px-4 font-medium text-gray-900">${escapeHTML(sport.sport_name || "Unnamed Sport")}</td>
-                        <td class="py-3 px-4 text-right text-gray-600">${toNumber(sport.points_per_game)}</td>
-                        <td class="py-3 px-4 text-right text-green-700 font-semibold">${toNumber(sport.winner_points)}</td>
-                        <td class="py-3 px-4 text-right text-red-700 font-semibold">${toNumber(sport.loser_points)}</td>
+                        <td class="py-3 px-4 text-right text-gray-600">${escapeHTML(getSportGameTypeLabel(sport.game_type))}</td>
                     </tr>
                 `).join("");
             }
@@ -4732,7 +4693,7 @@
 
                     supabase
                         .from(SPORTS_TABLE)
-                        .select("id, sport_name, points_per_game, winner_points, loser_points, created_at, updated_at")
+                        .select("id, sport_name, game_type, created_at, updated_at")
                         .order("sport_name", { ascending: true }),
 
                     supabase
@@ -5023,8 +4984,6 @@
                 sportForm.reset();
                 sportId.value = "";
                 sportGameTypeInput.value = "major";
-                pointsPerGameInput.value = "";
-                loserPointsInput.value = "";
 
                 sportModal.classList.remove("hidden");
                 sportModal.classList.add("flex");
@@ -5035,8 +4994,6 @@
                 sportId.value = sport.id;
                 sportNameInput.value = sport.sport_name;
                 sportGameTypeInput.value = normalizeGameType(sport.game_type || sport.sport_type || sport.category_type);
-                pointsPerGameInput.value = sport.points_per_game;
-                loserPointsInput.value = sport.loser_points;
 
                 sportModal.classList.remove("hidden");
                 sportModal.classList.add("flex");
@@ -5052,7 +5009,7 @@
             async function loadSports() {
                 const { data, error } = await supabase
                     .from(SPORTS_TABLE)
-                    .select("id, sport_name, game_type, points_per_game, winner_points, loser_points, created_at, updated_at")
+                    .select("id, sport_name, game_type, created_at, updated_at")
                     .order("sport_name", { ascending: true });
 
                 if (error) {
@@ -5060,7 +5017,7 @@
 
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="7" class="py-4 px-4 text-red-600">
+                            <td colspan="4" class="py-4 px-4 text-red-600">
                                 Error loading sports. Run the SQL below first, then check your Supabase RLS policies.
                             </td>
                         </tr>
@@ -5085,7 +5042,7 @@
                 if (sportsData.length === 0) {
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="7" class="py-4 px-4 text-gray-600">
+                            <td colspan="4" class="py-4 px-4 text-gray-600">
                                 No sports added yet.
                             </td>
                         </tr>
@@ -5106,18 +5063,6 @@
                             <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold ${normalizeGameType(sport.game_type) === "minor" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}">
                                 ${escapeHTML(getSportGameTypeLabel(sport.game_type))}
                             </span>
-                        </td>
-
-                        <td class="py-3 px-4 text-gray-600">
-                            ${toNumber(sport.points_per_game)}
-                        </td>
-
-                        <td class="py-3 px-4 text-gray-600">
-                            ${toNumber(sport.winner_points)}
-                        </td>
-
-                        <td class="py-3 px-4 text-gray-600">
-                            ${toNumber(sport.loser_points)}
                         </td>
 
                         <td class="py-3 px-4 text-gray-600">
@@ -5175,10 +5120,7 @@
 
                         alert(
                             `Sport: ${selectedSport.sport_name}\n` +
-                            `Type: ${getSportGameTypeLabel(selectedSport.game_type)}\n` +
-                            `Points Per Game: ${selectedSport.points_per_game}\n` +
-                            `Winner Points: ${selectedSport.winner_points}\n` +
-                            `Loser Points: ${selectedSport.loser_points}`
+                            `Type: ${getSportGameTypeLabel(selectedSport.game_type)}`
                         );
                     });
                 });
@@ -5195,26 +5137,15 @@
 
                 const sportName = sportNameInput.value.trim();
                 const gameType = normalizeGameType(sportGameTypeInput.value);
-                const pointsPerGame = toNumber(pointsPerGameInput.value);
-                const winnerPoints = pointsPerGame;
-                const loserPoints = toNumber(loserPointsInput.value);
 
                 if (!sportName) {
                     alert("Please enter a sport name.");
                     return;
                 }
 
-                if (pointsPerGame < 0 || winnerPoints < 0 || loserPoints < 0) {
-                    alert("Points cannot be negative.");
-                    return;
-                }
-
                 const sportData = {
                     sport_name: sportName,
-                    game_type: gameType,
-                    points_per_game: pointsPerGame,
-                    winner_points: winnerPoints,
-                    loser_points: loserPoints
+                    game_type: gameType
                 };
 
                 let result;

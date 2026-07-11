@@ -15,9 +15,6 @@ create table if not exists public.participants (
 create table if not exists public.sports (
     id bigserial primary key,
     sport_name text not null,
-    points_per_game numeric not null default 0,
-    winner_points numeric not null default 0,
-    loser_points numeric not null default 0,
     created_at timestamptz default now(),
     updated_at timestamptz default now()
 );

@@ -1753,6 +1753,32 @@
                             class="w-full border border-gray-300 rounded-lg px-3 py-2">
                     </div>
 
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Winner Actual Points</span>
+                            <input
+                                type="number"
+                                id="winnerActualPointsInput"
+                                required
+                                min="0"
+                                step="0.01"
+                                placeholder="Winner points"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </label>
+
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Loser Actual Points</span>
+                            <input
+                                type="number"
+                                id="loserActualPointsInput"
+                                required
+                                min="0"
+                                step="0.01"
+                                placeholder="Loser points"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </label>
+                    </div>
+
                     <div class="flex justify-end space-x-2 pt-4">
                         <button
                             type="button"
@@ -2184,6 +2210,8 @@
                 const resultMatchSummary = document.getElementById("resultMatchSummary");
                 const winnerTeamSelect = document.getElementById("winnerTeamSelect");
                 const bestPlayerInput = document.getElementById("bestPlayerInput");
+                const winnerActualPointsInput = document.getElementById("winnerActualPointsInput");
+                const loserActualPointsInput = document.getElementById("loserActualPointsInput");
 
                 let activeStatusTab = "Next";
                 let activeMatchScopeFilter = "mine";
@@ -3843,8 +3871,7 @@
                     */
                 const [
                     { data: teams, error: teamsError },
-                    { data: historyRows, error: historyError },
-                    { data: sportsRows, error: sportsError }
+                    { data: historyRows, error: historyError }
                 ] = await Promise.all([
                     supabase
                         .from(TEAMS_TABLE)
@@ -3853,10 +3880,6 @@
 
                     supabase
                         .from(GAME_HISTORY_TABLE)
-                        .select("*"),
-
-                    supabase
-                        .from(SPORTS_TABLE)
                         .select("*")
                 ]);
 
@@ -3888,25 +3911,8 @@
                     return;
                 }
 
-                if (sportsError) {
-                    console.warn("Leaderboard sports points warning:", sportsError.message || sportsError);
-                }
-
                 const teamStats = new Map();
                 const registeredTeamAliases = new Map();
-                const sportsById = new Map();
-                const sportsByName = new Map();
-
-                (sportsRows || []).forEach(sport => {
-                    if (sport.id !== undefined && sport.id !== null) {
-                        sportsById.set(String(sport.id), sport);
-                    }
-
-                    const sportName = String(sport.sport_name || sport.name || sport.game_name || "").trim().toLowerCase();
-                    if (sportName) {
-                        sportsByName.set(sportName, sport);
-                    }
-                });
 
                     function makeTeamKey(teamId, teamName) {
                         if (teamId !== null && teamId !== undefined && teamId !== "") {
@@ -3915,18 +3921,6 @@
 
                         return `name:${String(teamName || "Unknown Team").trim().toLowerCase()}`;
                     }
-
-                function getPointValue(...values) {
-                    for (const value of values) {
-                        const numericValue = Number(value);
-
-                            if (Number.isFinite(numericValue)) {
-                                return numericValue;
-                            }
-                        }
-
-                    return 0;
-                }
 
                 function findPointValue(...values) {
                     for (const value of values) {
@@ -3949,16 +3943,6 @@
                     };
                 }
 
-                function findSportForHistory(history) {
-                    const sportId = history.sport_id ?? history.game_id ?? history.category_id;
-                    if (sportId !== null && sportId !== undefined && sportsById.has(String(sportId))) {
-                        return sportsById.get(String(sportId));
-                    }
-
-                    const sportName = String(history.sport_name || history.game_name || history.category_name || history.sport || "").trim().toLowerCase();
-                    return sportName ? sportsByName.get(sportName) : null;
-                }
-
                 function getHistoryPoints(history, side) {
                     const explicitPoints = side === "winner"
                         ? findPointValue(history.winner_points_awarded, history.winner_award, history.winner_points, history.points_winner, history.winning_points)
@@ -3968,15 +3952,7 @@
                         return explicitPoints.value;
                     }
 
-                    const sport = findSportForHistory(history);
-
-                    if (sport) {
-                        return side === "winner"
-                            ? getPointValue(sport.points_per_game, sport.winner_points, sport.default_winner_points, 1)
-                            : getPointValue(sport.loser_points, sport.default_loser_points, 0);
-                    }
-
-                    return side === "winner" ? 1 : 0;
+                    return 0;
                 }
 
                 function registerTeamAliases(teamId, teamName, teamStat) {
@@ -4014,9 +3990,9 @@
                         teamStats.set(key, {
                             id: team.id,
                             team: teamName || "Unknown Team",
-                            points: getPointValue(team.points, team.total_points, team.score, 0),
-                            wins: getPointValue(team.wins, team.win, team.total_wins, 0),
-                            losses: getPointValue(team.losses, team.loss, team.total_losses, 0)
+                            points: 0,
+                            wins: 0,
+                            losses: 0
                         });
                     }
 
@@ -4675,7 +4651,7 @@
                             created_by,
                             created_by_role,
                             created_by_name,
-                            sport:sports!scheduled_matches_sport_id_fkey(id, sport_name, winner_points, loser_points, points_per_game),
+                            sport:sports!scheduled_matches_sport_id_fkey(id, sport_name),
                             team_one:sports_leaderboard!scheduled_matches_team_one_fkey(team),
                             team_two:sports_leaderboard!scheduled_matches_team_two_fkey(team)
                         `)
@@ -5393,6 +5369,7 @@
                     }
 
                     pendingResultMatch = match;
+                    resultForm.reset();
                     resultMatchId.value = match.id;
 
                     const firstTeamId = getTeamId(match, "one");
@@ -5452,6 +5429,8 @@
                     const submitButton = resultForm.querySelector('button[type="submit"]');
                     const winnerId = Number(winnerTeamSelect.value);
                     const bestPlayer = bestPlayerInput.value.trim();
+                    const winnerPointsAwarded = Number(winnerActualPointsInput.value);
+                    const loserPointsAwarded = Number(loserActualPointsInput.value);
 
                     if (!winnerId) {
                         alert("Please select the winning team.");
@@ -5461,6 +5440,18 @@
                     if (!bestPlayer) {
                         alert("Please enter the best player of the game before marking this match as Done.");
                         bestPlayerInput.focus();
+                        return;
+                    }
+
+                    if (!Number.isFinite(winnerPointsAwarded) || winnerPointsAwarded < 0) {
+                        alert("Please enter valid actual points for the winning team.");
+                        winnerActualPointsInput.focus();
+                        return;
+                    }
+
+                    if (!Number.isFinite(loserPointsAwarded) || loserPointsAwarded < 0) {
+                        alert("Please enter valid actual points for the losing team.");
+                        loserActualPointsInput.focus();
                         return;
                     }
 
@@ -5482,9 +5473,6 @@
                     submitButton.textContent = "Saving...";
 
                     try {
-                        const winnerPointsAwarded = Number(pendingResultMatch.sport?.points_per_game) || 0;
-                        const loserPointsAwarded = Number(pendingResultMatch.sport?.loser_points) || 0;
-
                         const historyPayload = {
                             match_id: pendingResultMatch.id,
                             sport_id: pendingResultMatch.sport_id || null,
