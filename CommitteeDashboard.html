@@ -944,6 +944,24 @@
                 border-bottom: 4px solid #1d4ed8 !important;
             }
 
+            .dashboard-header.match-management-active .admin-header-text {
+                flex: 0 1 clamp(20rem, 34vw, 31rem) !important;
+                min-width: 0;
+            }
+
+            .dashboard-header.match-management-active #pageTitle {
+                font-size: clamp(1.05rem, 1.55vw, 1.62rem) !important;
+                line-height: 1.15 !important;
+                margin-bottom: 0.35rem !important;
+                white-space: nowrap;
+            }
+
+            .dashboard-header.match-management-active #pageDesc {
+                font-size: clamp(0.68rem, 0.92vw, 0.86rem) !important;
+                line-height: 1.22 !important;
+                max-width: 100%;
+            }
+
             .match-header-controls {
                 display: none;
                 min-width: 0;
@@ -1009,6 +1027,22 @@
 
                 .match-header-controls {
                     display: none !important;
+                }
+
+                .dashboard-header.match-management-active .admin-header-text {
+                    flex: 1 1 auto !important;
+                }
+
+                .dashboard-header.match-management-active #pageTitle {
+                    font-size: clamp(0.9rem, 3.7vw, 1.05rem) !important;
+                    line-height: 1.1 !important;
+                    margin-bottom: 0.18rem !important;
+                    white-space: normal;
+                }
+
+                .dashboard-header.match-management-active #pageDesc {
+                    font-size: clamp(0.56rem, 2.35vw, 0.68rem) !important;
+                    line-height: 1.12 !important;
                 }
 
                 .match-control-bar {
@@ -2117,6 +2151,7 @@
 
                 document.getElementById('pageTitle').textContent = titles[selectedTabName];
                 document.getElementById('pageDesc').textContent = descs[selectedTabName];
+                document.querySelector('.dashboard-header')?.classList.toggle('match-management-active', selectedTabName === 'matches');
 
                 if (options.persist !== false) {
                     localStorage.setItem(COMMITTEE_ACTIVE_TAB_KEY, selectedTabName);
