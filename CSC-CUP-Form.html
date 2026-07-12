@@ -12,10 +12,10 @@
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const images = [
-                "./dashboard-backgrounds/56435184_2377398058971412_6905733492668104704_n.jpg",
-                "./dashboard-backgrounds/469984691_918281827068965_7471383534469226798_n.jpg",
-                "./dashboard-backgrounds/472760250_9329332677111214_8161660048911603548_n.jpg",
-                "./dashboard-backgrounds/671018030_1284495603780917_8907957753481931746_n.jpg"
+                "./56435184_2377398058971412_6905733492668104704_n.jpg",
+                "./469984691_918281827068965_7471383534469226798_n.jpg",
+                "./472760250_9329332677111214_8161660048911603548_n.jpg",
+                "./671018030_1284495603780917_8907957753481931746_n.jpg"
             ];
             let index = 0;
             let layer = "a";
@@ -338,7 +338,7 @@
                         <input id="isImportCheckbox" type="checkbox" class="mt-1 h-5 w-5 rounded border-slate-300 text-blue-700 focus:ring-blue-500">
                         <span>
                             <span class="block text-sm font-black text-slate-800">I am an import player</span>
-                            <span class="mt-1 block text-xs font-semibold text-slate-600">Check this if you are an import. You will need to capture your Import Form with Signatures.</span>
+                            <span class="mt-1 block text-xs font-semibold text-slate-600">Check this if you are an import. You will need to capture both pages of your Import Form with Signatures.</span>
                         </span>
                     </label>
                 </div>
@@ -395,16 +395,34 @@
                     <article id="importFormCard" class="hidden rounded-2xl border border-blue-200 bg-blue-50 p-4 lg:col-span-3">
                         <div class="mb-3">
                             <h2 class="text-lg font-black text-slate-950">Import Form with Signatures</h2>
-                            <p class="text-xs font-semibold text-slate-500">Required only for import players. Capture the signed import form using your camera.</p>
+                            <p class="text-xs font-semibold text-slate-500">Required only for import players. Capture both signed import form pages using your camera.</p>
                         </div>
-                        <div class="mx-auto max-w-sm overflow-hidden rounded-2xl border border-blue-200 bg-white">
-                            <canvas id="importFormCanvas" class="hidden"></canvas>
-                            <img id="importFormPreview" alt="Import form with signatures preview" class="camera-preview hidden w-full">
-                            <div id="importFormPlaceholder" class="flex aspect-[3/4] items-center justify-center p-6 text-center text-sm font-bold text-slate-400">No import form photo captured yet.</div>
-                        </div>
-                        <div class="mt-3 flex flex-wrap justify-center gap-2">
-                            <button type="button" data-camera-start="importForm" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Open Camera</button>
-                            <button type="button" data-camera-retake="importForm" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-900">Retake</button>
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                                <h3 class="mb-2 text-sm font-black text-blue-950">Import Form - Page 1</h3>
+                                <div class="overflow-hidden rounded-2xl border border-blue-200 bg-white">
+                                    <canvas id="importFormPage1Canvas" class="hidden"></canvas>
+                                    <img id="importFormPage1Preview" alt="Import form page 1 with signatures preview" class="camera-preview hidden w-full">
+                                    <div id="importFormPage1Placeholder" class="flex aspect-[3/4] items-center justify-center p-6 text-center text-sm font-bold text-slate-400">No import form page 1 photo captured yet.</div>
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <button type="button" data-camera-start="importFormPage1" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Open Camera</button>
+                                    <button type="button" data-camera-retake="importFormPage1" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-900">Retake</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="mb-2 text-sm font-black text-blue-950">Import Form - Page 2</h3>
+                                <div class="overflow-hidden rounded-2xl border border-blue-200 bg-white">
+                                    <canvas id="importFormPage2Canvas" class="hidden"></canvas>
+                                    <img id="importFormPage2Preview" alt="Import form page 2 with signatures preview" class="camera-preview hidden w-full">
+                                    <div id="importFormPage2Placeholder" class="flex aspect-[3/4] items-center justify-center p-6 text-center text-sm font-bold text-slate-400">No import form page 2 photo captured yet.</div>
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <button type="button" data-camera-start="importFormPage2" class="rounded-xl bg-blue-700 px-4 py-2 text-sm font-black text-white hover:bg-blue-800">Open Camera</button>
+                                    <button type="button" data-camera-retake="importFormPage2" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-black text-white hover:bg-slate-900">Retake</button>
+                                </div>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -504,11 +522,19 @@
                 blob: null,
                 stream: null
             },
-            importForm: {
-                label: "Import Form with Signatures",
-                canvas: document.getElementById("importFormCanvas"),
-                preview: document.getElementById("importFormPreview"),
-                placeholder: document.getElementById("importFormPlaceholder"),
+            importFormPage1: {
+                label: "Import Form with Signatures - Page 1",
+                canvas: document.getElementById("importFormPage1Canvas"),
+                preview: document.getElementById("importFormPage1Preview"),
+                placeholder: document.getElementById("importFormPage1Placeholder"),
+                blob: null,
+                stream: null
+            },
+            importFormPage2: {
+                label: "Import Form with Signatures - Page 2",
+                canvas: document.getElementById("importFormPage2Canvas"),
+                preview: document.getElementById("importFormPage2Preview"),
+                placeholder: document.getElementById("importFormPage2Placeholder"),
                 blob: null,
                 stream: null
             }
@@ -723,7 +749,8 @@
             importFormCard.classList.toggle("hidden", !isImport);
 
             if (!isImport) {
-                resetCameraCapture("importForm");
+                resetCameraCapture("importFormPage1");
+                resetCameraCapture("importFormPage2");
             }
         }
 
@@ -816,8 +843,8 @@
 
             const isImport = isImportCheckbox.checked;
 
-            if (isImport && !cameras.importForm.blob) {
-                setAlert("Please take a picture of the Import Form with Signatures.");
+            if (isImport && (!cameras.importFormPage1.blob || !cameras.importFormPage2.blob)) {
+                setAlert("Please take a picture of Import Form with Signatures Page 1 and Page 2.");
                 importFormCard.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
@@ -854,8 +881,17 @@
                 const parentConsentPage1Url = await uploadDocument(participantId, "parent-consent-page-1", cameras.parentPage1.blob);
                 const parentConsentPage2Url = await uploadDocument(participantId, "parent-consent-page-2", cameras.parentPage2.blob);
                 const medicalCertificateUrl = await uploadDocument(participantId, "medical-certificate", cameras.medical.blob);
-                const importFormUrl = isImport
-                    ? await uploadDocument(participantId, "import-form-with-signatures", cameras.importForm.blob)
+                const importFormPage1Url = isImport
+                    ? await uploadDocument(participantId, "import-form-with-signatures-page-1", cameras.importFormPage1.blob)
+                    : null;
+                const importFormPage2Url = isImport
+                    ? await uploadDocument(participantId, "import-form-with-signatures-page-2", cameras.importFormPage2.blob)
+                    : null;
+                const importFormPhotoValue = isImport
+                    ? JSON.stringify({
+                        page1: importFormPage1Url,
+                        page2: importFormPage2Url
+                    })
                     : null;
 
                 const participantRecord = {
@@ -874,7 +910,7 @@
                     minor_sport_id: requiresMinor ? minorSportSelect.value : null,
                     minor_sport_name: minorSportName,
                     is_import: isImport,
-                    import_form_photo: importFormUrl,
+                    import_form_photo: importFormPhotoValue,
                     parent_consent_photo: JSON.stringify({
                         page1: parentConsentPage1Url,
                         page2: parentConsentPage2Url
