@@ -3,7 +3,7 @@ create table if not exists public.basketball_match_player_stats (
     match_id bigint not null references public.scheduled_matches(id) on delete cascade,
     team_id bigint not null references public.sports_leaderboard(id) on delete cascade,
     team_name text not null,
-    participant_id uuid null references public.participants(id) on delete set null,
+    participant_id bigint null references public.participants(id) on delete set null,
     id_number text not null,
     player_name text,
     points numeric not null default 0,
