@@ -730,40 +730,34 @@
                 .replace(/\s+/g, " ")
                 .trim();
 
-            const categoryWords = new Set([
+            const categoryStartWords = new Set([
                 "a", "b", "c", "d", "e",
                 "boys", "boy", "girls", "girl",
-                "men", "man", "mens", "male",
+                "men", "man", "mens", "male", "s",
                 "women", "woman", "womens", "female",
+                "mixed", "singles", "single", "doubles", "double",
+                "relay", "backstroke", "butterfly", "freestyle",
                 "division", "div", "category", "cat",
                 "bracket", "pool", "group", "class"
             ]);
             const normalizedName = cleanedName
-                .replace(/[()]/g, " ")
+                .replace(/[()']/g, " ")
                 .replace(/[-:/]+/g, " ")
                 .replace(/\s+/g, " ")
                 .trim();
             const tokens = normalizedName.split(" ").filter(Boolean);
 
-            while (tokens.length > 1) {
-                const last = tokens[tokens.length - 1].toLowerCase();
-                const previous = tokens[tokens.length - 2]?.toLowerCase() || "";
+            for (let index = 1; index < tokens.length; index += 1) {
+                const token = tokens[index].toLowerCase();
 
                 if (
-                    categoryWords.has(last)
-                    || /^[a-z]$/i.test(last)
-                    || /^\d+$/.test(last)
-                    || ((previous === "category" || previous === "division" || previous === "div" || previous === "group") && /^[a-z0-9]+$/i.test(last))
+                    categoryStartWords.has(token)
+                    || /^[a-e]$/i.test(token)
+                    || /^\d/.test(token)
+                    || /^\d+m$/i.test(token)
                 ) {
-                    tokens.pop();
-                    continue;
+                    return tokens.slice(0, index).join(" ") || cleanedName;
                 }
-
-                break;
-            }
-
-            while (tokens.length > 1 && categoryWords.has(tokens[tokens.length - 1].toLowerCase())) {
-                tokens.pop();
             }
 
             return tokens.join(" ") || cleanedName;
