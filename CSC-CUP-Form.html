@@ -11,20 +11,43 @@
     <link rel="stylesheet" href="styles.css">
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const images = [
-                "./56435184_2377398058971412_6905733492668104704_n.jpg",
-                "./469984691_918281827068965_7471383534469226798_n.jpg",
-                "./472760250_9329332677111214_8161660048911603548_n.jpg",
-                "./671018030_1284495603780917_8907957753481931746_n.jpg"
+            document.body.classList.add("csc-registration-page");
+            const backgroundNames = [
+                "56435184_2377398058971412_6905733492668104704_n.jpg",
+                "469984691_918281827068965_7471383534469226798_n.jpg",
+                "472760250_9329332677111214_8161660048911603548_n.jpg",
+                "671018030_1284495603780917_8907957753481931746_n.jpg"
             ];
+            const testImage = imagePath => new Promise(resolve => {
+                const image = new Image();
+                image.onload = () => resolve(imagePath);
+                image.onerror = () => resolve("");
+                image.src = imagePath;
+            });
+            const resolveBackgroundImages = async () => {
+                const resolved = await Promise.all(backgroundNames.map(async fileName => {
+                    const rootPath = `./${fileName}`;
+                    const folderPath = `./dashboard-backgrounds/${fileName}`;
+                    return await testImage(rootPath) || await testImage(folderPath);
+                }));
+
+                return resolved.filter(Boolean);
+            };
             let index = 0;
             let layer = "a";
             const root = document.documentElement;
             const apply = (name, image) => root.style.setProperty(`--dashboard-photo-url-${name}`, `url("${image}")`);
-            apply("a", images[0]);
-            apply("b", images[0]);
             root.style.setProperty("--dashboard-photo-size", "cover");
-            window.setInterval(() => {
+
+            resolveBackgroundImages().then(images => {
+                if (!images.length) {
+                    return;
+                }
+
+                apply("a", images[0]);
+                apply("b", images[0]);
+
+                window.setInterval(() => {
                 index = (index + 1) % images.length;
                 if (layer === "a") {
                     apply("b", images[index]);
@@ -35,7 +58,8 @@
                     document.body.classList.remove("dashboard-bg-show-b");
                     layer = "a";
                 }
-            }, 8500);
+                }, 8500);
+            });
         });
     </script>
     <style>
@@ -53,7 +77,23 @@
 
         body {
             font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background-color: #f8fafc;
+            background-color: transparent;
+        }
+
+        body.csc-registration-page::before {
+            opacity: 0.9;
+        }
+
+        body.csc-registration-page::after {
+            opacity: 0;
+        }
+
+        body.csc-registration-page.dashboard-bg-show-b::before {
+            opacity: 0;
+        }
+
+        body.csc-registration-page.dashboard-bg-show-b::after {
+            opacity: 0.9;
         }
 
         h1,
