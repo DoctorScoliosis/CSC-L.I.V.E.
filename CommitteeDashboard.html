@@ -944,6 +944,103 @@
                 border-bottom: 4px solid #1d4ed8 !important;
             }
 
+            .match-header-controls {
+                display: none;
+                min-width: 0;
+                flex: 1 1 auto;
+                align-items: center;
+                justify-content: flex-end;
+                gap: 0.5rem;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .match-header-controls::-webkit-scrollbar {
+                display: none;
+            }
+
+            .match-header-controls.is-active {
+                display: flex;
+            }
+
+            .match-control-bar {
+                display: flex;
+                align-items: center;
+                gap: 0.45rem;
+                min-width: 0;
+                flex-wrap: nowrap;
+                white-space: nowrap;
+            }
+
+            .match-control-bar .match-status-tab,
+            .match-control-bar #openMatchModal,
+            .match-control-bar #doneMatchesDateFilter,
+            .match-control-bar #clearDoneMatchesDateFilter {
+                flex: 0 0 auto;
+                min-height: 2.35rem;
+                padding: 0.55rem 0.75rem !important;
+                font-size: clamp(0.68rem, 0.75vw, 0.875rem) !important;
+                line-height: 1rem !important;
+            }
+
+            .match-control-bar #doneMatchesDateFilter {
+                width: clamp(8.5rem, 10vw, 10rem);
+            }
+
+            .match-control-bar #clearDoneMatchesDateFilter {
+                max-width: 5.75rem;
+            }
+
+            .match-controls-home-collapsed {
+                margin-bottom: 0.75rem !important;
+            }
+
+            @media (max-width: 1023px) {
+                .dashboard-header {
+                    overflow: visible !important;
+                }
+
+                .match-header-controls {
+                    order: 10;
+                    flex-basis: 100%;
+                    width: 100%;
+                    padding: 0 0.55rem 0.45rem;
+                    justify-content: flex-start;
+                }
+
+                .match-control-bar {
+                    width: 100%;
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    padding-bottom: 0.1rem;
+                    scrollbar-width: none;
+                }
+
+                .match-control-bar::-webkit-scrollbar {
+                    display: none;
+                }
+
+                .match-control-bar .match-status-tab,
+                .match-control-bar #openMatchModal,
+                .match-control-bar #doneMatchesDateFilter,
+                .match-control-bar #clearDoneMatchesDateFilter {
+                    min-height: 2rem;
+                    padding: 0.42rem 0.55rem !important;
+                    font-size: clamp(0.58rem, 2.6vw, 0.72rem) !important;
+                    border-radius: 0.5rem !important;
+                }
+
+                .match-control-bar #doneMatchesDateFilter {
+                    width: 7.8rem;
+                }
+
+                .match-control-bar #clearDoneMatchesDateFilter {
+                    max-width: 4.9rem;
+                }
+            }
+
     </style>
     </head>
 
@@ -1065,6 +1162,8 @@
                                 Monitor sports activities and team performance.
                             </p>
                         </div>
+
+                        <div id="matchHeaderControls" class="match-header-controls" aria-label="Match management controls"></div>
 
                         <div id="notificationContainer" class="relative z-50 mr-3 self-center shrink-0">
                             <button
@@ -1480,13 +1579,49 @@
                 <!-- Matches Tab -->
                 <div id="matches" class="tab-content hidden mt-8 ml-5 mr-5">
 
-                    <div class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
-                        <button
-                            type="button"
-                            id="openMatchModal"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium w-full lg:w-auto lg:self-stretch">
-                            + Schedule Match
-                        </button>
+                    <div id="matchControlsHome" class="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center">
+                        <div id="matchPrimaryControls" class="match-control-bar">
+                            <button
+                                type="button"
+                                id="openMatchModal"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                                + Schedule Match
+                            </button>
+
+                            <button
+                                type="button"
+                                data-status-tab="Next"
+                                class="match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white">
+                                Next
+                            </button>
+
+                            <button
+                                type="button"
+                                data-status-tab="Ongoing"
+                                class="match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
+                                On Going
+                            </button>
+
+                            <button
+                                type="button"
+                                data-status-tab="Done"
+                                class="match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
+                                Done
+                            </button>
+
+                            <input
+                                id="doneMatchesDateFilter"
+                                type="date"
+                                aria-label="Filter next and done matches by date"
+                                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+
+                            <button
+                                id="clearDoneMatchesDateFilter"
+                                type="button"
+                                class="rounded-lg bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300">
+                                All dates
+                            </button>
+                        </div>
 
                         <div id="matchViewFilterCard" class="bg-white border border-gray-200 shadow-sm rounded-xl p-2.5 w-full lg:max-w-3xl">
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1520,43 +1655,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Status Filter Tabs -->
-                    <div class="mb-6 flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            data-status-tab="Next"
-                            class="match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white">
-                            Next
-                        </button>
-
-                        <button
-                            type="button"
-                            data-status-tab="Ongoing"
-                            class="match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
-                            On Going
-                        </button>
-
-                        <button
-                            type="button"
-                            data-status-tab="Done"
-                            class="match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
-                            Done
-                        </button>
-
-                        <input
-                            id="doneMatchesDateFilter"
-                            type="date"
-                            aria-label="Filter next and done matches by date"
-                            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
-
-                        <button
-                            id="clearDoneMatchesDateFilter"
-                            type="button"
-                            class="rounded-lg bg-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300">
-                            All dates
-                        </button>
                     </div>
 
                     <!-- Next Matches -->
@@ -2224,6 +2322,9 @@
                 const sportFilterSelect = document.getElementById("sportFilterSelect");
                 const clearSportFilter = document.getElementById("clearSportFilter");
                 const matchViewFilterCard = document.getElementById("matchViewFilterCard");
+                const matchHeaderControls = document.getElementById("matchHeaderControls");
+                const matchControlsHome = document.getElementById("matchControlsHome");
+                const matchPrimaryControls = document.getElementById("matchPrimaryControls");
 
                 const nextMatchesGrid = document.getElementById("nextMatchesGrid");
                 const ongoingMatchesGrid = document.getElementById("ongoingMatchesGrid");
@@ -2306,6 +2407,32 @@
                 let cameraPhotoFile = null;
                 const OVERALL_COMMITTEE_SPORT_ID = "__overall_committee__";
                 const OVERALL_COMMITTEE_SPORT_NAME = "Overall Committee";
+
+                function placeMatchControlsForTab(tabName) {
+                    if (!matchHeaderControls || !matchControlsHome || !matchPrimaryControls) {
+                        return;
+                    }
+
+                    const isMatchesTab = tabName === "matches";
+
+                    if (isMatchesTab) {
+                        if (matchPrimaryControls.parentElement !== matchHeaderControls) {
+                            matchHeaderControls.appendChild(matchPrimaryControls);
+                        }
+
+                        matchHeaderControls.classList.add("is-active");
+                        matchControlsHome.classList.add("match-controls-home-collapsed");
+                    } else {
+                        if (matchPrimaryControls.parentElement !== matchControlsHome) {
+                            matchControlsHome.insertBefore(matchPrimaryControls, matchControlsHome.firstChild);
+                        }
+
+                        matchHeaderControls.classList.remove("is-active");
+                        matchControlsHome.classList.remove("match-controls-home-collapsed");
+                    }
+                }
+
+                window.onCommitteeTabSwitch = placeMatchControlsForTab;
 
                 function clearCameraPhoto() {
                     if (cameraPreviewUrl) {
@@ -6274,6 +6401,8 @@
                     loadRegisteredTeams(),
                     loadSavedMatches()
                 ]);
+
+                placeMatchControlsForTab(document.querySelector(".tab-content:not(.hidden)")?.id || "overview");
 
                 setInterval(() => scheduleCommitteeRealtimeReload({ overview: true }), 10000);
                 setInterval(loadCommitteeAnnouncements, 2000);
