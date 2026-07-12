@@ -3123,11 +3123,80 @@
                     || getAssignedSportName(account).toLowerCase() === OVERALL_COMMITTEE_SPORT_NAME.toLowerCase();
             }
 
+            function normalizeSportGroupKey(value) {
+                return String(value || "")
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "");
+            }
+
+            function getGeneralSportName(name) {
+                const cleanedName = String(name || "Unnamed sport")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                const categoryStartWords = new Set([
+                    "a", "b", "c", "d", "e",
+                    "boys", "boy", "girls", "girl",
+                    "men", "man", "mens", "male", "s",
+                    "women", "woman", "womens", "female",
+                    "mixed", "singles", "single", "doubles", "double",
+                    "relay", "backstroke", "butterfly", "freestyle",
+                    "division", "div", "category", "cat",
+                    "bracket", "pool", "group", "class"
+                ]);
+                const normalizedName = cleanedName
+                    .replace(/[()']/g, " ")
+                    .replace(/[-:/]+/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                const tokens = normalizedName.split(" ").filter(Boolean);
+
+                for (let index = 1; index < tokens.length; index += 1) {
+                    const token = tokens[index].toLowerCase();
+
+                    if (
+                        categoryStartWords.has(token)
+                        || /^[a-e]$/i.test(token)
+                        || /^\d/.test(token)
+                        || /^\d+m$/i.test(token)
+                    ) {
+                        return tokens.slice(0, index).join(" ") || cleanedName;
+                    }
+                }
+
+                return tokens.join(" ") || cleanedName;
+            }
+
+            function getAdminSportAssignmentGroups() {
+                const groups = new Map();
+
+                sportsData.forEach(sport => {
+                    const sportName = sport.sport_name || sport.name || "Unnamed sport";
+                    const generalName = getGeneralSportName(sportName);
+                    const key = normalizeSportGroupKey(generalName);
+
+                    if (!groups.has(key)) {
+                        groups.set(key, {
+                            id: `__sport_group__:${key}`,
+                            sport_name: generalName,
+                            isGeneralSportGroup: true,
+                            sourceSports: []
+                        });
+                    }
+
+                    groups.get(key).sourceSports.push(sport);
+                });
+
+                return [...groups.values()].sort((a, b) => a.sport_name.localeCompare(b.sport_name));
+            }
+
             function getAssignedSportOptions(account) {
                 const assignedSportId = getAssignedSportId(account);
                 const assignedSportName = getAssignedSportName(account);
                 const isOverallCommittee = isOverallCommitteeAssignment(account);
                 const hasAssignedSportInList = assignedSportId && sportsData.some(sport => String(sport.id) === assignedSportId);
+                const groupedSports = getAdminSportAssignmentGroups();
+                const assignedGroupKey = normalizeSportGroupKey(getGeneralSportName(assignedSportName));
 
                 const options = [
                     `<option value="">No game assigned</option>`,
@@ -3138,10 +3207,11 @@
                     options.push(`<option value="${escapeHTML(assignedSportId)}" selected>${escapeHTML(assignedSportName || "Assigned game")}</option>`);
                 }
 
-                sportsData.forEach(sport => {
+                groupedSports.forEach(sport => {
                     const sportId = String(sport.id);
+                    const isSelected = assignedGroupKey && normalizeSportGroupKey(sport.sport_name) === assignedGroupKey;
                     options.push(`
-                        <option value="${escapeHTML(sportId)}" ${sportId === assignedSportId ? "selected" : ""}>
+                        <option value="${escapeHTML(sportId)}" ${isSelected ? "selected" : ""}>
                             ${escapeHTML(sport.sport_name || "Unnamed sport")}
                         </option>
                     `);
@@ -7007,9 +7077,13 @@
                 editingAccountSportId = accountId;
                 accountSportEditAccountName.textContent = account.full_name || account.email || "Account";
                 accountSportEditSelect.innerHTML = getAssignedSportOptions(account);
-                accountSportEditSelect.value = isOverallCommitteeAssignment(account)
-                    ? OVERALL_COMMITTEE_SPORT_ID
-                    : getAssignedSportId(account);
+                if (isOverallCommitteeAssignment(account)) {
+                    accountSportEditSelect.value = OVERALL_COMMITTEE_SPORT_ID;
+                } else {
+                    const assignedGroupKey = normalizeSportGroupKey(getGeneralSportName(getAssignedSportName(account)));
+                    const matchingGroup = getAdminSportAssignmentGroups().find(group => normalizeSportGroupKey(group.sport_name) === assignedGroupKey);
+                    accountSportEditSelect.value = matchingGroup?.id || getAssignedSportId(account);
+                }
                 accountSportEditModal.classList.remove("hidden");
                 accountSportEditModal.classList.add("flex");
             }
@@ -7023,11 +7097,19 @@
             async function updateAccountAssignedGame(accountId, sportId) {
                 const selectedSport = sportsData.find(sport => String(sport.id) === String(sportId));
                 const isOverallCommittee = String(sportId) === OVERALL_COMMITTEE_SPORT_ID;
+                const selectedGroup = getAdminSportAssignmentGroups().find(group => String(group.id) === String(sportId));
+                const isGeneralSportGroup = Boolean(selectedGroup);
+                const nextAssignedSportId = isOverallCommittee || isGeneralSportGroup ? null : (selectedSport?.id || null);
+                const nextAssignedSportName = isOverallCommittee
+                    ? OVERALL_COMMITTEE_SPORT_NAME
+                    : isGeneralSportGroup
+                        ? selectedGroup.sport_name
+                        : (selectedSport?.sport_name || null);
 
                 const { error } = await supabase.rpc("admin_assign_account_sport", {
                     target_user_id: accountId,
-                    assigned_sport_id: isOverallCommittee ? null : (selectedSport?.id || null),
-                    assigned_sport_name: isOverallCommittee ? OVERALL_COMMITTEE_SPORT_NAME : (selectedSport?.sport_name || null)
+                    assigned_sport_id: nextAssignedSportId,
+                    assigned_sport_name: nextAssignedSportName
                 });
 
                 if (error) {
@@ -7040,8 +7122,8 @@
                 const account = accountApprovalsData.find(item => String(item.id) === String(accountId));
 
                 if (account) {
-                    account.assigned_sport_id = isOverallCommittee ? null : (selectedSport?.id || null);
-                    account.assigned_sport_name = isOverallCommittee ? OVERALL_COMMITTEE_SPORT_NAME : (selectedSport?.sport_name || null);
+                    account.assigned_sport_id = nextAssignedSportId;
+                    account.assigned_sport_name = nextAssignedSportName;
                 }
 
                 renderAccountApprovals();
