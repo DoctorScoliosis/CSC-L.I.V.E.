@@ -4868,6 +4868,13 @@
                         .trim();
                 }
 
+                function normalizeSportCompact(value) {
+                    return String(value || "")
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "");
+                }
+
                 function canCurrentUserScheduleAllSports() {
                     return isCurrentUserAdmin()
                         || currentUser?.assignedSportId === OVERALL_COMMITTEE_SPORT_ID
@@ -4881,18 +4888,23 @@
 
                     const assignedSportId = String(currentUser?.assignedSportId || "").trim();
                     const assignedSportName = normalizeSportText(currentUser?.assignedSportName);
+                    const assignedSportCompact = normalizeSportCompact(currentUser?.assignedSportName);
                     const sportId = String(sport?.id || "").trim();
                     const sportName = normalizeSportText(sport?.sport_name || sport?.name || "");
+                    const sportCompact = normalizeSportCompact(sport?.sport_name || sport?.name || "");
 
                     if (assignedSportId && sportId && assignedSportId === sportId) {
                         return true;
                     }
 
-                    if (!assignedSportName || !sportName) {
+                    if ((!assignedSportName || !sportName) && (!assignedSportCompact || !sportCompact)) {
                         return false;
                     }
 
-                    return sportName.includes(assignedSportName) || assignedSportName.includes(sportName);
+                    return sportName.includes(assignedSportName)
+                        || assignedSportName.includes(sportName)
+                        || sportCompact.includes(assignedSportCompact)
+                        || assignedSportCompact.includes(sportCompact);
                 }
 
                 async function loadSportsForMatches() {

@@ -722,15 +722,51 @@
             return String(value || "")
                 .trim()
                 .toLowerCase()
-                .replace(/[^a-z0-9]+/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
+                .replace(/[^a-z0-9]+/g, "");
         }
 
         function getGeneralSportName(name) {
             const cleanedName = String(name || "Unnamed sport")
                 .replace(/\s+/g, " ")
                 .trim();
+
+            const categoryWords = new Set([
+                "a", "b", "c", "d", "e",
+                "boys", "boy", "girls", "girl",
+                "men", "man", "mens", "male",
+                "women", "woman", "womens", "female",
+                "division", "div", "category", "cat",
+                "bracket", "pool", "group", "class"
+            ]);
+            const normalizedName = cleanedName
+                .replace(/[()]/g, " ")
+                .replace(/[-:/]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+            const tokens = normalizedName.split(" ").filter(Boolean);
+
+            while (tokens.length > 1) {
+                const last = tokens[tokens.length - 1].toLowerCase();
+                const previous = tokens[tokens.length - 2]?.toLowerCase() || "";
+
+                if (
+                    categoryWords.has(last)
+                    || /^[a-z]$/i.test(last)
+                    || /^\d+$/.test(last)
+                    || ((previous === "category" || previous === "division" || previous === "div" || previous === "group") && /^[a-z0-9]+$/i.test(last))
+                ) {
+                    tokens.pop();
+                    continue;
+                }
+
+                break;
+            }
+
+            while (tokens.length > 1 && categoryWords.has(tokens[tokens.length - 1].toLowerCase())) {
+                tokens.pop();
+            }
+
+            return tokens.join(" ") || cleanedName;
 
             const withoutTrailingGroup = cleanedName
                 .replace(/\s*[-–—:/]\s*[A-Z0-9]$/i, "")
