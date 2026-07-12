@@ -2487,6 +2487,7 @@
                 let currentUser = null;
                 let hasRenderedCommitteeLeaderboard = false;
                 let isRefreshingCommitteeLeaderboard = false;
+                let shouldRefreshCommitteeLeaderboardAgain = false;
                 let lastCommitteeLeaderboardSignature = "";
                 let contactPersonnelData = [];
                 let committeeAllConversationsData = [];
@@ -2495,6 +2496,7 @@
                 let committeeAnnouncementsData = [];
                 let hasLoadedCommitteeAnnouncements = false;
                 let isLoadingCommitteeAnnouncements = false;
+                let shouldReloadCommitteeAnnouncementsAgain = false;
                 const unreadCommitteeAnnouncements = new Map();
                 let committeeConversationListMarkup = "";
                 let activeContactSportId = "";
@@ -4090,8 +4092,12 @@
 
                 async function loadCommitteeAnnouncements() {
                     if (!committeeAnnouncementsList) return;
-                    if (isLoadingCommitteeAnnouncements) return;
+                    if (isLoadingCommitteeAnnouncements) {
+                        shouldReloadCommitteeAnnouncementsAgain = true;
+                        return;
+                    }
                     isLoadingCommitteeAnnouncements = true;
+                    shouldReloadCommitteeAnnouncementsAgain = false;
 
                     try {
                         const { data, error } = await supabase
@@ -4153,6 +4159,10 @@
                         `).join("");
                     } finally {
                         isLoadingCommitteeAnnouncements = false;
+                        if (shouldReloadCommitteeAnnouncementsAgain) {
+                            shouldReloadCommitteeAnnouncementsAgain = false;
+                            await loadCommitteeAnnouncements();
+                        }
                     }
                 }
 
@@ -4520,13 +4530,21 @@
                 }
 
                 async function refreshCommitteeLeaderboard() {
-                    if (isRefreshingCommitteeLeaderboard) return;
+                    if (isRefreshingCommitteeLeaderboard) {
+                        shouldRefreshCommitteeLeaderboardAgain = true;
+                        return;
+                    }
 
                     isRefreshingCommitteeLeaderboard = true;
+                    shouldRefreshCommitteeLeaderboardAgain = false;
                     try {
                         await loadLeaderboard();
                     } finally {
                         isRefreshingCommitteeLeaderboard = false;
+                        if (shouldRefreshCommitteeLeaderboardAgain) {
+                            shouldRefreshCommitteeLeaderboardAgain = false;
+                            await refreshCommitteeLeaderboard();
+                        }
                     }
                 }
 

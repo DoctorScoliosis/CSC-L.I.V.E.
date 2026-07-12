@@ -2859,9 +2859,11 @@
             let participantsData = [];
             let studentFeedbackData = [];
             let isLoadingStudentFeedback = false;
+            let shouldReloadStudentFeedbackAgain = false;
             let announcementsData = [];
             let accountApprovalsData = [];
             let isLoadingAccountApprovals = false;
+            let shouldReloadAccountApprovalsAgain = false;
             let editingAccountSportId = "";
             let hasLoadedAdminOverview = false;
             let currentAdminUser = null;
@@ -6751,8 +6753,12 @@
 
             async function loadStudentFeedback() {
                 if (!studentFeedbackTableBody) return;
-                if (isLoadingStudentFeedback) return;
+                if (isLoadingStudentFeedback) {
+                    shouldReloadStudentFeedbackAgain = true;
+                    return;
+                }
                 isLoadingStudentFeedback = true;
+                shouldReloadStudentFeedbackAgain = false;
 
                 try {
                     if (studentFeedbackData.length === 0) {
@@ -6785,6 +6791,10 @@
                     updateAdminMessageNotification();
                 } finally {
                     isLoadingStudentFeedback = false;
+                    if (shouldReloadStudentFeedbackAgain) {
+                        shouldReloadStudentFeedbackAgain = false;
+                        await loadStudentFeedback();
+                    }
                 }
             }
 
@@ -6916,8 +6926,12 @@
 
             async function loadAccountApprovals() {
                 if (!accountApprovalsTableBody) return;
-                if (isLoadingAccountApprovals) return;
+                if (isLoadingAccountApprovals) {
+                    shouldReloadAccountApprovalsAgain = true;
+                    return;
+                }
                 isLoadingAccountApprovals = true;
+                shouldReloadAccountApprovalsAgain = false;
 
                 try {
                     if (accountApprovalsData.length === 0) {
@@ -6951,6 +6965,10 @@
                     updateAdminMessageNotification();
                 } finally {
                     isLoadingAccountApprovals = false;
+                    if (shouldReloadAccountApprovalsAgain) {
+                        shouldReloadAccountApprovalsAgain = false;
+                        await loadAccountApprovals();
+                    }
                 }
             }
 
@@ -7920,7 +7938,7 @@
                         schema: "public",
                         table: TEAMS_TABLE
                     },
-                    () => scheduleAdminRealtimeReload({ teams: true, overview: true })
+                    () => scheduleAdminRealtimeReload({ teams: true, participants: true, overview: true })
                 )
                 .on(
                     "postgres_changes",
@@ -7947,7 +7965,7 @@
                         schema: "public",
                         table: SPORTS_TABLE
                     },
-                    () => scheduleAdminRealtimeReload({ sports: true, overview: true })
+                    () => scheduleAdminRealtimeReload({ sports: true, participants: true, accounts: true, contacts: true, overview: true })
                 )
                 .on(
                     "postgres_changes",

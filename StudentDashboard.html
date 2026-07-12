@@ -701,7 +701,9 @@
             let matchReloadTimer = null;
             let leaderboardReloadTimer = null;
             let isLoadingMatches = false;
+            let shouldReloadMatchesAgain = false;
             let isLoadingLeaderboard = false;
+            let shouldReloadLeaderboardAgain = false;
             let lastLeaderboardRows = [];
             let lastLeaderboardHistoryRows = [];
             let lastLeaderboardSignature = "";
@@ -709,6 +711,8 @@
             let lastShownAnnouncementKey = null;
             let studentAnnouncementsData = [];
             let isRefreshingStudentAnnouncements = false;
+            let shouldRefreshStudentAnnouncementsAgain = false;
+            let shouldShowQueuedStudentAnnouncementPopup = false;
             const studentAnnouncementChanges = new Map();
             const STUDENT_SEEN_ANNOUNCEMENTS_KEY = "studentSeenAnnouncementIds";
 
@@ -915,9 +919,15 @@
             }
 
             async function refreshStudentAnnouncements({ showPopup = false } = {}) {
-                if (isRefreshingStudentAnnouncements) return;
+                if (isRefreshingStudentAnnouncements) {
+                    shouldRefreshStudentAnnouncementsAgain = true;
+                    shouldShowQueuedStudentAnnouncementPopup = shouldShowQueuedStudentAnnouncementPopup || Boolean(showPopup);
+                    return;
+                }
 
                 isRefreshingStudentAnnouncements = true;
+                shouldRefreshStudentAnnouncementsAgain = false;
+                shouldShowQueuedStudentAnnouncementPopup = false;
 
                 try {
                     await loadStudentAnnouncements();
@@ -928,6 +938,12 @@
                     }
                 } finally {
                     isRefreshingStudentAnnouncements = false;
+                    if (shouldRefreshStudentAnnouncementsAgain) {
+                        const showQueuedPopup = shouldShowQueuedStudentAnnouncementPopup;
+                        shouldRefreshStudentAnnouncementsAgain = false;
+                        shouldShowQueuedStudentAnnouncementPopup = false;
+                        await refreshStudentAnnouncements({ showPopup: showQueuedPopup });
+                    }
                 }
             }
 
@@ -1266,11 +1282,13 @@
 
             async function loadLeaderboard(options = {}) {
                 if (isLoadingLeaderboard) {
+                    shouldReloadLeaderboardAgain = true;
                     return;
                 }
 
                 const { showLoading = false } = options;
                 isLoadingLeaderboard = true;
+                shouldReloadLeaderboardAgain = false;
 
                 const shouldShowLoading = lastLeaderboardRows.length === 0;
 
@@ -1362,6 +1380,10 @@
                     }
                 } finally {
                     isLoadingLeaderboard = false;
+                    if (shouldReloadLeaderboardAgain) {
+                        shouldReloadLeaderboardAgain = false;
+                        await loadLeaderboard({ showLoading: false });
+                    }
                 }
             }
 
@@ -1816,10 +1838,14 @@
             }
 
             async function loadMatches(options = {}) {
-                if (isLoadingMatches) return;
+                if (isLoadingMatches) {
+                    shouldReloadMatchesAgain = true;
+                    return;
+                }
 
                 const { showLoading = false } = options;
                 isLoadingMatches = true;
+                shouldReloadMatchesAgain = false;
 
                 if (studentMatchesData.length === 0) {
                     studentMatchesGrid.innerHTML = `
@@ -1848,6 +1874,10 @@
                         studentMatchesGrid.innerHTML = `<div class="col-span-full p-10 text-center text-red-500 font-bold">Failed to load matches.</div>`;
                     }
                     isLoadingMatches = false;
+                    if (shouldReloadMatchesAgain) {
+                        shouldReloadMatchesAgain = false;
+                        await loadMatches({ showLoading: false });
+                    }
                     return;
                 }
 
@@ -1867,6 +1897,10 @@
                     lastMatchesSignature = matchesSignature;
                 }
                 isLoadingMatches = false;
+                if (shouldReloadMatchesAgain) {
+                    shouldReloadMatchesAgain = false;
+                    await loadMatches({ showLoading: false });
+                }
             }
 
             function renderMatches() {
