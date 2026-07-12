@@ -1488,7 +1488,7 @@
                             + Schedule Match
                         </button>
 
-                        <div class="bg-white border border-gray-200 shadow-sm rounded-xl p-2.5 w-full lg:max-w-3xl">
+                        <div id="matchViewFilterCard" class="bg-white border border-gray-200 shadow-sm rounded-xl p-2.5 w-full lg:max-w-3xl">
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="min-w-0">
                                     <p class="text-xs font-bold uppercase tracking-wide text-gray-700">View Matches</p>
@@ -2223,6 +2223,7 @@
                 const closeSportFilterModal = document.getElementById("closeSportFilterModal");
                 const sportFilterSelect = document.getElementById("sportFilterSelect");
                 const clearSportFilter = document.getElementById("clearSportFilter");
+                const matchViewFilterCard = document.getElementById("matchViewFilterCard");
 
                 const nextMatchesGrid = document.getElementById("nextMatchesGrid");
                 const ongoingMatchesGrid = document.getElementById("ongoingMatchesGrid");
@@ -2773,7 +2774,7 @@
                 function getFilteredMatchesForDisplay(matches) {
                     let filteredMatches = Array.isArray(matches) ? [...matches] : [];
 
-                    if (activeSportFilterId) {
+                    if (canCurrentUserUseMatchViewFilters() && activeSportFilterId) {
                         filteredMatches = filteredMatches.filter(match => String(match.sport_id) === String(activeSportFilterId));
                     }
 
@@ -2784,12 +2785,23 @@
                     return sortMatchesWithOwnFirst(filteredMatches);
                 }
 
+                function canCurrentUserUseMatchViewFilters() {
+                    return currentUser?.assignedSportId === OVERALL_COMMITTEE_SPORT_ID
+                        || normalizeSportText(currentUser?.assignedSportName) === normalizeSportText(OVERALL_COMMITTEE_SPORT_NAME);
+                }
+
                 function updateSportFilterButtonVisibility() {
+                    const canUseFilters = canCurrentUserUseMatchViewFilters();
+
+                    if (matchViewFilterCard) {
+                        matchViewFilterCard.classList.toggle("hidden", !canUseFilters);
+                    }
+
                     if (!openSportFilterModal) {
                         return;
                     }
 
-                    const shouldShowSportFilter = activeMatchScopeFilter === "all";
+                    const shouldShowSportFilter = canUseFilters && activeMatchScopeFilter === "all";
                     openSportFilterModal.classList.toggle("hidden", !shouldShowSportFilter);
 
                     if (!shouldShowSportFilter && activeSportFilterId) {
@@ -2802,7 +2814,7 @@
                 }
 
                 function setActiveMatchScopeFilter(scope) {
-                    activeMatchScopeFilter = scope === "all" ? "all" : "mine";
+                    activeMatchScopeFilter = scope === "all" && canCurrentUserUseMatchViewFilters() ? "all" : "mine";
 
                     document.querySelectorAll(".match-scope-tab").forEach(button => {
                         const isActive = button.dataset.matchScopeTab === activeMatchScopeFilter;
@@ -2817,7 +2829,7 @@
                 }
 
                 function openSportFilterModalFunction() {
-                    if (activeMatchScopeFilter !== "all") {
+                    if (!canCurrentUserUseMatchViewFilters() || activeMatchScopeFilter !== "all") {
                         return;
                     }
 
