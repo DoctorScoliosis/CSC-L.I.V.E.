@@ -951,6 +951,7 @@
                 align-items: center;
                 justify-content: flex-end;
                 gap: 0.5rem;
+                margin-right: 0.9rem;
                 overflow-x: auto;
                 overflow-y: hidden;
                 scrollbar-width: none;
@@ -989,6 +990,10 @@
                 width: clamp(8.5rem, 10vw, 10rem);
             }
 
+            .match-date-trigger {
+                display: none;
+            }
+
             .match-control-bar #clearDoneMatchesDateFilter {
                 max-width: 5.75rem;
             }
@@ -1003,17 +1008,14 @@
                 }
 
                 .match-header-controls {
-                    order: 10;
-                    flex-basis: 100%;
-                    width: 100%;
-                    padding: 0 0.55rem 0.45rem;
-                    justify-content: flex-start;
+                    display: none !important;
                 }
 
                 .match-control-bar {
                     width: 100%;
                     overflow-x: auto;
                     overflow-y: hidden;
+                    gap: 0.28rem;
                     padding-bottom: 0.1rem;
                     scrollbar-width: none;
                 }
@@ -1033,11 +1035,50 @@
                 }
 
                 .match-control-bar #doneMatchesDateFilter {
-                    width: 7.8rem;
+                    position: absolute;
+                    width: 1px;
+                    height: 1px;
+                    opacity: 0;
+                    pointer-events: none;
+                }
+
+                .match-date-trigger {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex: 0 0 auto;
+                    min-height: 2rem;
+                    padding: 0.42rem 0.55rem !important;
+                    border-radius: 0.5rem !important;
+                    background: #fff;
+                    border: 1px solid #d1d5db;
+                    color: #1f2937;
+                    font-size: clamp(0.58rem, 2.6vw, 0.72rem) !important;
+                    font-weight: 700;
+                    line-height: 1rem !important;
                 }
 
                 .match-control-bar #clearDoneMatchesDateFilter {
                     max-width: 4.9rem;
+                }
+
+                .match-controls-home-collapsed {
+                    margin-top: 0.45rem !important;
+                    margin-bottom: 0.9rem !important;
+                }
+
+                .match-schedule-full-label {
+                    display: none;
+                }
+
+                .match-schedule-short-label {
+                    display: inline;
+                }
+            }
+
+            @media (min-width: 1024px) {
+                .match-schedule-short-label {
+                    display: none;
                 }
             }
 
@@ -1585,7 +1626,8 @@
                                 type="button"
                                 id="openMatchModal"
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
-                                + Schedule Match
+                                <span class="match-schedule-full-label">+ Schedule Match</span>
+                                <span class="match-schedule-short-label">+ Schedule...</span>
                             </button>
 
                             <button
@@ -1614,6 +1656,15 @@
                                 type="date"
                                 aria-label="Filter next and done matches by date"
                                 class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+
+                            <button
+                                id="openDoneMatchesDatePicker"
+                                type="button"
+                                class="match-date-trigger"
+                                aria-label="Open match date picker"
+                                title="Choose date">
+                                📅
+                            </button>
 
                             <button
                                 id="clearDoneMatchesDateFilter"
@@ -2331,6 +2382,7 @@
                 const doneMatchesGrid = document.getElementById("doneMatchesGrid");
                 const doneMatchesDateFilter = document.getElementById("doneMatchesDateFilter");
                 const clearDoneMatchesDateFilter = document.getElementById("clearDoneMatchesDateFilter");
+                const openDoneMatchesDatePicker = document.getElementById("openDoneMatchesDatePicker");
 
                 const contactsList = document.getElementById("contactsList");
                 const contactsSection = document.getElementById("contactsSection");
@@ -2414,8 +2466,9 @@
                     }
 
                     const isMatchesTab = tabName === "matches";
+                    const shouldUseHeaderControls = isMatchesTab && window.innerWidth >= 1024;
 
-                    if (isMatchesTab) {
+                    if (shouldUseHeaderControls) {
                         if (matchPrimaryControls.parentElement !== matchHeaderControls) {
                             matchHeaderControls.appendChild(matchPrimaryControls);
                         }
@@ -2428,7 +2481,7 @@
                         }
 
                         matchHeaderControls.classList.remove("is-active");
-                        matchControlsHome.classList.remove("match-controls-home-collapsed");
+                        matchControlsHome.classList.toggle("match-controls-home-collapsed", isMatchesTab);
                     }
                 }
 
@@ -6192,6 +6245,14 @@
                     closeSportFilterModalFunction();
                     renderMatches(matchesData);
                 });
+                openDoneMatchesDatePicker.addEventListener("click", function () {
+                    if (typeof doneMatchesDateFilter.showPicker === "function") {
+                        doneMatchesDateFilter.showPicker();
+                    } else {
+                        doneMatchesDateFilter.focus();
+                        doneMatchesDateFilter.click();
+                    }
+                });
                 doneMatchesDateFilter.addEventListener("change", function () {
                     activeDoneMatchesDate = this.value || "";
                     renderMatches(matchesData);
@@ -6403,6 +6464,9 @@
                 ]);
 
                 placeMatchControlsForTab(document.querySelector(".tab-content:not(.hidden)")?.id || "overview");
+                window.addEventListener("resize", function () {
+                    placeMatchControlsForTab(document.querySelector(".tab-content:not(.hidden)")?.id || "overview");
+                });
 
                 setInterval(() => scheduleCommitteeRealtimeReload({ overview: true }), 10000);
                 setInterval(loadCommitteeAnnouncements, 2000);
