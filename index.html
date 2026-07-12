@@ -606,6 +606,11 @@
         const selectedRegisterSportLabel = document.getElementById("selectedRegisterSportLabel");
         const registerSportAssignmentGroup = document.getElementById("registerSportAssignmentGroup");
 
+        const OVERALL_COMMITTEE_ASSIGNMENT = {
+            id: "__overall_committee__",
+            sport_name: "Overall Committee"
+        };
+
         let currentMode = "signin";
         let selectedSignInRole = "admin";
         let selectedRegisterRole = "committee";
@@ -715,12 +720,18 @@
 
         function renderRegisterSports() {
             if (!registerSportList) return;
-            if (registeredSports.length === 0) {
-                registerSportList.innerHTML = `<p class="rounded-xl bg-gray-50 p-4 text-sm font-semibold text-gray-500">No registered sports are available yet.</p>`;
-                return;
-            }
+            const sportOptions = [OVERALL_COMMITTEE_ASSIGNMENT, ...registeredSports];
 
-            registerSportList.innerHTML = registeredSports.map(sport => `
+            registerSportList.innerHTML = `
+                <button
+                    type="button"
+                    data-register-sport-id="${OVERALL_COMMITTEE_ASSIGNMENT.id}"
+                    class="register-sport-option w-full rounded-xl border px-4 py-3 text-left text-sm font-bold transition ${String(selectedRegisterSport?.id || "") === OVERALL_COMMITTEE_ASSIGNMENT.id ? "border-blue-600 bg-blue-50 text-blue-800" : "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"}">
+                    Overall Committee
+                    <span class="mt-1 block text-xs font-semibold text-amber-700">Can schedule matches for all sports categories.</span>
+                </button>
+                ${registeredSports.length === 0 ? `<p class="rounded-xl bg-gray-50 p-4 text-sm font-semibold text-gray-500">No registered sports are available yet.</p>` : ""}
+            ` + registeredSports.map(sport => `
                 <button
                     type="button"
                     data-register-sport-id="${sport.id}"
@@ -731,7 +742,7 @@
 
             document.querySelectorAll(".register-sport-option").forEach(button => {
                 button.addEventListener("click", function () {
-                    selectedRegisterSport = registeredSports.find(sport => String(sport.id) === String(this.dataset.registerSportId)) || null;
+                    selectedRegisterSport = sportOptions.find(sport => String(sport.id) === String(this.dataset.registerSportId)) || null;
                     selectedRegisterSportLabel.textContent = selectedRegisterSport?.sport_name || "Choose the sport you will handle";
                     closeRegisterSportModalFunction();
                 });
@@ -843,13 +854,15 @@
                 throw new Error("Account was created, but the user profile could not be identified.");
             }
 
+            const isOverallCommittee = sport?.id === OVERALL_COMMITTEE_ASSIGNMENT.id;
+
             const { error } = await supabase.rpc("save_pending_user_profile", {
                 p_email: user.email,
                 p_full_name: fullName,
                 p_mobile_number: mobileNumber,
                 p_role: role,
-                p_assigned_sport_id: sport?.id || null,
-                p_assigned_sport_name: sport?.sport_name || null
+                p_assigned_sport_id: isOverallCommittee ? null : (sport?.id || null),
+                p_assigned_sport_name: isOverallCommittee ? OVERALL_COMMITTEE_ASSIGNMENT.sport_name : (sport?.sport_name || null)
             });
 
             if (error) {

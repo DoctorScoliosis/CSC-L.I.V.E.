@@ -2881,6 +2881,8 @@
             let adminMessagesListMarkup = "";
             let adminCameraPreviewUrl = "";
             let adminCameraPhotoFile = null;
+            const OVERALL_COMMITTEE_SPORT_ID = "__overall_committee__";
+            const OVERALL_COMMITTEE_SPORT_NAME = "Overall Committee";
 
             function clearAdminCameraPhoto() {
                 if (adminCameraPreviewUrl) {
@@ -3108,20 +3110,31 @@
 
             function getAccountAssignedSportLabel(account) {
                 const assignedSportId = getAssignedSportId(account);
+                if (isOverallCommitteeAssignment(account)) {
+                    return OVERALL_COMMITTEE_SPORT_NAME;
+                }
+
                 const sport = sportsData.find(item => String(item.id) === assignedSportId);
                 return sport?.sport_name || getAssignedSportName(account) || "No game assigned";
+            }
+
+            function isOverallCommitteeAssignment(account) {
+                return getAssignedSportId(account) === OVERALL_COMMITTEE_SPORT_ID
+                    || getAssignedSportName(account).toLowerCase() === OVERALL_COMMITTEE_SPORT_NAME.toLowerCase();
             }
 
             function getAssignedSportOptions(account) {
                 const assignedSportId = getAssignedSportId(account);
                 const assignedSportName = getAssignedSportName(account);
+                const isOverallCommittee = isOverallCommitteeAssignment(account);
                 const hasAssignedSportInList = assignedSportId && sportsData.some(sport => String(sport.id) === assignedSportId);
 
                 const options = [
-                    `<option value="">No game assigned</option>`
+                    `<option value="">No game assigned</option>`,
+                    `<option value="${OVERALL_COMMITTEE_SPORT_ID}" ${isOverallCommittee ? "selected" : ""}>${OVERALL_COMMITTEE_SPORT_NAME}</option>`
                 ];
 
-                if (assignedSportId && !hasAssignedSportInList) {
+                if (assignedSportId && !isOverallCommittee && !hasAssignedSportInList) {
                     options.push(`<option value="${escapeHTML(assignedSportId)}" selected>${escapeHTML(assignedSportName || "Assigned game")}</option>`);
                 }
 
@@ -6994,7 +7007,9 @@
                 editingAccountSportId = accountId;
                 accountSportEditAccountName.textContent = account.full_name || account.email || "Account";
                 accountSportEditSelect.innerHTML = getAssignedSportOptions(account);
-                accountSportEditSelect.value = getAssignedSportId(account);
+                accountSportEditSelect.value = isOverallCommitteeAssignment(account)
+                    ? OVERALL_COMMITTEE_SPORT_ID
+                    : getAssignedSportId(account);
                 accountSportEditModal.classList.remove("hidden");
                 accountSportEditModal.classList.add("flex");
             }
@@ -7007,11 +7022,12 @@
 
             async function updateAccountAssignedGame(accountId, sportId) {
                 const selectedSport = sportsData.find(sport => String(sport.id) === String(sportId));
+                const isOverallCommittee = String(sportId) === OVERALL_COMMITTEE_SPORT_ID;
 
                 const { error } = await supabase.rpc("admin_assign_account_sport", {
                     target_user_id: accountId,
-                    assigned_sport_id: selectedSport?.id || null,
-                    assigned_sport_name: selectedSport?.sport_name || null
+                    assigned_sport_id: isOverallCommittee ? null : (selectedSport?.id || null),
+                    assigned_sport_name: isOverallCommittee ? OVERALL_COMMITTEE_SPORT_NAME : (selectedSport?.sport_name || null)
                 });
 
                 if (error) {
@@ -7024,8 +7040,8 @@
                 const account = accountApprovalsData.find(item => String(item.id) === String(accountId));
 
                 if (account) {
-                    account.assigned_sport_id = selectedSport?.id || null;
-                    account.assigned_sport_name = selectedSport?.sport_name || null;
+                    account.assigned_sport_id = isOverallCommittee ? null : (selectedSport?.id || null);
+                    account.assigned_sport_name = isOverallCommittee ? OVERALL_COMMITTEE_SPORT_NAME : (selectedSport?.sport_name || null);
                 }
 
                 renderAccountApprovals();

@@ -2303,6 +2303,8 @@
                 let contactMessagesListMarkup = "";
                 let cameraPreviewUrl = "";
                 let cameraPhotoFile = null;
+                const OVERALL_COMMITTEE_SPORT_ID = "__overall_committee__";
+                const OVERALL_COMMITTEE_SPORT_NAME = "Overall Committee";
 
                 function clearCameraPhoto() {
                     if (cameraPreviewUrl) {
@@ -2474,6 +2476,8 @@
                         email: userData.email || "",
                         fullName: userData.fullName || userData.full_name || userData.name || "",
                         role: normalizeComparableValue(userData.role || "committee"),
+                        assignedSportId: String(userData.assignedSportId || userData.assigned_sport_id || userData.assigned_game_id || userData.sport_id || "").trim(),
+                        assignedSportName: String(userData.assignedSportName || userData.assigned_sport_name || userData.assigned_game_name || userData.assigned_sport || userData.sport_name || userData.sport || "").trim(),
                         approvalStatus: normalizeComparableValue(userData.approvalStatus || userData.approval_status || "approved"),
                         loginTime: userData.loginTime || new Date().toISOString(),
                         authProvider: userData.authProvider || "supabase"
@@ -2525,6 +2529,8 @@
                             email: profile.email,
                             fullName: profile.full_name || authUser.user_metadata?.full_name || "",
                             role: profile.role,
+                            assigned_sport_id: profile.assigned_sport_id || profile.assigned_game_id || profile.sport_id || "",
+                            assigned_sport_name: profile.assigned_sport_name || profile.assigned_game_name || profile.assigned_sport || profile.sport_name || profile.sport || "",
                             approvalStatus: profile.approval_status,
                             loginTime: new Date().toISOString(),
                             authProvider: "supabase"
@@ -4853,6 +4859,41 @@
                     document.getElementById("doneMatchesTab").classList.toggle("hidden", status !== "Done");
                 }
 
+                function normalizeSportText(value) {
+                    return String(value || "")
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, " ")
+                        .replace(/\s+/g, " ")
+                        .trim();
+                }
+
+                function canCurrentUserScheduleAllSports() {
+                    return isCurrentUserAdmin()
+                        || currentUser?.assignedSportId === OVERALL_COMMITTEE_SPORT_ID
+                        || normalizeSportText(currentUser?.assignedSportName) === normalizeSportText(OVERALL_COMMITTEE_SPORT_NAME);
+                }
+
+                function isSportVisibleForCurrentUser(sport) {
+                    if (canCurrentUserScheduleAllSports()) {
+                        return true;
+                    }
+
+                    const assignedSportId = String(currentUser?.assignedSportId || "").trim();
+                    const assignedSportName = normalizeSportText(currentUser?.assignedSportName);
+                    const sportId = String(sport?.id || "").trim();
+                    const sportName = normalizeSportText(sport?.sport_name || sport?.name || "");
+
+                    if (assignedSportId && sportId && assignedSportId === sportId) {
+                        return true;
+                    }
+
+                    if (!assignedSportName || !sportName) {
+                        return false;
+                    }
+
+                    return sportName.includes(assignedSportName) || assignedSportName.includes(sportName);
+                }
 
                 async function loadSportsForMatches() {
                     const { data, error } = await supabase
@@ -4870,14 +4911,22 @@
                         return;
                     }
 
-                    populateSportFilterOptions(data || []);
+                    const allSports = data || [];
+                    const visibleSports = allSports.filter(isSportVisibleForCurrentUser);
 
-                    if (!data || data.length === 0) {
+                    populateSportFilterOptions(allSports);
+
+                    if (allSports.length === 0) {
                         matchSport.innerHTML = `<option value="">No registered sports found</option>`;
                         return;
                     }
 
-                    data.forEach(sport => {
+                    if (visibleSports.length === 0) {
+                        matchSport.innerHTML = `<option value="">No sports available for your account assignment</option>`;
+                        return;
+                    }
+
+                    visibleSports.forEach(sport => {
                         const option = document.createElement("option");
                         option.value = sport.id;
                         option.textContent = sport.sport_name;
@@ -5845,6 +5894,19 @@
 
                     if (!matchSport.value) {
                         alert("Please select a sport or game category before scheduling the match.");
+                        matchSport.focus();
+                        return;
+                    }
+
+                    const selectedSport = registeredSportsData.find(sport => String(sport.id) === String(matchSport.value));
+                    if (!selectedSport) {
+                        alert("Please choose a valid sport category from the list.");
+                        matchSport.focus();
+                        return;
+                    }
+
+                    if (selectedSport && !isSportVisibleForCurrentUser(selectedSport)) {
+                        alert("This sport category is not available for your account assignment.");
                         matchSport.focus();
                         return;
                     }
