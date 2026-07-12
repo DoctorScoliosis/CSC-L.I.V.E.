@@ -3108,8 +3108,10 @@
                                         data-stat-id="${escapeHTML(row.id || "")}"
                                         data-id-number="${escapeHTML(row.id_number || "")}"
                                         placeholder="Type ID number"
-                                        ${canManageCurrentMatch && !row.id ? "" : "disabled"}
-                                        class="basketball-score-input basketball-player-id-input">
+                                        title="${row.id ? "Click to show/edit ID number" : "Type ID number and press Enter"}"
+                                        ${canManageCurrentMatch ? "" : "disabled"}
+                                        ${row.id ? "readonly" : ""}
+                                        class="basketball-score-input basketball-player-id-input ${row.id ? "cursor-pointer truncate bg-slate-50" : ""}">
                                 </td>
                                 <td class="px-2 py-1 text-center">
                                     <div class="inline-flex items-center gap-1">
@@ -3184,14 +3186,14 @@
                                         <p class="text-3xl font-black leading-none ${theme.text}">${totals.points}</p>
                                     </div>
                                 </div>
-                                <div class="overflow-x-auto">
-                                    <table class="w-full min-w-[34rem] text-xs">
+                                <div class="overflow-x-auto xl:overflow-x-visible">
+                                    <table class="w-full min-w-[26rem] table-fixed text-xs xl:min-w-0">
                                         <thead>
                                             <tr class="${theme.header}">
-                                                <th class="px-2 py-2 text-center">#</th>
-                                                <th class="px-2 py-2 text-left">Player</th>
-                                                <th class="px-2 py-2 text-center">PTS</th>
-                                                <th class="px-2 py-2 text-center">FLS</th>
+                                                <th class="w-8 px-1 py-2 text-center">#</th>
+                                                <th class="px-1.5 py-2 text-left">Player</th>
+                                                <th class="w-20 px-1 py-2 text-center">PTS</th>
+                                                <th class="w-20 px-1 py-2 text-center">FLS</th>
                                             </tr>
                                         </thead>
                                         <tbody>${renderBasketballRows(match, teamSide, canManageCurrentMatch)}</tbody>
@@ -3293,21 +3295,26 @@
                         updated_at: new Date().toISOString()
                     };
 
-                    const { data: existingRows, error: existingError } = await supabase
-                        .from(BASKETBALL_STATS_TABLE)
-                        .select("id")
-                        .eq("match_id", matchId)
-                        .eq("team_id", teamId)
-                        .eq("id_number", idNumber)
-                        .limit(1);
+                    let existingRow = input.dataset.statId ? { id: input.dataset.statId } : null;
 
-                    if (existingError) {
-                        console.error("Basketball player lookup error:", existingError.message || existingError);
-                        alert("Unable to check basketball player. Run the basketball score SQL first.");
-                        return;
+                    if (!existingRow) {
+                        const { data: existingRows, error: existingError } = await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .select("id")
+                            .eq("match_id", matchId)
+                            .eq("team_id", teamId)
+                            .eq("id_number", idNumber)
+                            .limit(1);
+
+                        if (existingError) {
+                            console.error("Basketball player lookup error:", existingError.message || existingError);
+                            alert("Unable to check basketball player. Run the basketball score SQL first.");
+                            return;
+                        }
+
+                        existingRow = Array.isArray(existingRows) && existingRows.length ? existingRows[0] : null;
                     }
 
-                    const existingRow = Array.isArray(existingRows) && existingRows.length ? existingRows[0] : null;
                     const saveResult = existingRow
                         ? await supabase
                             .from(BASKETBALL_STATS_TABLE)
@@ -6229,8 +6236,21 @@
 
                 function addBasketballScoreListeners() {
                     document.querySelectorAll(".basketball-player-id-input").forEach(input => {
+                        input.addEventListener("click", function () {
+                            if (!this.dataset.statId || this.dataset.editingId === "true") {
+                                return;
+                            }
+
+                            this.dataset.editingId = "true";
+                            this.readOnly = false;
+                            this.value = this.dataset.idNumber || this.value;
+                            this.focus();
+                            this.select();
+                        });
                         input.addEventListener("change", function () {
-                            saveBasketballPlayerFromInput(this);
+                            if (!this.readOnly) {
+                                saveBasketballPlayerFromInput(this);
+                            }
                         });
                         input.addEventListener("keydown", function (event) {
                             if (event.key === "Enter") {
