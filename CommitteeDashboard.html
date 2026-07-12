@@ -3092,50 +3092,72 @@
                     return Array.from({ length: minRows }, (_, index) => {
                         const row = rows[index] || {};
                         const rowKey = row.id ? `saved-${row.id}` : `blank-${teamSide}-${index}`;
+                        const displayValue = row.id
+                            ? (row.player_name || row.id_number || "")
+                            : "";
                         return `
                             <tr class="border-b border-slate-200 bg-white/80">
                                 <td class="px-2 py-1 text-center text-xs font-black">${index + 1}</td>
                                 <td class="px-2 py-1">
                                     <input
                                         type="text"
-                                        value="${escapeHTML(row.id_number || "")}"
+                                        value="${escapeHTML(displayValue)}"
                                         data-match-id="${match.id}"
                                         data-team-side="${teamSide}"
                                         data-team-id="${teamId}"
                                         data-stat-id="${escapeHTML(row.id || "")}"
+                                        data-id-number="${escapeHTML(row.id_number || "")}"
                                         placeholder="Type ID number"
-                                        ${canManageCurrentMatch ? "" : "disabled"}
+                                        ${canManageCurrentMatch && !row.id ? "" : "disabled"}
                                         class="basketball-score-input basketball-player-id-input">
                                 </td>
-                                <td class="px-2 py-1">
-                                    <input
-                                        type="text"
-                                        value="${escapeHTML(row.player_name || "")}"
-                                        placeholder="Name appears after ID"
-                                        readonly
-                                        class="basketball-score-input bg-slate-100 text-slate-700">
+                                <td class="px-2 py-1 text-center">
+                                    <div class="inline-flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            data-match-id="${match.id}"
+                                            data-stat-id="${escapeHTML(row.id || "")}"
+                                            data-stat-field="points"
+                                            data-stat-amount="-1"
+                                            ${canManageCurrentMatch && row.id ? "" : "disabled"}
+                                            class="basketball-score-button basketball-stat-adjust-btn ${row.id ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                            -
+                                        </button>
+                                        <button
+                                            type="button"
+                                            data-match-id="${match.id}"
+                                            data-team-side="${teamSide}"
+                                            data-stat-id="${escapeHTML(row.id || "")}"
+                                            data-row-key="${escapeHTML(rowKey)}"
+                                            ${canManageCurrentMatch && row.id ? "" : "disabled"}
+                                            class="basketball-score-button basketball-points-btn ${row.id ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                            ${Number(row.points) || 0}
+                                        </button>
+                                    </div>
                                 </td>
                                 <td class="px-2 py-1 text-center">
-                                    <button
-                                        type="button"
-                                        data-match-id="${match.id}"
-                                        data-team-side="${teamSide}"
-                                        data-stat-id="${escapeHTML(row.id || "")}"
-                                        data-row-key="${escapeHTML(rowKey)}"
-                                        ${canManageCurrentMatch && row.id ? "" : "disabled"}
-                                        class="basketball-score-button basketball-points-btn ${row.id ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
-                                        ${Number(row.points) || 0}
-                                    </button>
-                                </td>
-                                <td class="px-2 py-1 text-center">
-                                    <button
-                                        type="button"
-                                        data-match-id="${match.id}"
-                                        data-stat-id="${escapeHTML(row.id || "")}"
-                                        ${canManageCurrentMatch && row.id ? "" : "disabled"}
-                                        class="basketball-score-button basketball-foul-btn ${row.id ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
-                                        ${Number(row.fouls) || 0}
-                                    </button>
+                                    <div class="inline-flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            data-match-id="${match.id}"
+                                            data-stat-id="${escapeHTML(row.id || "")}"
+                                            data-stat-field="fouls"
+                                            data-stat-amount="-1"
+                                            ${canManageCurrentMatch && row.id ? "" : "disabled"}
+                                            class="basketball-score-button basketball-stat-adjust-btn ${row.id ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                            -
+                                        </button>
+                                        <button
+                                            type="button"
+                                            data-match-id="${match.id}"
+                                            data-stat-id="${escapeHTML(row.id || "")}"
+                                            data-stat-field="fouls"
+                                            data-stat-amount="1"
+                                            ${canManageCurrentMatch && row.id ? "" : "disabled"}
+                                            class="basketball-score-button basketball-stat-adjust-btn ${row.id ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                            ${Number(row.fouls) || 0}
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -3167,7 +3189,6 @@
                                         <thead>
                                             <tr class="${theme.header}">
                                                 <th class="px-2 py-2 text-center">#</th>
-                                                <th class="px-2 py-2 text-left">ID Number</th>
                                                 <th class="px-2 py-2 text-left">Player</th>
                                                 <th class="px-2 py-2 text-center">PTS</th>
                                                 <th class="px-2 py-2 text-center">FLS</th>
@@ -3176,7 +3197,7 @@
                                         <tbody>${renderBasketballRows(match, teamSide, canManageCurrentMatch)}</tbody>
                                         <tfoot>
                                             <tr class="${theme.footer}">
-                                                <td colspan="3" class="px-2 py-2 text-sm font-black uppercase">Total</td>
+                                                <td colspan="2" class="px-2 py-2 text-sm font-black uppercase">Total</td>
                                                 <td class="px-2 py-2 text-center text-sm font-black">${totals.points}</td>
                                                 <td class="px-2 py-2 text-center text-sm font-black">${totals.fouls}</td>
                                             </tr>
@@ -3192,7 +3213,7 @@
                             <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <p class="text-xs font-black uppercase tracking-wide text-slate-600">Basketball Score Sheet</p>
-                                    <p class="text-[11px] font-semibold text-slate-500">Type an ID number first. Click PTS to add +1, +2, or +3. Click FLS to add fouls.</p>
+                                    <p class="text-[11px] font-semibold text-slate-500">Type an ID number and press Enter. The player name will appear in the same field. Use +/- for PTS and FLS.</p>
                                 </div>
                                 <p class="text-xs font-bold text-slate-700">Scores: ${teamOneTotals.points} - ${teamTwoTotals.points}</p>
                             </div>
@@ -3268,7 +3289,7 @@
                         team_name: teamName,
                         participant_id: participant?.id || null,
                         id_number: idNumber,
-                        player_name: getParticipantDisplayName(participant),
+                        player_name: getParticipantDisplayName(participant) || idNumber,
                         updated_at: new Date().toISOString()
                     };
 
@@ -6229,13 +6250,17 @@
                         });
                     });
 
-                    document.querySelectorAll(".basketball-foul-btn").forEach(button => {
+                    document.querySelectorAll(".basketball-stat-adjust-btn").forEach(button => {
                         button.addEventListener("click", async function () {
                             if (!this.dataset.statId) {
                                 alert("Please type and save the player ID first.");
                                 return;
                             }
-                            await addBasketballStatValue(this.dataset.statId, "fouls", 1);
+                            await addBasketballStatValue(
+                                this.dataset.statId,
+                                this.dataset.statField,
+                                Number(this.dataset.statAmount) || 0
+                            );
                         });
                     });
                 }
