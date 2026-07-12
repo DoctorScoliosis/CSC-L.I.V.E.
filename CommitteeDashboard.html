@@ -684,6 +684,42 @@
                 }
             }
 
+            .basketball-score-sheet {
+                border: 1px solid #cbd5e1;
+                background: rgba(255, 255, 255, 0.82);
+                border-radius: 0.75rem;
+                padding: 0.75rem;
+            }
+
+            .basketball-score-team {
+                border-radius: 0.75rem;
+                border: 1px solid var(--score-border, #bfdbfe);
+                background: var(--score-bg, #eff6ff);
+                overflow: hidden;
+            }
+
+            .basketball-score-input {
+                width: 100%;
+                border-radius: 0.45rem;
+                border: 1px solid #cbd5e1;
+                padding: 0.35rem 0.45rem;
+                font-size: 0.75rem;
+                font-weight: 700;
+                outline: none;
+            }
+
+            .basketball-score-input:focus {
+                border-color: #2563eb;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            }
+
+            .basketball-score-button {
+                border-radius: 0.45rem;
+                padding: 0.35rem 0.55rem;
+                font-size: 0.75rem;
+                font-weight: 900;
+            }
+
             @media (max-width: 380px) {
                 .tab-content table {
                     font-size: 0.62rem !important;
@@ -2052,6 +2088,35 @@
         </div>
 
 
+        <!-- Basketball Point Modal -->
+        <div
+            id="basketballPointModal"
+            class="dashboard-modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+
+            <div class="dashboard-modal-panel w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-black text-gray-900">Add Basketball Points</h2>
+                        <p id="basketballPointPlayerLabel" class="mt-1 text-sm font-semibold text-gray-600">Select points to add.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="closeBasketballPointModal"
+                        class="text-2xl leading-none text-gray-500 hover:text-gray-800">
+                        &times;
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-basketball-points="1" class="basketball-point-choice rounded-xl bg-blue-600 px-4 py-3 text-lg font-black text-white hover:bg-blue-700">+1</button>
+                    <button type="button" data-basketball-points="2" class="basketball-point-choice rounded-xl bg-blue-600 px-4 py-3 text-lg font-black text-white hover:bg-blue-700">+2</button>
+                    <button type="button" data-basketball-points="3" class="basketball-point-choice rounded-xl bg-blue-600 px-4 py-3 text-lg font-black text-white hover:bg-blue-700">+3</button>
+                </div>
+            </div>
+        </div>
+
+
 
         <!-- Sport Filter Modal -->
         <div
@@ -2368,6 +2433,7 @@
                 const ATTENDANCE_TABLE = "attendance";
                 const MATCHES_TABLE = "scheduled_matches";
                 const GAME_HISTORY_TABLE = "game_history";
+                const BASKETBALL_STATS_TABLE = "basketball_match_player_stats";
                 const SPORTS_TABLE = "sports";
                 const ANNOUNCEMENTS_TABLE = "announcements";
                 const CONVERSATIONS_TABLE = "conversations";
@@ -2476,6 +2542,9 @@
                 const bestPlayerInput = document.getElementById("bestPlayerInput");
                 const winnerActualPointsInput = document.getElementById("winnerActualPointsInput");
                 const loserActualPointsInput = document.getElementById("loserActualPointsInput");
+                const basketballPointModal = document.getElementById("basketballPointModal");
+                const basketballPointPlayerLabel = document.getElementById("basketballPointPlayerLabel");
+                const closeBasketballPointModal = document.getElementById("closeBasketballPointModal");
 
                 let activeStatusTab = "Next";
                 let activeMatchScopeFilter = "mine";
@@ -2483,6 +2552,8 @@
                 let activeDoneMatchesDate = "";
                 let registeredSportsData = [];
                 let matchesData = [];
+                let basketballStatsByMatch = new Map();
+                let pendingBasketballPointTarget = null;
                 let pendingResultMatch = null;
                 let currentUser = null;
                 let hasRenderedCommitteeLeaderboard = false;
@@ -2976,6 +3047,314 @@
                         finals: "Finals",
                         battle_for_third: "Battle for Third"
                     }[stage] || "";
+                }
+
+                function normalizeTeamValue(value) {
+                    return String(value || "").trim().toLowerCase();
+                }
+
+                function getParticipantDisplayName(participant) {
+                    return participant?.name
+                        || participant?.full_name
+                        || participant?.participant_name
+                        || participant?.student_name
+                        || "";
+                }
+
+                function getBasketballStatsForMatch(matchId) {
+                    return basketballStatsByMatch.get(Number(matchId)) || [];
+                }
+
+                function getBasketballTeamStats(match, teamSide) {
+                    const teamId = getTeamId(match, teamSide);
+                    return getBasketballStatsForMatch(match.id)
+                        .filter(row => Number(row.team_id) === Number(teamId))
+                        .sort((first, second) => {
+                            const firstTime = new Date(first.created_at || 0).getTime();
+                            const secondTime = new Date(second.created_at || 0).getTime();
+                            return firstTime - secondTime;
+                        });
+                }
+
+                function getBasketballTotals(match, teamSide) {
+                    return getBasketballTeamStats(match, teamSide).reduce((totals, row) => {
+                        totals.points += Number(row.points) || 0;
+                        totals.fouls += Number(row.fouls) || 0;
+                        return totals;
+                    }, { points: 0, fouls: 0 });
+                }
+
+                function renderBasketballRows(match, teamSide, canManageCurrentMatch) {
+                    const rows = getBasketballTeamStats(match, teamSide);
+                    const teamId = getTeamId(match, teamSide);
+                    const minRows = Math.max(5, rows.length + 1);
+
+                    return Array.from({ length: minRows }, (_, index) => {
+                        const row = rows[index] || {};
+                        const rowKey = row.id ? `saved-${row.id}` : `blank-${teamSide}-${index}`;
+                        return `
+                            <tr class="border-b border-slate-200 bg-white/80">
+                                <td class="px-2 py-1 text-center text-xs font-black">${index + 1}</td>
+                                <td class="px-2 py-1">
+                                    <input
+                                        type="text"
+                                        value="${escapeHTML(row.id_number || "")}"
+                                        data-match-id="${match.id}"
+                                        data-team-side="${teamSide}"
+                                        data-team-id="${teamId}"
+                                        data-stat-id="${escapeHTML(row.id || "")}"
+                                        placeholder="Type ID number"
+                                        ${canManageCurrentMatch ? "" : "disabled"}
+                                        class="basketball-score-input basketball-player-id-input">
+                                </td>
+                                <td class="px-2 py-1">
+                                    <input
+                                        type="text"
+                                        value="${escapeHTML(row.player_name || "")}"
+                                        placeholder="Name appears after ID"
+                                        readonly
+                                        class="basketball-score-input bg-slate-100 text-slate-700">
+                                </td>
+                                <td class="px-2 py-1 text-center">
+                                    <button
+                                        type="button"
+                                        data-match-id="${match.id}"
+                                        data-team-side="${teamSide}"
+                                        data-stat-id="${escapeHTML(row.id || "")}"
+                                        data-row-key="${escapeHTML(rowKey)}"
+                                        ${canManageCurrentMatch && row.id ? "" : "disabled"}
+                                        class="basketball-score-button basketball-points-btn ${row.id ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                        ${Number(row.points) || 0}
+                                    </button>
+                                </td>
+                                <td class="px-2 py-1 text-center">
+                                    <button
+                                        type="button"
+                                        data-match-id="${match.id}"
+                                        data-stat-id="${escapeHTML(row.id || "")}"
+                                        ${canManageCurrentMatch && row.id ? "" : "disabled"}
+                                        class="basketball-score-button basketball-foul-btn ${row.id ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                        ${Number(row.fouls) || 0}
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join("");
+                }
+
+                function renderBasketballScoreSheet(match, canManageCurrentMatch) {
+                    if (!isBasketballSport(match) || match.status !== "Ongoing") {
+                        return "";
+                    }
+
+                    const teamOneTotals = getBasketballTotals(match, "one");
+                    const teamTwoTotals = getBasketballTotals(match, "two");
+
+                    const renderTeamSheet = (teamSide, theme) => {
+                        const teamName = getTeamName(match, teamSide);
+                        const totals = teamSide === "one" ? teamOneTotals : teamTwoTotals;
+                        return `
+                            <div class="basketball-score-team" style="--score-border:${theme.border};--score-bg:${theme.bg};">
+                                <div class="flex items-center justify-between gap-2 px-3 py-2">
+                                    <h4 class="text-sm font-black uppercase ${theme.text}">${escapeHTML(teamName)}</h4>
+                                    <div class="text-right">
+                                        <p class="text-[10px] font-black uppercase tracking-wide ${theme.text}">Total</p>
+                                        <p class="text-3xl font-black leading-none ${theme.text}">${totals.points}</p>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[34rem] text-xs">
+                                        <thead>
+                                            <tr class="${theme.header}">
+                                                <th class="px-2 py-2 text-center">#</th>
+                                                <th class="px-2 py-2 text-left">ID Number</th>
+                                                <th class="px-2 py-2 text-left">Player</th>
+                                                <th class="px-2 py-2 text-center">PTS</th>
+                                                <th class="px-2 py-2 text-center">FLS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${renderBasketballRows(match, teamSide, canManageCurrentMatch)}</tbody>
+                                        <tfoot>
+                                            <tr class="${theme.footer}">
+                                                <td colspan="3" class="px-2 py-2 text-sm font-black uppercase">Total</td>
+                                                <td class="px-2 py-2 text-center text-sm font-black">${totals.points}</td>
+                                                <td class="px-2 py-2 text-center text-sm font-black">${totals.fouls}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    };
+
+                    return `
+                        <div class="basketball-score-sheet mb-2">
+                            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-wide text-slate-600">Basketball Score Sheet</p>
+                                    <p class="text-[11px] font-semibold text-slate-500">Type an ID number first. Click PTS to add +1, +2, or +3. Click FLS to add fouls.</p>
+                                </div>
+                                <p class="text-xs font-bold text-slate-700">Scores: ${teamOneTotals.points} - ${teamTwoTotals.points}</p>
+                            </div>
+                            <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                                ${renderTeamSheet("one", {
+                                    border: "#93c5fd",
+                                    bg: "#eff6ff",
+                                    text: "text-blue-700",
+                                    header: "bg-blue-50 text-blue-800",
+                                    footer: "bg-blue-100 text-blue-800"
+                                })}
+                                ${renderTeamSheet("two", {
+                                    border: "#86efac",
+                                    bg: "#f0fdf4",
+                                    text: "text-emerald-700",
+                                    header: "bg-emerald-50 text-emerald-800",
+                                    footer: "bg-emerald-100 text-emerald-800"
+                                })}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                async function findParticipantByIdNumber(idNumber) {
+                    const safeId = String(idNumber || "").trim();
+                    if (!safeId) return null;
+
+                    const { data, error } = await supabase
+                        .from(PARTICIPANTS_TABLE)
+                        .select("*")
+                        .or(`student_id.eq.${safeId},id_number.eq.${safeId}`)
+                        .limit(1);
+
+                    if (error) {
+                        console.warn("Participant lookup failed:", error.message || error);
+                        return null;
+                    }
+
+                    return Array.isArray(data) && data.length ? data[0] : null;
+                }
+
+                async function saveBasketballPlayerFromInput(input) {
+                    const idNumber = String(input.value || "").trim();
+                    if (!idNumber) return;
+
+                    const matchId = Number(input.dataset.matchId);
+                    const teamId = Number(input.dataset.teamId);
+                    const selectedMatch = matchesData.find(match => Number(match.id) === matchId);
+                    if (!selectedMatch || !enforceMatchPermission(selectedMatch)) return;
+
+                    const teamSide = input.dataset.teamSide;
+                    const teamName = getTeamName(selectedMatch, teamSide);
+                    const participant = await findParticipantByIdNumber(idNumber);
+                    const participantTeam = participant?.team || participant?.team_name || "";
+
+                    if (!participant) {
+                        const allowUnknown = confirm(`ID Number ${idNumber} was not found in registered participants. Save this player anyway?`);
+                        if (!allowUnknown) {
+                            input.value = "";
+                            return;
+                        }
+                    } else if (normalizeTeamValue(participantTeam) !== normalizeTeamValue(teamName)) {
+                        const allowDifferentTeam = confirm(`${getParticipantDisplayName(participant) || idNumber} is registered under ${participantTeam || "another team"}, not ${teamName}. Allow this player anyway?`);
+                        if (!allowDifferentTeam) {
+                            input.value = "";
+                            return;
+                        }
+                    }
+
+                    const payload = {
+                        match_id: matchId,
+                        team_id: teamId,
+                        team_name: teamName,
+                        participant_id: participant?.id || null,
+                        id_number: idNumber,
+                        player_name: getParticipantDisplayName(participant),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const { data: existingRows, error: existingError } = await supabase
+                        .from(BASKETBALL_STATS_TABLE)
+                        .select("id")
+                        .eq("match_id", matchId)
+                        .eq("team_id", teamId)
+                        .eq("id_number", idNumber)
+                        .limit(1);
+
+                    if (existingError) {
+                        console.error("Basketball player lookup error:", existingError.message || existingError);
+                        alert("Unable to check basketball player. Run the basketball score SQL first.");
+                        return;
+                    }
+
+                    const existingRow = Array.isArray(existingRows) && existingRows.length ? existingRows[0] : null;
+                    const saveResult = existingRow
+                        ? await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .update(payload)
+                            .eq("id", existingRow.id)
+                        : await supabase
+                        .from(BASKETBALL_STATS_TABLE)
+                            .insert([{
+                                ...payload,
+                                points: 0,
+                                fouls: 0
+                            }]);
+
+                    if (saveResult.error) {
+                        console.error("Basketball player save error:", saveResult.error.message || saveResult.error);
+                        alert("Unable to save basketball player. Run the basketball score SQL first.");
+                        return;
+                    }
+
+                    await loadSavedMatches();
+                }
+
+                function openBasketballPointModal(button) {
+                    pendingBasketballPointTarget = {
+                        matchId: Number(button.dataset.matchId),
+                        statId: button.dataset.statId || ""
+                    };
+
+                    const row = getBasketballStatsForMatch(pendingBasketballPointTarget.matchId)
+                        .find(item => String(item.id) === String(pendingBasketballPointTarget.statId));
+
+                    basketballPointPlayerLabel.textContent = row?.player_name || row?.id_number || "Selected player";
+                    basketballPointModal.classList.remove("hidden");
+                    basketballPointModal.classList.add("flex");
+                }
+
+                function closeBasketballPointModalFunction() {
+                    pendingBasketballPointTarget = null;
+                    basketballPointModal.classList.add("hidden");
+                    basketballPointModal.classList.remove("flex");
+                }
+
+                async function addBasketballStatValue(statId, field, amount) {
+                    const statRow = Array.from(basketballStatsByMatch.values())
+                        .flat()
+                        .find(row => String(row.id) === String(statId));
+
+                    if (!statRow) {
+                        alert("Please type and save the player ID first.");
+                        return;
+                    }
+
+                    const nextValue = Math.max(0, (Number(statRow[field]) || 0) + amount);
+                    const { error } = await supabase
+                        .from(BASKETBALL_STATS_TABLE)
+                        .update({
+                            [field]: nextValue,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq("id", statId);
+
+                    if (error) {
+                        console.error("Basketball stat update error:", error.message || error);
+                        alert("Unable to update basketball stat. Run the basketball score SQL first.");
+                        return;
+                    }
+
+                    await loadSavedMatches();
                 }
 
                 function updateMatchStageOptions() {
@@ -5276,6 +5655,7 @@
                     matchesData = data || [];
 
                     const matchIds = matchesData.map(match => match.id);
+                    basketballStatsByMatch = new Map();
 
                     if (matchIds.length > 0) {
                         const { data: historyRows, error: historyError } = await supabase
@@ -5294,6 +5674,23 @@
                                 ...match,
                                 game_history: historyMap.get(Number(match.id)) || null
                             }));
+                        }
+
+                        const { data: basketballRows, error: basketballError } = await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .select("*")
+                            .in("match_id", matchIds);
+
+                        if (basketballError) {
+                            console.warn("Basketball score sheet load warning:", basketballError.message || basketballError);
+                        } else if (Array.isArray(basketballRows)) {
+                            basketballRows.forEach(row => {
+                                const key = Number(row.match_id);
+                                if (!basketballStatsByMatch.has(key)) {
+                                    basketballStatsByMatch.set(key, []);
+                                }
+                                basketballStatsByMatch.get(key).push(row);
+                            });
                         }
                     }
 
@@ -5320,6 +5717,7 @@
 
                     addStatusListeners();
                     addGamePeriodListeners();
+                    addBasketballScoreListeners();
                     addTimerListeners();
                     addTimerControlListeners();
                     addEditMatchListeners();
@@ -5636,6 +6034,8 @@
                                 </div>
                             </div>
 
+                            ${renderBasketballScoreSheet(match, canManageCurrentMatch)}
+
                             <div class="border-t border-gray-200 pt-2">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 
@@ -5802,6 +6202,40 @@
                                 console.error("Error updating game period:", error.message || error);
                                 alert(error.message === MATCH_PERMISSION_MESSAGE ? MATCH_PERMISSION_MESSAGE : "Unable to update the live game period.");
                             }
+                        });
+                    });
+                }
+
+                function addBasketballScoreListeners() {
+                    document.querySelectorAll(".basketball-player-id-input").forEach(input => {
+                        input.addEventListener("change", function () {
+                            saveBasketballPlayerFromInput(this);
+                        });
+                        input.addEventListener("keydown", function (event) {
+                            if (event.key === "Enter") {
+                                event.preventDefault();
+                                saveBasketballPlayerFromInput(this);
+                            }
+                        });
+                    });
+
+                    document.querySelectorAll(".basketball-points-btn").forEach(button => {
+                        button.addEventListener("click", function () {
+                            if (!this.dataset.statId) {
+                                alert("Please type and save the player ID first.");
+                                return;
+                            }
+                            openBasketballPointModal(this);
+                        });
+                    });
+
+                    document.querySelectorAll(".basketball-foul-btn").forEach(button => {
+                        button.addEventListener("click", async function () {
+                            if (!this.dataset.statId) {
+                                alert("Please type and save the player ID first.");
+                                return;
+                            }
+                            await addBasketballStatValue(this.dataset.statId, "fouls", 1);
                         });
                     });
                 }
@@ -5987,6 +6421,19 @@
                     const secondTeamId = getTeamId(match, "two");
                     const firstTeamName = getTeamName(match, "one");
                     const secondTeamName = getTeamName(match, "two");
+                    const isBasketballMatch = isBasketballSport(match);
+                    const teamOneTotals = getBasketballTotals(match, "one");
+                    const teamTwoTotals = getBasketballTotals(match, "two");
+
+                    winnerTeamSelect.closest("div")?.classList.toggle("hidden", isBasketballMatch);
+                    winnerActualPointsInput.closest("label")?.classList.toggle("hidden", isBasketballMatch);
+                    loserActualPointsInput.closest("label")?.classList.toggle("hidden", isBasketballMatch);
+                    winnerTeamSelect.required = !isBasketballMatch;
+                    winnerActualPointsInput.required = !isBasketballMatch;
+                    loserActualPointsInput.required = !isBasketballMatch;
+                    bestPlayerInput.placeholder = isBasketballMatch
+                        ? "Enter Player of the Game ID number"
+                        : "Enter the best player's name";
 
                     resultMatchSummary.innerHTML = `
                         <p class="text-xs text-blue-700 uppercase tracking-wide mb-1">Sport</p>
@@ -5996,7 +6443,21 @@
                         <p class="font-semibold text-gray-900 mb-1">
                             ${escapeHTML(firstTeamName)} vs ${escapeHTML(secondTeamName)}
                         </p>
-                        <p>Declare who won before this match can be marked as <strong>Done</strong>.</p>
+                        ${isBasketballMatch ? `
+                            <div class="mt-3 grid grid-cols-2 gap-2 text-center">
+                                <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                                    <p class="text-xs font-black uppercase text-blue-700">${escapeHTML(firstTeamName)}</p>
+                                    <p class="text-3xl font-black text-blue-700">${teamOneTotals.points}</p>
+                                    <p class="text-xs font-bold text-blue-600">FLS ${teamOneTotals.fouls}</p>
+                                </div>
+                                <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                                    <p class="text-xs font-black uppercase text-emerald-700">${escapeHTML(secondTeamName)}</p>
+                                    <p class="text-3xl font-black text-emerald-700">${teamTwoTotals.points}</p>
+                                    <p class="text-xs font-bold text-emerald-600">FLS ${teamTwoTotals.fouls}</p>
+                                </div>
+                            </div>
+                            <p class="mt-3">Basketball winner will be declared automatically from the highest score.</p>
+                        ` : `<p>Declare who won before this match can be marked as <strong>Done</strong>.</p>`}
                     `;
 
                     winnerTeamSelect.innerHTML = `
@@ -6038,20 +6499,53 @@
                     }
 
                     const submitButton = resultForm.querySelector('button[type="submit"]');
-                    const winnerId = Number(winnerTeamSelect.value);
-                    const bestPlayer = bestPlayerInput.value.trim();
-                    const winnerPointsAwarded = Number(winnerActualPointsInput.value);
-                    const loserPointsAwarded = Number(loserActualPointsInput.value);
+                    const isBasketballMatch = isBasketballSport(pendingResultMatch);
+                    const teamOneTotals = getBasketballTotals(pendingResultMatch, "one");
+                    const teamTwoTotals = getBasketballTotals(pendingResultMatch, "two");
+                    let winnerId = Number(winnerTeamSelect.value);
+                    const bestPlayerRaw = bestPlayerInput.value.trim();
+                    let bestPlayer = bestPlayerRaw;
+                    let winnerPointsAwarded = Number(winnerActualPointsInput.value);
+                    let loserPointsAwarded = Number(loserActualPointsInput.value);
+
+                    if (isBasketballMatch) {
+                        if (teamOneTotals.points === teamTwoTotals.points) {
+                            alert("Basketball scores are tied. Update the score sheet before marking Done.");
+                            return;
+                        }
+
+                        winnerId = teamOneTotals.points > teamTwoTotals.points
+                            ? getTeamId(pendingResultMatch, "one")
+                            : getTeamId(pendingResultMatch, "two");
+                        winnerPointsAwarded = Math.max(teamOneTotals.points, teamTwoTotals.points);
+                        loserPointsAwarded = Math.min(teamOneTotals.points, teamTwoTotals.points);
+                    }
 
                     if (!winnerId) {
                         alert("Please select the winning team.");
                         return;
                     }
 
-                    if (!bestPlayer) {
-                        alert("Please enter the best player of the game before marking this match as Done.");
+                    if (!bestPlayerRaw) {
+                        alert(isBasketballMatch
+                            ? "Please enter the Player of the Game ID number before marking this match as Done."
+                            : "Please enter the best player of the game before marking this match as Done.");
                         bestPlayerInput.focus();
                         return;
+                    }
+
+                    if (isBasketballMatch) {
+                        const bestPlayerParticipant = await findParticipantByIdNumber(bestPlayerRaw);
+                        if (!bestPlayerParticipant) {
+                            const allowUnknownBestPlayer = confirm(`Player of the Game ID ${bestPlayerRaw} was not found in participants. Save anyway?`);
+                            if (!allowUnknownBestPlayer) {
+                                bestPlayerInput.focus();
+                                return;
+                            }
+                        }
+                        bestPlayer = bestPlayerParticipant
+                            ? `${getParticipantDisplayName(bestPlayerParticipant) || bestPlayerRaw} (${bestPlayerRaw})`
+                            : bestPlayerRaw;
                     }
 
                     if (!Number.isFinite(winnerPointsAwarded) || winnerPointsAwarded < 0) {
@@ -6516,6 +7010,27 @@
                     }
                 });
                 resultForm.addEventListener("submit", saveMatchResult);
+                closeBasketballPointModal.addEventListener("click", closeBasketballPointModalFunction);
+                basketballPointModal.addEventListener("click", function (event) {
+                    if (event.target === basketballPointModal) {
+                        closeBasketballPointModalFunction();
+                    }
+                });
+                document.querySelectorAll(".basketball-point-choice").forEach(button => {
+                    button.addEventListener("click", async function () {
+                        if (!pendingBasketballPointTarget?.statId) {
+                            closeBasketballPointModalFunction();
+                            return;
+                        }
+
+                        await addBasketballStatValue(
+                            pendingBasketballPointTarget.statId,
+                            "points",
+                            Number(this.dataset.basketballPoints) || 0
+                        );
+                        closeBasketballPointModalFunction();
+                    });
+                });
 
                 if (!await loadCurrentDashboardUser()) return;
                 setActiveMatchScopeFilter("mine");
@@ -6699,6 +7214,17 @@
                         () => scheduleCommitteeRealtimeReload({
                             matches: true,
                             leaderboard: true
+                        })
+                    )
+                    .on(
+                        "postgres_changes",
+                        {
+                            event: "*",
+                            schema: "public",
+                            table: BASKETBALL_STATS_TABLE
+                        },
+                        () => scheduleCommitteeRealtimeReload({
+                            matches: true
                         })
                     )
                     .on(
