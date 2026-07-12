@@ -720,6 +720,11 @@
                 font-weight: 900;
             }
 
+            .basketball-score-scroll {
+                max-height: 24rem;
+                overflow-y: auto;
+            }
+
             @media (max-width: 380px) {
                 .tab-content table {
                     font-size: 0.62rem !important;
@@ -3065,10 +3070,15 @@
                     return basketballStatsByMatch.get(Number(matchId)) || [];
                 }
 
-                function getBasketballTeamStats(match, teamSide) {
+                function getBasketballActivePeriod(match) {
+                    return Math.min(4, Math.max(1, Number(match?.game_period) || 1));
+                }
+
+                function getBasketballTeamStats(match, teamSide, gamePeriod = getBasketballActivePeriod(match)) {
                     const teamId = getTeamId(match, teamSide);
                     return getBasketballStatsForMatch(match.id)
                         .filter(row => Number(row.team_id) === Number(teamId))
+                        .filter(row => Number(row.game_period || 1) === Number(gamePeriod))
                         .sort((first, second) => {
                             const firstTime = new Date(first.created_at || 0).getTime();
                             const secondTime = new Date(second.created_at || 0).getTime();
@@ -3076,8 +3086,13 @@
                         });
                 }
 
-                function getBasketballTotals(match, teamSide) {
-                    return getBasketballTeamStats(match, teamSide).reduce((totals, row) => {
+                function getBasketballTotals(match, teamSide, gamePeriod = null) {
+                    const teamId = getTeamId(match, teamSide);
+                    const rows = getBasketballStatsForMatch(match.id)
+                        .filter(row => Number(row.team_id) === Number(teamId))
+                        .filter(row => gamePeriod === null || Number(row.game_period || 1) === Number(gamePeriod));
+
+                    return rows.reduce((totals, row) => {
                         totals.points += Number(row.points) || 0;
                         totals.fouls += Number(row.fouls) || 0;
                         return totals;
@@ -3085,9 +3100,11 @@
                 }
 
                 function renderBasketballRows(match, teamSide, canManageCurrentMatch) {
-                    const rows = getBasketballTeamStats(match, teamSide);
+                    const activePeriod = getBasketballActivePeriod(match);
+                    const rows = getBasketballTeamStats(match, teamSide, activePeriod);
                     const teamId = getTeamId(match, teamSide);
-                    const minRows = Math.max(5, rows.length + 1);
+                    const maxRows = 12;
+                    const minRows = Math.min(maxRows, Math.max(5, rows.length + 1));
 
                     return Array.from({ length: minRows }, (_, index) => {
                         const row = rows[index] || {};
@@ -3105,6 +3122,7 @@
                                         data-match-id="${match.id}"
                                         data-team-side="${teamSide}"
                                         data-team-id="${teamId}"
+                                        data-game-period="${activePeriod}"
                                         data-stat-id="${escapeHTML(row.id || "")}"
                                         data-id-number="${escapeHTML(row.id_number || "")}"
                                         data-player-name="${escapeHTML(displayValue)}"
@@ -3172,22 +3190,27 @@
                         return "";
                     }
 
-                    const teamOneTotals = getBasketballTotals(match, "one");
-                    const teamTwoTotals = getBasketballTotals(match, "two");
+                    const activePeriod = getBasketballActivePeriod(match);
+                    const teamOneGameTotals = getBasketballTotals(match, "one");
+                    const teamTwoGameTotals = getBasketballTotals(match, "two");
+                    const teamOneQuarterTotals = getBasketballTotals(match, "one", activePeriod);
+                    const teamTwoQuarterTotals = getBasketballTotals(match, "two", activePeriod);
 
                     const renderTeamSheet = (teamSide, theme) => {
                         const teamName = getTeamName(match, teamSide);
-                        const totals = teamSide === "one" ? teamOneTotals : teamTwoTotals;
+                        const quarterTotals = teamSide === "one" ? teamOneQuarterTotals : teamTwoQuarterTotals;
+                        const gameTotals = teamSide === "one" ? teamOneGameTotals : teamTwoGameTotals;
                         return `
                             <div class="basketball-score-team" style="--score-border:${theme.border};--score-bg:${theme.bg};">
                                 <div class="flex items-center justify-between gap-2 px-3 py-2">
                                     <h4 class="text-sm font-black uppercase ${theme.text}">${escapeHTML(teamName)}</h4>
                                     <div class="text-right">
-                                        <p class="text-[10px] font-black uppercase tracking-wide ${theme.text}">Total</p>
-                                        <p class="text-3xl font-black leading-none ${theme.text}">${totals.points}</p>
+                                        <p class="text-[10px] font-black uppercase tracking-wide ${theme.text}">Q${activePeriod} Total</p>
+                                        <p class="text-3xl font-black leading-none ${theme.text}">${quarterTotals.points}</p>
+                                        <p class="mt-0.5 text-[10px] font-bold ${theme.text}">Game: ${gameTotals.points}</p>
                                     </div>
                                 </div>
-                                <div class="overflow-x-auto xl:overflow-x-visible">
+                                <div class="basketball-score-scroll overflow-x-auto xl:overflow-x-visible">
                                     <table class="w-full min-w-[26rem] table-fixed text-xs xl:min-w-0">
                                         <thead>
                                             <tr class="${theme.header}">
@@ -3200,9 +3223,9 @@
                                         <tbody>${renderBasketballRows(match, teamSide, canManageCurrentMatch)}</tbody>
                                         <tfoot>
                                             <tr class="${theme.footer}">
-                                                <td colspan="2" class="px-2 py-2 text-sm font-black uppercase">Total</td>
-                                                <td class="px-2 py-2 text-center text-sm font-black">${totals.points}</td>
-                                                <td class="px-2 py-2 text-center text-sm font-black">${totals.fouls}</td>
+                                                <td colspan="2" class="px-2 py-2 text-sm font-black uppercase">Q${activePeriod} Total</td>
+                                                <td class="px-2 py-2 text-center text-sm font-black">${quarterTotals.points}</td>
+                                                <td class="px-2 py-2 text-center text-sm font-black">${quarterTotals.fouls}</td>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -3216,9 +3239,9 @@
                             <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <p class="text-xs font-black uppercase tracking-wide text-slate-600">Basketball Score Sheet</p>
-                                    <p class="text-[11px] font-semibold text-slate-500">Type an ID number and press Enter. The player name will appear in the same field. Use +/- for PTS and FLS.</p>
+                                    <p class="text-[11px] font-semibold text-slate-500">Quarter ${activePeriod}: add up to 12 players per team. Each quarter saves its own lineup and stats.</p>
                                 </div>
-                                <p class="text-xs font-bold text-slate-700">Scores: ${teamOneTotals.points} - ${teamTwoTotals.points}</p>
+                                <p class="text-xs font-bold text-slate-700">Game Scores: ${teamOneGameTotals.points} - ${teamTwoGameTotals.points}</p>
                             </div>
                             <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
                                 ${renderTeamSheet("one", {
@@ -3267,6 +3290,7 @@
                     const teamId = Number(input.dataset.teamId);
                     const selectedMatch = matchesData.find(match => Number(match.id) === matchId);
                     if (!selectedMatch || !enforceMatchPermission(selectedMatch)) return;
+                    const gamePeriod = Math.min(4, Math.max(1, Number(input.dataset.gamePeriod) || getBasketballActivePeriod(selectedMatch)));
 
                     const teamSide = input.dataset.teamSide;
                     const teamName = getTeamName(selectedMatch, teamSide);
@@ -3302,6 +3326,7 @@
                         match_id: matchId,
                         team_id: teamId,
                         team_name: teamName,
+                        game_period: gamePeriod,
                         participant_id: participant?.id || null,
                         id_number: idNumber,
                         player_name: getParticipantDisplayName(participant) || idNumber,
@@ -3316,6 +3341,7 @@
                             .select("id")
                             .eq("match_id", matchId)
                             .eq("team_id", teamId)
+                            .eq("game_period", gamePeriod)
                             .eq("id_number", idNumber)
                             .limit(1);
 
@@ -3372,7 +3398,7 @@
                     data.forEach(row => {
                         const rowKeyValue = String(row.id_number || row.participant_id || "").trim();
                         if (!rowKeyValue) return;
-                        const key = `${row.match_id}:${row.team_id}:${rowKeyValue.toLowerCase()}`;
+                        const key = `${row.match_id}:${row.team_id}:${Number(row.game_period || 1)}:${rowKeyValue.toLowerCase()}`;
                         if (!groups.has(key)) groups.set(key, []);
                         groups.get(key).push(row);
                     });
@@ -5995,7 +6021,7 @@
                         const periodControls = isOngoing && periodLimit ? `
                             <div class="mb-2 w-full rounded-lg border border-red-300 bg-red-100 p-2.5">
                                 <p class="mb-2 text-xs font-bold uppercase tracking-wide text-red-800">${isBasketballSport(match) ? "Basketball Quarter" : "Volleyball Set"}</p>
-                                <div class="flex flex-wrap gap-2">
+                                <div class="grid w-full gap-2" style="grid-template-columns: repeat(${periodLimit}, minmax(0, 1fr));">
                                     ${Array.from({ length: periodLimit }, (_, index) => {
                                         const period = index + 1;
                                         const isSelected = Number(match.game_period || 1) === period;
@@ -6004,7 +6030,7 @@
                                                 type="button"
                                                 data-match-id="${match.id}"
                                                 data-game-period="${period}"
-                                                class="game-period-btn rounded-lg px-3 py-1.5 text-xs font-bold ${isSelected ? "bg-red-700 text-white" : "bg-white text-red-700 hover:bg-red-200"}">
+                                                class="game-period-btn w-full rounded-lg px-3 py-2 text-xs font-bold ${isSelected ? "bg-red-700 text-white" : "bg-white text-red-700 hover:bg-red-200"}">
                                                 ${period}
                                             </button>
                                         `;
