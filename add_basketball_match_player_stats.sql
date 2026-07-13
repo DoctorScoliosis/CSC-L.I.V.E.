@@ -7,6 +7,7 @@ create table if not exists public.basketball_match_player_stats (
     id_number text not null,
     player_name text,
     game_period integer not null default 1,
+    is_active boolean not null default false,
     points numeric not null default 0,
     fouls integer not null default 0,
     created_at timestamptz not null default now(),
@@ -19,6 +20,9 @@ create table if not exists public.basketball_match_player_stats (
 
 alter table public.basketball_match_player_stats
     add column if not exists game_period integer not null default 1;
+
+alter table public.basketball_match_player_stats
+    add column if not exists is_active boolean not null default false;
 
 alter table public.basketball_match_player_stats
     drop constraint if exists basketball_match_player_stats_unique_player;
