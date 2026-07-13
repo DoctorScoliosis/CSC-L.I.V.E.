@@ -3105,7 +3105,14 @@
                     const quarterOneRows = allTeamRows.filter(row => Number(row.game_period || 1) === 1);
 
                     if (quarterOneRows.length > 0) {
-                        return sortBasketballLineupRows(quarterOneRows);
+                        const lineupByIdNumber = new Map();
+                        sortBasketballLineupRows(quarterOneRows).forEach(row => {
+                            const key = normalizeTeamValue(row.id_number || row.participant_id);
+                            if (key && !lineupByIdNumber.has(key)) {
+                                lineupByIdNumber.set(key, row);
+                            }
+                        });
+                        return Array.from(lineupByIdNumber.values());
                     }
 
                     const lineupByIdNumber = new Map();
@@ -3139,7 +3146,7 @@
                             const sourceRow = periodRow || lineupRow;
                             return {
                                 ...sourceRow,
-                                id: periodRow?.id || "",
+                                id: periodRow?.id || (activePeriod === 1 ? lineupRow.id || "" : ""),
                                 lineup_id: lineupRow.id || "",
                                 id_number: lineupRow.id_number || periodRow?.id_number || "",
                                 player_name: lineupRow.player_name || periodRow?.player_name || "",
@@ -3182,7 +3189,7 @@
                         const row = rows[index] || {};
                         const rowKey = row.id ? `saved-${row.id}` : `blank-${teamSide}-${index}`;
                         const isActive = Boolean(row.is_active);
-                        const displayValue = row.id
+                        const displayValue = row.id || row.lineup_id
                             ? (row.player_name || row.id_number || "")
                             : "";
                         return `
@@ -3215,10 +3222,10 @@
                                         data-id-number="${escapeHTML(row.id_number || "")}"
                                         data-player-name="${escapeHTML(displayValue)}"
                                         placeholder="Type ID number"
-                                        title="${row.id ? "Click to show/edit ID number" : "Type ID number and press Enter"}"
+                                        title="${row.id || row.lineup_id ? "Click to show/edit ID number" : "Type ID number and press Enter"}"
                                         ${canManageCurrentMatch ? "" : "disabled"}
-                                        ${row.id ? "readonly" : ""}
-                                        class="basketball-score-input basketball-player-id-input ${row.id ? "cursor-pointer truncate bg-slate-50" : ""}">
+                                        ${row.id || row.lineup_id ? "readonly" : ""}
+                                        class="basketball-score-input basketball-player-id-input ${row.id || row.lineup_id ? "cursor-pointer truncate bg-slate-50" : ""}">
                                 </td>
                                 <td class="px-2 py-1 text-center">
                                     <div class="inline-flex items-center gap-1">
@@ -3382,7 +3389,7 @@
 
                     const teamSide = input.dataset.teamSide;
                     const teamName = getTeamName(selectedMatch, teamSide);
-                    if (input.dataset.statId && idNumber === String(input.dataset.idNumber || "").trim()) {
+                    if ((input.dataset.statId || input.dataset.lineupStatId) && idNumber === String(input.dataset.idNumber || "").trim()) {
                         input.dataset.editingId = "false";
                         input.readOnly = true;
                         input.value = input.dataset.playerName || input.dataset.idNumber || idNumber;
@@ -3420,13 +3427,12 @@
                         updated_at: new Date().toISOString()
                     };
 
-                    const saveError = await saveBasketballLineupPlayerAcrossPeriods({
+                    const saveError = await saveBasketballRosterPlayer({
                         matchId,
                         teamId,
                         payload,
-                        currentStatId: input.dataset.statId || "",
-                        previousIdNumber: input.dataset.idNumber || "",
-                        activePeriod: gamePeriod
+                        lineupStatId: input.dataset.lineupStatId || input.dataset.statId || "",
+                        previousIdNumber: input.dataset.idNumber || ""
                     });
 
                     if (saveError) {
@@ -3441,55 +3447,73 @@
                     input.dataset.saving = "false";
                 }
 
-                async function saveBasketballLineupPlayerAcrossPeriods({ matchId, teamId, payload, currentStatId, previousIdNumber, activePeriod }) {
+                async function saveBasketballRosterPlayer({ matchId, teamId, payload, lineupStatId, previousIdNumber }) {
                     const allRows = getBasketballStatsForMatch(matchId)
                         .filter(row => Number(row.team_id) === Number(teamId));
                     const normalizedNewId = normalizeTeamValue(payload.id_number);
                     const normalizedPreviousId = normalizeTeamValue(previousIdNumber);
+                    const quarterOneRows = allRows.filter(row => Number(row.game_period || 1) === 1);
+                    const rowByNewId = quarterOneRows.find(row => normalizeTeamValue(row.id_number) === normalizedNewId);
+                    const rowByPreviousId = normalizedPreviousId
+                        ? quarterOneRows.find(row => normalizeTeamValue(row.id_number) === normalizedPreviousId)
+                        : null;
+                    const rowByLineupId = lineupStatId
+                        ? quarterOneRows.find(row => String(row.id) === String(lineupStatId))
+                        : null;
+                    const targetRow = rowByNewId || rowByLineupId || rowByPreviousId;
 
-                    for (let period = 1; period <= 4; period += 1) {
-                        const periodRows = allRows.filter(row => Number(row.game_period || 1) === period);
-                        const rowByNewId = periodRows.find(row => normalizeTeamValue(row.id_number) === normalizedNewId);
-                        const rowByPreviousId = normalizedPreviousId
-                            ? periodRows.find(row => normalizeTeamValue(row.id_number) === normalizedPreviousId)
-                            : null;
-                        const rowByCurrentStat = currentStatId && period === Number(activePeriod)
-                            ? periodRows.find(row => String(row.id) === String(currentStatId))
-                            : null;
-                        const targetRow = rowByNewId || rowByCurrentStat || rowByPreviousId;
+                    if (rowByNewId && rowByPreviousId && String(rowByNewId.id) !== String(rowByPreviousId.id)) {
+                        const { error: deleteError } = await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .delete()
+                            .eq("id", rowByPreviousId.id);
 
-                        if (rowByNewId && rowByPreviousId && String(rowByNewId.id) !== String(rowByPreviousId.id)) {
-                            const { error: deleteError } = await supabase
-                                .from(BASKETBALL_STATS_TABLE)
-                                .delete()
-                                .eq("id", rowByPreviousId.id);
+                        if (deleteError) return deleteError;
+                    }
 
-                            if (deleteError) return deleteError;
-                        }
+                    if (targetRow) {
+                        const { error } = await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .update({
+                                ...payload,
+                                game_period: 1
+                            })
+                            .eq("id", targetRow.id);
 
-                        if (targetRow) {
-                            const { error } = await supabase
-                                .from(BASKETBALL_STATS_TABLE)
-                                .update({
-                                    ...payload,
-                                    game_period: period
-                                })
-                                .eq("id", targetRow.id);
+                        if (error) return error;
+                    } else {
+                        const { error } = await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .insert([{
+                                ...payload,
+                                game_period: 1,
+                                points: 0,
+                                fouls: 0,
+                                is_active: false
+                            }]);
 
-                            if (error) return error;
-                        } else {
-                            const { error } = await supabase
-                                .from(BASKETBALL_STATS_TABLE)
-                                .insert([{
-                                    ...payload,
-                                    game_period: period,
-                                    points: 0,
-                                    fouls: 0,
-                                    is_active: false
-                                }]);
+                        if (error) return error;
+                    }
 
-                            if (error) return error;
-                        }
+                    const rowsToSync = allRows.filter(row => {
+                        const rowIdNumber = normalizeTeamValue(row.id_number);
+                        return rowIdNumber === normalizedNewId || (normalizedPreviousId && rowIdNumber === normalizedPreviousId);
+                    });
+
+                    for (const row of rowsToSync) {
+                        if (Number(row.game_period || 1) === 1) continue;
+
+                        const { error } = await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .update({
+                                participant_id: payload.participant_id,
+                                id_number: payload.id_number,
+                                player_name: payload.player_name,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq("id", row.id);
+
+                        if (error) return error;
                     }
 
                     return null;
@@ -3660,7 +3684,7 @@
                             is_active: Boolean(nextActive),
                             updated_at: new Date().toISOString()
                         })
-                        .eq("id", statId);
+                        .eq("id", statRow.id);
 
                     if (error) {
                         console.error("Basketball active player update error:", error.message || error);
@@ -6523,7 +6547,7 @@
                 function addBasketballScoreListeners() {
                     document.querySelectorAll(".basketball-player-id-input").forEach(input => {
                         input.addEventListener("click", function () {
-                            if (!this.dataset.statId || this.dataset.editingId === "true") {
+                            if ((!this.dataset.statId && !this.dataset.lineupStatId) || this.dataset.editingId === "true") {
                                 return;
                             }
 
