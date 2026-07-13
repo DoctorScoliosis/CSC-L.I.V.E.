@@ -672,6 +672,7 @@
             const ATTENDANCE_TABLE = "attendance";
             const MATCHES_TABLE = "scheduled_matches";
             const GAME_HISTORY_TABLE = "game_history";
+            const BASKETBALL_STATS_TABLE = "basketball_match_player_stats";
             const SPORTS_TABLE = "sports";
             const STUDENT_FEEDBACK_TABLE = "student_feedback";
             const ANNOUNCEMENTS_TABLE = "announcements";
@@ -717,6 +718,7 @@
                 : "Next";
             let activeSportCategoryFilter = "All";
             let studentMatchesData = [];
+            let basketballStatsByMatch = new Map();
             let registeredSports = [];
             let matchReloadTimer = null;
             let leaderboardReloadTimer = null;
@@ -1054,6 +1056,10 @@
                 return match.team_two?.team || match.team_two_name || "Unknown Team";
             }
 
+            function getTeamId(match, teamSide) {
+                return Number(teamSide === "one" ? match.team_one_id : match.team_two_id);
+            }
+
             function getSportName(match) {
                 return match.sport?.sport_name || match.sport_name || "Unknown Sport";
             }
@@ -1088,6 +1094,136 @@
                 if (isBasketballSport(match)) return `Quarter ${match.game_period || 1}`;
                 if (isVolleyballSport(match)) return `Set ${match.game_period || 1}`;
                 return "";
+            }
+
+            function getBasketballActivePeriod(match) {
+                return Math.min(4, Math.max(1, Number(match?.game_period) || 1));
+            }
+
+            function getBasketballStatsForMatch(matchId) {
+                return basketballStatsByMatch.get(Number(matchId)) || [];
+            }
+
+            function getStudentBasketballTeamRows(match, teamSide, activeOnly = false) {
+                const teamId = getTeamId(match, teamSide);
+                const activePeriod = getBasketballActivePeriod(match);
+                return getBasketballStatsForMatch(match.id)
+                    .filter(row => Number(row.team_id) === Number(teamId))
+                    .filter(row => Number(row.game_period || 1) === activePeriod)
+                    .filter(row => !activeOnly || row.is_active)
+                    .sort((first, second) => {
+                        const firstActive = first.is_active ? 1 : 0;
+                        const secondActive = second.is_active ? 1 : 0;
+                        if (firstActive !== secondActive) return secondActive - firstActive;
+                        const firstTime = new Date(first.created_at || 0).getTime();
+                        const secondTime = new Date(second.created_at || 0).getTime();
+                        return firstTime - secondTime;
+                    });
+            }
+
+            function getStudentBasketballTotals(match, teamSide, gamePeriod = null) {
+                const teamId = getTeamId(match, teamSide);
+                return getBasketballStatsForMatch(match.id)
+                    .filter(row => Number(row.team_id) === Number(teamId))
+                    .filter(row => gamePeriod === null || Number(row.game_period || 1) === Number(gamePeriod))
+                    .reduce((totals, row) => {
+                        totals.points += Number(row.points) || 0;
+                        totals.fouls += Number(row.fouls) || 0;
+                        return totals;
+                    }, { points: 0, fouls: 0 });
+            }
+
+            function renderStudentBasketballScoreSheet(match, options = {}) {
+                if (!isBasketballSport(match) || match.status !== "Ongoing") {
+                    return "";
+                }
+
+                const { compact = false } = options;
+                const activePeriod = getBasketballActivePeriod(match);
+                const teamOneQuarterTotals = getStudentBasketballTotals(match, "one", activePeriod);
+                const teamTwoQuarterTotals = getStudentBasketballTotals(match, "two", activePeriod);
+                const teamOneGameTotals = getStudentBasketballTotals(match, "one");
+                const teamTwoGameTotals = getStudentBasketballTotals(match, "two");
+
+                const renderTeamPreview = (teamSide, theme) => {
+                    const teamName = getTeamName(match, teamSide);
+                    const rows = getStudentBasketballTeamRows(match, teamSide, true);
+                    const quarterTotals = teamSide === "one" ? teamOneQuarterTotals : teamTwoQuarterTotals;
+                    const gameTotals = teamSide === "one" ? teamOneGameTotals : teamTwoGameTotals;
+                    const visibleRows = rows.length ? rows : [];
+
+                    return `
+                        <div class="rounded-2xl border ${theme.border} ${theme.bg} overflow-hidden">
+                            <div class="flex items-center justify-between gap-2 px-3 py-2">
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-black uppercase tracking-widest ${theme.label}">Active Players</p>
+                                    <h4 class="truncate text-sm font-black uppercase ${theme.text}">${escapeHTML(teamName)}</h4>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[10px] font-black uppercase tracking-wide ${theme.label}">Q${activePeriod}</p>
+                                    <p class="text-2xl font-black leading-none ${theme.text}">${quarterTotals.points}</p>
+                                    <p class="text-[10px] font-bold ${theme.label}">Game ${gameTotals.points}</p>
+                                </div>
+                            </div>
+                            <div class="max-h-44 overflow-y-auto border-t ${theme.border}">
+                                <table class="w-full table-fixed text-xs">
+                                    <thead class="${theme.header}">
+                                        <tr>
+                                            <th class="w-8 px-2 py-2 text-left">#</th>
+                                            <th class="px-2 py-2 text-left">Player</th>
+                                            <th class="w-12 px-1 py-2 text-center">PTS</th>
+                                            <th class="w-12 px-1 py-2 text-center">FLS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${visibleRows.length ? visibleRows.map((row, index) => `
+                                            <tr class="border-t border-white/70 bg-white/75">
+                                                <td class="px-2 py-2 font-black">${index + 1}</td>
+                                                <td class="truncate px-2 py-2 font-bold text-slate-800">${escapeHTML(row.player_name || row.id_number || "Player")}</td>
+                                                <td class="px-1 py-2 text-center font-black ${theme.text}">${Number(row.points) || 0}</td>
+                                                <td class="px-1 py-2 text-center font-black text-red-600">${Number(row.fouls) || 0}</td>
+                                            </tr>
+                                        `).join("") : `
+                                            <tr>
+                                                <td colspan="4" class="px-3 py-4 text-center text-[11px] font-semibold text-slate-500">
+                                                    No active players selected for this quarter yet.
+                                                </td>
+                                            </tr>
+                                        `}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                };
+
+                return `
+                    <div class="${compact ? "mt-4" : ""} rounded-2xl border border-slate-200 bg-white/85 p-3 shadow-sm">
+                        <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Basketball Score Sheet Preview</p>
+                                <p class="text-xs font-semibold text-slate-600">Read-only live data from committee scoring.</p>
+                            </div>
+                            <p class="text-xs font-black text-slate-800">Q${activePeriod}: ${teamOneQuarterTotals.points} - ${teamTwoQuarterTotals.points}</p>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3 ${compact ? "" : "lg:grid-cols-2"}">
+                            ${renderTeamPreview("one", {
+                                border: "border-blue-200",
+                                bg: "bg-blue-50/70",
+                                header: "bg-blue-100 text-blue-900",
+                                label: "text-blue-600",
+                                text: "text-blue-700"
+                            })}
+                            ${renderTeamPreview("two", {
+                                border: "border-emerald-200",
+                                bg: "bg-emerald-50/70",
+                                header: "bg-emerald-100 text-emerald-900",
+                                label: "text-emerald-600",
+                                text: "text-emerald-700"
+                            })}
+                        </div>
+                    </div>
+                `;
             }
 
             let studentLastInteractionAt = 0;
@@ -1908,6 +2044,7 @@
 
                 studentMatchesData = data || [];
                 const matchIds = studentMatchesData.map(m => m.id);
+                basketballStatsByMatch = new Map();
                 if (matchIds.length > 0) {
                     const { data: historyRows, error: historyError } = await supabase.from(GAME_HISTORY_TABLE).select("*").in("match_id", matchIds);
                     if (!historyError && Array.isArray(historyRows)) {
@@ -1915,8 +2052,26 @@
                         historyRows.forEach(h => historyMap.set(Number(h.match_id), h));
                         studentMatchesData = studentMatchesData.map(m => ({ ...m, game_history: historyMap.get(Number(m.id)) || null }));
                     }
+
+                    const { data: basketballRows, error: basketballError } = await supabase
+                        .from(BASKETBALL_STATS_TABLE)
+                        .select("*")
+                        .in("match_id", matchIds);
+
+                    if (basketballError) {
+                        console.warn("Student basketball score sheet load warning:", basketballError.message || basketballError);
+                    } else if (Array.isArray(basketballRows)) {
+                        basketballRows.forEach(row => {
+                            const key = Number(row.match_id);
+                            if (!basketballStatsByMatch.has(key)) {
+                                basketballStatsByMatch.set(key, []);
+                            }
+                            basketballStatsByMatch.get(key).push(row);
+                        });
+                    }
                 }
-                const matchesSignature = JSON.stringify(studentMatchesData);
+                const basketballSignature = JSON.stringify([...basketballStatsByMatch.entries()]);
+                const matchesSignature = JSON.stringify(studentMatchesData) + basketballSignature;
                 if (matchesSignature !== lastMatchesSignature) {
                     renderMatches();
                     lastMatchesSignature = matchesSignature;
@@ -2022,6 +2177,8 @@
                                 </div>
                             </div>
 
+                            ${renderStudentBasketballScoreSheet(match, { compact: true })}
+
                             <div class="space-y-2 pt-4 border-t border-slate-300">
                                 <div class="flex items-center text-sm text-slate-800 font-bold">
                                     <span class="mr-2 text-slate-950">TIME:</span> ${formatDateTime(match.match_time)}
@@ -2095,6 +2252,8 @@
                                 <p class="text-xl font-black text-slate-900">${escapeHTML(getTeamName(match, "two"))}</p>
                             </div>
                         </div>
+
+                        ${renderStudentBasketballScoreSheet(match)}
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center">
@@ -2236,6 +2395,9 @@
                 .on("postgres_changes", { event: "*", schema: "public", table: GAME_HISTORY_TABLE }, () => {
                     scheduleLiveLeaderboardReload(150);
                     scheduleLiveMatchReload(150);
+                })
+                .on("postgres_changes", { event: "*", schema: "public", table: BASKETBALL_STATS_TABLE }, () => {
+                    scheduleLiveMatchReload(0, { force: true });
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: SPORTS_TABLE }, async () => {
                     scheduleStudentSupplementalReload({ sports: true }, 150);
