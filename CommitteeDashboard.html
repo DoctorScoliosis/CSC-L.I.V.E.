@@ -3402,19 +3402,28 @@
                     const participantTeam = participant?.team || participant?.team_name || "";
 
                     if (!participant) {
-                        const allowUnknown = confirm(`ID Number ${idNumber} was not found in registered participants. Save this player anyway?`);
-                        if (!allowUnknown) {
-                            input.value = "";
-                            input.dataset.saving = "false";
-                            return;
-                        }
+                        alert(`ID Number ${idNumber} is not registered. Please enter a registered participant ID.`);
+                        input.value = "";
+                        input.dataset.saving = "false";
+                        return;
                     } else if (normalizeTeamValue(participantTeam) !== normalizeTeamValue(teamName)) {
-                        const allowDifferentTeam = confirm(`${getParticipantDisplayName(participant) || idNumber} is registered under ${participantTeam || "another team"}, not ${teamName}. Allow this player anyway?`);
-                        if (!allowDifferentTeam) {
-                            input.value = "";
-                            input.dataset.saving = "false";
-                            return;
-                        }
+                        alert(`${getParticipantDisplayName(participant) || idNumber} is registered under ${participantTeam || "another team"}, not ${teamName}. This player cannot be added to this team.`);
+                        input.value = "";
+                        input.dataset.saving = "false";
+                        return;
+                    }
+
+                    const existingOtherTeamRow = getBasketballStatsForMatch(matchId)
+                        .find(row =>
+                            Number(row.team_id) !== Number(teamId)
+                            && normalizeTeamValue(row.id_number) === normalizeTeamValue(idNumber)
+                        );
+
+                    if (existingOtherTeamRow) {
+                        alert(`${getParticipantDisplayName(participant) || idNumber} is already listed under ${existingOtherTeamRow.team_name || "the other team"} for this match.`);
+                        input.value = "";
+                        input.dataset.saving = "false";
+                        return;
                     }
 
                     const payload = {
