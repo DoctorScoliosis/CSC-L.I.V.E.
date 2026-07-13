@@ -1465,8 +1465,8 @@
                                         <th class="leaderboard-rank-cell text-left py-5 px-6 font-bold uppercase text-xs tracking-wider">Rank</th>
                                         <th class="leaderboard-team-cell text-left py-5 px-6 font-bold uppercase text-xs tracking-wider">Team Name</th>
                                         <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Points</th>
-                                        <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Wins</th>
-                                        <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Losses</th>
+                                        <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Victory</th>
+                                        <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Defeated</th>
                                     </tr>
                                 </thead>
 
@@ -1913,7 +1913,7 @@
                         <select
                             id="matchStage"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                            <option value="regular">Regular Game</option>
+                            <option value="regular">Elimination Round</option>
                             <option value="semifinals">Semifinals</option>
                             <option value="finals">Finals</option>
                             <option value="battle_for_third" id="battleForThirdOption" hidden>Battle for Third</option>
@@ -3069,7 +3069,12 @@
                 }
 
                 function getMatchStageLabel(stage) {
+                    if (!String(stage || "").trim()) {
+                        return "Elimination Round";
+                    }
+
                     return {
+                        regular: "Elimination Round",
                         semifinals: "Semifinals",
                         finals: "Finals",
                         battle_for_third: "Battle for Third"

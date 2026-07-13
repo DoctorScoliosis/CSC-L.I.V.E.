@@ -377,8 +377,8 @@
                                 <th class="leaderboard-rank-cell text-left py-5 px-6 font-bold uppercase text-xs tracking-wider">Rank</th>
                                 <th class="leaderboard-team-cell text-left py-5 px-6 font-bold uppercase text-xs tracking-wider">Team Name</th>
                                 <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Points</th>
-                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Wins</th>
-                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Losses</th>
+                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Victory</th>
+                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Defeated</th>
                             </tr>
                         </thead>
 
@@ -1051,7 +1051,12 @@
             }
 
             function getMatchStageLabel(stage) {
+                if (!String(stage || "").trim()) {
+                    return "Elimination Round";
+                }
+
                 return {
+                    regular: "Elimination Round",
                     semifinals: "Semifinals",
                     finals: "Finals",
                     battle_for_third: "Battle for Third"
@@ -1767,7 +1772,7 @@
                                         <p class="font-black text-slate-950 text-lg">vs ${escapeHTML(opponent)}</p>
                                     </div>
                                     <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${isWin ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
-                                        ${isWin ? 'Victory' : 'Defeat'}
+                                        ${isWin ? 'Victory' : 'Defeated'}
                                     </span>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4 text-sm">
@@ -1802,11 +1807,11 @@
                                 <p class="team-detail-score-value text-2xl font-black text-blue-900">${formattedTeamPoints}</p>
                             </div>
                             <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
-                                <p class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Wins</p>
+                                <p class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Victory</p>
                                 <p class="team-detail-score-value text-2xl font-black text-emerald-900">${Number(team.wins || 0).toLocaleString()}</p>
                             </div>
                             <div class="bg-red-50 p-4 rounded-2xl border border-red-100 text-center">
-                                <p class="text-[10px] uppercase font-bold text-red-600 mb-1">Losses</p>
+                                <p class="text-[10px] uppercase font-bold text-red-600 mb-1">Defeated</p>
                                 <p class="team-detail-score-value text-2xl font-black text-red-900">${Number(team.losses || 0).toLocaleString()}</p>
                             </div>
                         </div>
