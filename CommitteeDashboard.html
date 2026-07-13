@@ -3089,6 +3089,76 @@
                         });
                 }
 
+                function sortBasketballLineupRows(rows) {
+                    return [...rows].sort((first, second) => {
+                        const firstTime = new Date(first.created_at || 0).getTime();
+                        const secondTime = new Date(second.created_at || 0).getTime();
+                        if (firstTime !== secondTime) return firstTime - secondTime;
+                        return String(first.id || "").localeCompare(String(second.id || ""));
+                    });
+                }
+
+                function getBasketballLineupRows(match, teamSide) {
+                    const teamId = getTeamId(match, teamSide);
+                    const allTeamRows = getBasketballStatsForMatch(match.id)
+                        .filter(row => Number(row.team_id) === Number(teamId));
+                    const quarterOneRows = allTeamRows.filter(row => Number(row.game_period || 1) === 1);
+
+                    if (quarterOneRows.length > 0) {
+                        return sortBasketballLineupRows(quarterOneRows);
+                    }
+
+                    const lineupByIdNumber = new Map();
+                    sortBasketballLineupRows(allTeamRows).forEach(row => {
+                        const key = normalizeTeamValue(row.id_number || row.participant_id);
+                        if (key && !lineupByIdNumber.has(key)) {
+                            lineupByIdNumber.set(key, row);
+                        }
+                    });
+
+                    return Array.from(lineupByIdNumber.values());
+                }
+
+                function getBasketballDisplayRows(match, teamSide) {
+                    const activePeriod = getBasketballActivePeriod(match);
+                    const teamId = getTeamId(match, teamSide);
+                    const periodRows = getBasketballStatsForMatch(match.id)
+                        .filter(row => Number(row.team_id) === Number(teamId))
+                        .filter(row => Number(row.game_period || 1) === Number(activePeriod));
+                    const periodRowsByIdNumber = new Map();
+
+                    periodRows.forEach(row => {
+                        const key = normalizeTeamValue(row.id_number || row.participant_id);
+                        if (key) periodRowsByIdNumber.set(key, row);
+                    });
+
+                    return getBasketballLineupRows(match, teamSide)
+                        .map((lineupRow, lineupIndex) => {
+                            const key = normalizeTeamValue(lineupRow.id_number || lineupRow.participant_id);
+                            const periodRow = periodRowsByIdNumber.get(key) || (activePeriod === 1 ? lineupRow : null);
+                            const sourceRow = periodRow || lineupRow;
+                            return {
+                                ...sourceRow,
+                                id: periodRow?.id || "",
+                                lineup_id: lineupRow.id || "",
+                                id_number: lineupRow.id_number || periodRow?.id_number || "",
+                                player_name: lineupRow.player_name || periodRow?.player_name || "",
+                                participant_id: lineupRow.participant_id || periodRow?.participant_id || null,
+                                points: periodRow ? (Number(periodRow.points) || 0) : 0,
+                                fouls: periodRow ? (Number(periodRow.fouls) || 0) : 0,
+                                is_active: Boolean(periodRow?.is_active),
+                                created_at: lineupRow.created_at || periodRow?.created_at || null,
+                                lineup_index: lineupIndex
+                            };
+                        })
+                        .sort((first, second) => {
+                            const firstActive = first.is_active ? 1 : 0;
+                            const secondActive = second.is_active ? 1 : 0;
+                            if (firstActive !== secondActive) return secondActive - firstActive;
+                            return (first.lineup_index || 0) - (second.lineup_index || 0);
+                        });
+                }
+
                 function getBasketballTotals(match, teamSide, gamePeriod = null) {
                     const teamId = getTeamId(match, teamSide);
                     const rows = getBasketballStatsForMatch(match.id)
@@ -3104,7 +3174,7 @@
 
                 function renderBasketballRows(match, teamSide, canManageCurrentMatch) {
                     const activePeriod = getBasketballActivePeriod(match);
-                    const rows = getBasketballTeamStats(match, teamSide, activePeriod);
+                    const rows = getBasketballDisplayRows(match, teamSide);
                     const teamId = getTeamId(match, teamSide);
                     const maxRows = 12;
 
@@ -3120,11 +3190,15 @@
                                 <td class="px-2 py-1 text-center text-xs font-black">
                                     <button
                                         type="button"
+                                        data-match-id="${match.id}"
+                                        data-team-id="${teamId}"
+                                        data-game-period="${activePeriod}"
                                         data-stat-id="${escapeHTML(row.id || "")}"
+                                        data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
                                         data-is-active="${isActive ? "true" : "false"}"
-                                        ${canManageCurrentMatch && row.id ? "" : "disabled"}
-                                        title="${row.id ? "Click to mark active for this quarter" : "Save player first"}"
-                                        class="basketball-active-player-btn inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${isActive ? "bg-green-600 text-white shadow" : row.id ? "bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-green-100" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                        ${canManageCurrentMatch && (row.id || row.lineup_id) ? "" : "disabled"}
+                                        title="${row.id || row.lineup_id ? "Click to mark active for this quarter" : "Save player first"}"
+                                        class="basketball-active-player-btn inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${isActive ? "bg-green-600 text-white shadow" : row.id || row.lineup_id ? "bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-green-100" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
                                         ${index + 1}
                                     </button>
                                 </td>
@@ -3137,6 +3211,7 @@
                                         data-team-id="${teamId}"
                                         data-game-period="${activePeriod}"
                                         data-stat-id="${escapeHTML(row.id || "")}"
+                                        data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
                                         data-id-number="${escapeHTML(row.id_number || "")}"
                                         data-player-name="${escapeHTML(displayValue)}"
                                         placeholder="Type ID number"
@@ -3537,14 +3612,46 @@
                     await loadSavedMatches();
                 }
 
-                async function toggleBasketballActivePlayer(statId, nextActive) {
-                    const statRow = Array.from(basketballStatsByMatch.values())
+                async function toggleBasketballActivePlayer(statId, nextActive, options = {}) {
+                    let statRow = Array.from(basketballStatsByMatch.values())
                         .flat()
                         .find(row => String(row.id) === String(statId));
 
                     if (!statRow) {
-                        alert("Please type and save the player ID first.");
-                        return;
+                        const lineupRow = Array.from(basketballStatsByMatch.values())
+                            .flat()
+                            .find(row => String(row.id) === String(options.lineupStatId || ""));
+
+                        if (!lineupRow) {
+                            alert("Please type and save the player ID first.");
+                            return;
+                        }
+
+                        const { data: insertedRows, error: insertError } = await supabase
+                            .from(BASKETBALL_STATS_TABLE)
+                            .insert([{
+                                match_id: Number(options.matchId) || lineupRow.match_id,
+                                team_id: Number(options.teamId) || lineupRow.team_id,
+                                team_name: lineupRow.team_name,
+                                game_period: Math.min(4, Math.max(1, Number(options.gamePeriod) || 1)),
+                                participant_id: lineupRow.participant_id || null,
+                                id_number: lineupRow.id_number,
+                                player_name: lineupRow.player_name || lineupRow.id_number,
+                                points: 0,
+                                fouls: 0,
+                                is_active: Boolean(nextActive),
+                                updated_at: new Date().toISOString()
+                            }])
+                            .select("*")
+                            .single();
+
+                        if (insertError) {
+                            console.error("Basketball active player insert error:", insertError.message || insertError);
+                            alert("Unable to update active player. Run the basketball score SQL first.");
+                            return;
+                        }
+
+                        statRow = insertedRows;
                     }
 
                     const { error } = await supabase
@@ -6465,13 +6572,19 @@
 
                     document.querySelectorAll(".basketball-active-player-btn").forEach(button => {
                         button.addEventListener("click", async function () {
-                            if (!this.dataset.statId) {
+                            if (!this.dataset.statId && !this.dataset.lineupStatId) {
                                 alert("Please type and save the player ID first.");
                                 return;
                             }
                             await toggleBasketballActivePlayer(
                                 this.dataset.statId,
-                                this.dataset.isActive !== "true"
+                                this.dataset.isActive !== "true",
+                                {
+                                    lineupStatId: this.dataset.lineupStatId,
+                                    matchId: this.dataset.matchId,
+                                    teamId: this.dataset.teamId,
+                                    gamePeriod: this.dataset.gamePeriod
+                                }
                             );
                         });
                     });
