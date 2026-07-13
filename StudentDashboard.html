@@ -622,7 +622,11 @@
             // Placeholder for auth check if needed
         }
 
+        const STUDENT_ACTIVE_TAB_KEY = "cscLiveStudentActiveTab";
+        const VALID_STUDENT_TABS = ["leaderboard", "schedule"];
+
         function switchTab(tabName, buttonElement) {
+            const selectedTabName = VALID_STUDENT_TABS.includes(tabName) ? tabName : "leaderboard";
             document.querySelectorAll(".tab-content").forEach(tab => {
                 tab.classList.add("hidden");
             });
@@ -631,14 +635,26 @@
                 button.className = "tab-button flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold text-sm sm:text-base transition-all duration-200";
             });
 
-            document.getElementById(tabName).classList.remove("hidden");
+            document.getElementById(selectedTabName).classList.remove("hidden");
+            localStorage.setItem(STUDENT_ACTIVE_TAB_KEY, selectedTabName);
 
-            if (buttonElement) {
-                buttonElement.className = "tab-button active flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200";
+            const activeButton = buttonElement || document.querySelector(`[onclick*="'${selectedTabName}'"]`);
+            if (activeButton) {
+                activeButton.className = "tab-button active flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200";
             }
         }
 
         checkAuth();
+        function restoreStudentActiveTab() {
+            const savedTab = localStorage.getItem(STUDENT_ACTIVE_TAB_KEY);
+            switchTab(VALID_STUDENT_TABS.includes(savedTab) ? savedTab : "leaderboard");
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", restoreStudentActiveTab);
+        } else {
+            restoreStudentActiveTab();
+        }
     </script>
 
     <!-- Supabase Student Dashboard Script -->
@@ -694,7 +710,11 @@
             const matchDetailsTitle = document.getElementById("matchDetailsTitle");
             const matchDetailsContent = document.getElementById("matchDetailsContent");
 
-            let activeScheduleFilter = "Next";
+            const STUDENT_SCHEDULE_FILTER_KEY = "cscLiveStudentScheduleFilter";
+            const VALID_STUDENT_SCHEDULE_FILTERS = ["Next", "Ongoing", "Done"];
+            let activeScheduleFilter = VALID_STUDENT_SCHEDULE_FILTERS.includes(localStorage.getItem(STUDENT_SCHEDULE_FILTER_KEY))
+                ? localStorage.getItem(STUDENT_SCHEDULE_FILTER_KEY)
+                : "Next";
             let activeSportCategoryFilter = "All";
             let studentMatchesData = [];
             let registeredSports = [];
@@ -2138,9 +2158,11 @@
             }
 
             function setActiveScheduleFilter(val) {
-                activeScheduleFilter = val;
+                const selectedFilter = VALID_STUDENT_SCHEDULE_FILTERS.includes(val) ? val : "Next";
+                activeScheduleFilter = selectedFilter;
+                localStorage.setItem(STUDENT_SCHEDULE_FILTER_KEY, selectedFilter);
                 document.querySelectorAll(".schedule-filter").forEach(btn => {
-                    const active = btn.dataset.scheduleFilter === val;
+                    const active = btn.dataset.scheduleFilter === selectedFilter;
                     btn.className = active 
                         ? "schedule-filter w-full min-w-0 sm:w-auto px-2 sm:px-6 py-2.5 rounded-full font-bold text-[11px] sm:text-sm transition-all duration-200 bg-blue-600 text-white shadow-md shadow-blue-100"
                         : "schedule-filter w-full min-w-0 sm:w-auto px-2 sm:px-6 py-2.5 rounded-full font-bold text-[11px] sm:text-sm transition-all duration-200 bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600";
@@ -2151,6 +2173,7 @@
             document.querySelectorAll(".schedule-filter").forEach(btn => {
                 btn.onclick = function() { setActiveScheduleFilter(this.dataset.scheduleFilter); };
             });
+            setActiveScheduleFilter(activeScheduleFilter);
 
             if (gameCategoryFilter) {
                 gameCategoryFilter.addEventListener("change", function () {

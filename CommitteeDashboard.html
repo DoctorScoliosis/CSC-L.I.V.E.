@@ -2564,8 +2564,16 @@
                 const basketballPointPlayerLabel = document.getElementById("basketballPointPlayerLabel");
                 const closeBasketballPointModal = document.getElementById("closeBasketballPointModal");
 
-                let activeStatusTab = "Next";
-                let activeMatchScopeFilter = "mine";
+                const COMMITTEE_MATCH_STATUS_TAB_KEY = "cscLiveCommitteeMatchStatusTab";
+                const COMMITTEE_MATCH_SCOPE_KEY = "cscLiveCommitteeMatchScope";
+                const VALID_MATCH_STATUS_TABS = ["Next", "Ongoing", "Done"];
+                const VALID_MATCH_SCOPES = ["mine", "all"];
+                let activeStatusTab = VALID_MATCH_STATUS_TABS.includes(localStorage.getItem(COMMITTEE_MATCH_STATUS_TAB_KEY))
+                    ? localStorage.getItem(COMMITTEE_MATCH_STATUS_TAB_KEY)
+                    : "Next";
+                let activeMatchScopeFilter = VALID_MATCH_SCOPES.includes(localStorage.getItem(COMMITTEE_MATCH_SCOPE_KEY))
+                    ? localStorage.getItem(COMMITTEE_MATCH_SCOPE_KEY)
+                    : "mine";
                 let activeSportFilterId = "";
                 let activeDoneMatchesDate = "";
                 let registeredSportsData = [];
@@ -3800,6 +3808,7 @@
 
                 function setActiveMatchScopeFilter(scope) {
                     activeMatchScopeFilter = scope === "all" && canCurrentUserUseMatchViewFilters() ? "all" : "mine";
+                    localStorage.setItem(COMMITTEE_MATCH_SCOPE_KEY, activeMatchScopeFilter);
 
                     document.querySelectorAll(".match-scope-tab").forEach(button => {
                         const isActive = button.dataset.matchScopeTab === activeMatchScopeFilter;
@@ -5857,19 +5866,21 @@
                 }
 
                 function setActiveStatusTab(status) {
-                    activeStatusTab = status;
+                    const selectedStatus = VALID_MATCH_STATUS_TABS.includes(status) ? status : "Next";
+                    activeStatusTab = selectedStatus;
+                    localStorage.setItem(COMMITTEE_MATCH_STATUS_TAB_KEY, selectedStatus);
 
                     document.querySelectorAll(".match-status-tab").forEach(button => {
-                        const isActive = button.dataset.statusTab === status;
+                        const isActive = button.dataset.statusTab === selectedStatus;
 
                         button.className = isActive
                             ? "match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white"
                             : "match-status-tab px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300";
                     });
 
-                    document.getElementById("nextMatchesTab").classList.toggle("hidden", status !== "Next");
-                    document.getElementById("ongoingMatchesTab").classList.toggle("hidden", status !== "Ongoing");
-                    document.getElementById("doneMatchesTab").classList.toggle("hidden", status !== "Done");
+                    document.getElementById("nextMatchesTab").classList.toggle("hidden", selectedStatus !== "Next");
+                    document.getElementById("ongoingMatchesTab").classList.toggle("hidden", selectedStatus !== "Ongoing");
+                    document.getElementById("doneMatchesTab").classList.toggle("hidden", selectedStatus !== "Done");
                 }
 
                 function normalizeSportText(value) {
@@ -6507,7 +6518,7 @@
                                     return;
                                 }
 
-                                activeStatusTab = "Ongoing";
+                                setActiveStatusTab("Ongoing");
 
                                 await Promise.all([
                                     loadSavedMatches(),
@@ -6536,7 +6547,7 @@
                                     return;
                                 }
 
-                                activeStatusTab = "Next";
+                                setActiveStatusTab("Next");
 
                                 await Promise.all([
                                     loadSavedMatches(),
@@ -7048,7 +7059,7 @@
 
                         alert("Result saved. Match marked as Done.");
 
-                        activeStatusTab = "Done";
+                        setActiveStatusTab("Done");
                         closeResultModalFunction();
 
                         await Promise.all([
@@ -7177,7 +7188,7 @@
                     }
 
                     alert("Match scheduled successfully!");
-                    activeStatusTab = "Next";
+                    setActiveStatusTab("Next");
                     closeMatchModalFunction();
 
                     await Promise.all([
@@ -7443,7 +7454,7 @@
                 });
 
                 if (!await loadCurrentDashboardUser()) return;
-                setActiveMatchScopeFilter("mine");
+                setActiveMatchScopeFilter(activeMatchScopeFilter);
 
                 await Promise.all([
                     loadOverviewCounts(),
