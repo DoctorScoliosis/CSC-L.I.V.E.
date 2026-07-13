@@ -721,8 +721,21 @@
             }
 
             .basketball-score-scroll {
-                max-height: 24rem;
+                overflow-y: hidden;
+            }
+
+            .basketball-score-body {
+                display: block;
+                max-height: 16.5rem;
                 overflow-y: auto;
+            }
+
+            .basketball-score-body tr,
+            .basketball-score-table thead,
+            .basketball-score-table tfoot {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
             }
 
             @media (max-width: 380px) {
@@ -3315,7 +3328,7 @@
                                     </div>
                                 </div>
                                 <div class="basketball-score-scroll overflow-x-auto xl:overflow-x-visible">
-                                    <table class="w-full min-w-[26rem] table-fixed text-xs xl:min-w-0">
+                                    <table class="basketball-score-table w-full min-w-[26rem] table-fixed text-xs xl:min-w-0">
                                         <thead>
                                             <tr class="${theme.header}">
                                                 <th class="w-10 px-1 py-2 text-center">Active</th>
@@ -3324,7 +3337,7 @@
                                                 <th class="w-20 px-1 py-2 text-center">FLS</th>
                                             </tr>
                                         </thead>
-                                        <tbody>${renderBasketballRows(match, teamSide, canManageCurrentMatch)}</tbody>
+                                        <tbody class="basketball-score-body">${renderBasketballRows(match, teamSide, canManageCurrentMatch)}</tbody>
                                         <tfoot>
                                             <tr class="${theme.footer}">
                                                 <td colspan="2" class="px-2 py-2 text-sm font-black uppercase">Q${activePeriod} Total</td>
