@@ -2867,6 +2867,15 @@
                     return String(currentUser?.id || currentUser?.email || "").trim();
                 }
 
+                function getCurrentUserCreatorKeys() {
+                    return [
+                        currentUser?.id,
+                        currentUser?.email
+                    ]
+                        .map(value => String(value || "").trim())
+                        .filter(Boolean);
+                }
+
                 function getCurrentUserDisplayName() {
                     return currentUser?.fullName || currentUser?.email || currentUser?.id || "Unknown User";
                 }
@@ -2913,13 +2922,13 @@
                         return query;
                     }
 
-                    const creatorKey = getCurrentUserCreatorKey();
+                    const creatorKeys = getCurrentUserCreatorKeys();
 
-                    if (!creatorKey) {
+                    if (creatorKeys.length === 0) {
                         return query.eq("created_by", "__missing_logged_in_user__");
                     }
 
-                    return query.eq("created_by", creatorKey);
+                    return query.in("created_by", creatorKeys);
                 }
 
                 async function updateMatchRecord(matchId, updatePayload, options = {}) {
