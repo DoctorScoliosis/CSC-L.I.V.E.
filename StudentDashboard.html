@@ -1134,10 +1134,23 @@
             function getStudentBasketballTeamRows(match, teamSide, activeOnly = false) {
                 const teamId = getTeamId(match, teamSide);
                 const activePeriod = getBasketballActivePeriod(match);
-                return getBasketballStatsForMatch(match.id)
-                    .filter(row => Number(row.team_id) === Number(teamId))
+                const allTeamRows = getBasketballStatsForMatch(match.id)
+                    .filter(row => Number(row.team_id) === Number(teamId));
+
+                return allTeamRows
                     .filter(row => Number(row.game_period || 1) === activePeriod)
                     .filter(row => !activeOnly || row.is_active)
+                    .map(row => {
+                        const key = normalizeTeamValue(row.id_number || row.participant_id);
+                        const cumulativeRows = allTeamRows.filter(teamRow =>
+                            normalizeTeamValue(teamRow.id_number || teamRow.participant_id) === key
+                        );
+                        return {
+                            ...row,
+                            points: cumulativeRows.reduce((total, teamRow) => total + (Number(teamRow.points) || 0), 0),
+                            fouls: cumulativeRows.reduce((total, teamRow) => total + (Number(teamRow.fouls) || 0), 0)
+                        };
+                    })
                     .sort((first, second) => {
                         const firstActive = first.is_active ? 1 : 0;
                         const secondActive = second.is_active ? 1 : 0;
@@ -1166,16 +1179,12 @@
                 }
 
                 const { compact = false } = options;
-                const activePeriod = getBasketballActivePeriod(match);
-                const teamOneQuarterTotals = getStudentBasketballTotals(match, "one", activePeriod);
-                const teamTwoQuarterTotals = getStudentBasketballTotals(match, "two", activePeriod);
                 const teamOneGameTotals = getStudentBasketballTotals(match, "one");
                 const teamTwoGameTotals = getStudentBasketballTotals(match, "two");
 
                 const renderTeamPreview = (teamSide, theme) => {
                     const teamName = getTeamName(match, teamSide);
                     const rows = getStudentBasketballTeamRows(match, teamSide, true);
-                    const quarterTotals = teamSide === "one" ? teamOneQuarterTotals : teamTwoQuarterTotals;
                     const gameTotals = teamSide === "one" ? teamOneGameTotals : teamTwoGameTotals;
                     const visibleRows = rows.length ? rows : [];
 
@@ -1186,7 +1195,7 @@
                                     <h4 class="truncate text-[11px] font-black uppercase ${theme.text} sm:text-sm">${escapeHTML(teamName)}</h4>
                                 </div>
                                 <div class="shrink-0 text-right">
-                                    <p class="text-lg font-black leading-none ${theme.text} sm:text-2xl">${quarterTotals.points}</p>
+                                    <p class="text-lg font-black leading-none ${theme.text} sm:text-2xl">${gameTotals.points}</p>
                                 </div>
                             </div>
                             <div class="max-h-44 overflow-y-auto border-t ${theme.border}">

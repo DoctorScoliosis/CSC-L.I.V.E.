@@ -3164,6 +3164,8 @@
                 function getBasketballDisplayRows(match, teamSide) {
                     const activePeriod = getBasketballActivePeriod(match);
                     const teamId = getTeamId(match, teamSide);
+                    const allTeamRows = getBasketballStatsForMatch(match.id)
+                        .filter(row => Number(row.team_id) === Number(teamId));
                     const periodRows = getBasketballStatsForMatch(match.id)
                         .filter(row => Number(row.team_id) === Number(teamId))
                         .filter(row => Number(row.game_period || 1) === Number(activePeriod));
@@ -3179,6 +3181,11 @@
                             const key = normalizeTeamValue(lineupRow.id_number || lineupRow.participant_id);
                             const periodRow = periodRowsByIdNumber.get(key) || (activePeriod === 1 ? lineupRow : null);
                             const sourceRow = periodRow || lineupRow;
+                            const cumulativeRows = allTeamRows.filter(row =>
+                                normalizeTeamValue(row.id_number || row.participant_id) === key
+                            );
+                            const cumulativePoints = cumulativeRows.reduce((total, row) => total + (Number(row.points) || 0), 0);
+                            const cumulativeFouls = cumulativeRows.reduce((total, row) => total + (Number(row.fouls) || 0), 0);
                             return {
                                 ...sourceRow,
                                 id: periodRow?.id || (activePeriod === 1 ? lineupRow.id || "" : ""),
@@ -3186,8 +3193,8 @@
                                 id_number: lineupRow.id_number || periodRow?.id_number || "",
                                 player_name: lineupRow.player_name || periodRow?.player_name || "",
                                 participant_id: lineupRow.participant_id || periodRow?.participant_id || null,
-                                points: periodRow ? (Number(periodRow.points) || 0) : 0,
-                                fouls: periodRow ? (Number(periodRow.fouls) || 0) : 0,
+                                points: cumulativePoints,
+                                fouls: cumulativeFouls,
                                 is_active: Boolean(periodRow?.is_active),
                                 created_at: lineupRow.created_at || periodRow?.created_at || null,
                                 lineup_index: lineupIndex
@@ -3348,7 +3355,7 @@
                                 <div class="flex items-center justify-between gap-2 px-3 py-2">
                                     <h4 class="text-sm font-black uppercase ${theme.text}">${escapeHTML(teamName)}</h4>
                                     <div class="text-right">
-                                        <p class="text-3xl font-black leading-none ${theme.text}">${quarterTotals.points}</p>
+                                        <p class="text-3xl font-black leading-none ${theme.text}">${gameTotals.points}</p>
                                     </div>
                                 </div>
                                 <div class="basketball-score-scroll overflow-x-auto xl:overflow-x-visible">
