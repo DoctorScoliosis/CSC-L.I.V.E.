@@ -160,6 +160,33 @@
             line-height: 1.05;
         }
 
+        .student-basketball-score-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+
+        .student-basketball-score-team {
+            min-width: 0;
+        }
+
+        .student-basketball-score-table th,
+        .student-basketball-score-table td {
+            padding-left: clamp(0.2rem, 1.4vw, 0.5rem);
+            padding-right: clamp(0.2rem, 1.4vw, 0.5rem);
+        }
+
+        .student-basketball-score-player {
+            max-width: 1px;
+        }
+
+        @media (max-width: 420px) {
+            .student-basketball-score-preview {
+                margin-left: -0.75rem;
+                margin-right: -0.75rem;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+        }
+
         .about-modal-copy p {
             margin-bottom: 1rem;
         }
@@ -1153,35 +1180,35 @@
                     const visibleRows = rows.length ? rows : [];
 
                     return `
-                        <div class="rounded-2xl border ${theme.border} ${theme.bg} overflow-hidden">
-                            <div class="flex items-center justify-between gap-2 px-3 py-2">
+                        <div class="student-basketball-score-team rounded-2xl border ${theme.border} ${theme.bg} overflow-hidden">
+                            <div class="flex items-center justify-between gap-1 px-2 py-2 sm:gap-2 sm:px-3">
                                 <div class="min-w-0">
                                     <p class="text-[10px] font-black uppercase tracking-widest ${theme.label}">Active Players</p>
-                                    <h4 class="truncate text-sm font-black uppercase ${theme.text}">${escapeHTML(teamName)}</h4>
+                                    <h4 class="truncate text-[11px] font-black uppercase ${theme.text} sm:text-sm">${escapeHTML(teamName)}</h4>
                                 </div>
-                                <div class="text-right">
+                                <div class="shrink-0 text-right">
                                     <p class="text-[10px] font-black uppercase tracking-wide ${theme.label}">Q${activePeriod}</p>
-                                    <p class="text-2xl font-black leading-none ${theme.text}">${quarterTotals.points}</p>
-                                    <p class="text-[10px] font-bold ${theme.label}">Game ${gameTotals.points}</p>
+                                    <p class="text-lg font-black leading-none ${theme.text} sm:text-2xl">${quarterTotals.points}</p>
+                                    <p class="text-[9px] font-bold ${theme.label} sm:text-[10px]">Game ${gameTotals.points}</p>
                                 </div>
                             </div>
                             <div class="max-h-44 overflow-y-auto border-t ${theme.border}">
-                                <table class="w-full table-fixed text-xs">
+                                <table class="student-basketball-score-table w-full table-fixed text-[10px] sm:text-xs">
                                     <thead class="${theme.header}">
                                         <tr>
-                                            <th class="w-8 px-2 py-2 text-left">#</th>
-                                            <th class="px-2 py-2 text-left">Player</th>
-                                            <th class="w-12 px-1 py-2 text-center">PTS</th>
-                                            <th class="w-12 px-1 py-2 text-center">FLS</th>
+                                            <th class="w-6 py-1.5 text-left sm:w-8 sm:py-2">#</th>
+                                            <th class="py-1.5 text-left sm:py-2">Player</th>
+                                            <th class="w-8 py-1.5 text-center sm:w-12 sm:py-2">PTS</th>
+                                            <th class="w-8 py-1.5 text-center sm:w-12 sm:py-2">FLS</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         ${visibleRows.length ? visibleRows.map((row, index) => `
                                             <tr class="border-t border-white/70 bg-white/75">
-                                                <td class="px-2 py-2 font-black">${index + 1}</td>
-                                                <td class="truncate px-2 py-2 font-bold text-slate-800">${escapeHTML(row.player_name || row.id_number || "Player")}</td>
-                                                <td class="px-1 py-2 text-center font-black ${theme.text}">${Number(row.points) || 0}</td>
-                                                <td class="px-1 py-2 text-center font-black text-red-600">${Number(row.fouls) || 0}</td>
+                                                <td class="py-1.5 font-black sm:py-2">${index + 1}</td>
+                                                <td class="student-basketball-score-player truncate py-1.5 font-bold text-slate-800 sm:py-2">${escapeHTML(row.player_name || row.id_number || "Player")}</td>
+                                                <td class="py-1.5 text-center font-black ${theme.text} sm:py-2">${Number(row.points) || 0}</td>
+                                                <td class="py-1.5 text-center font-black text-red-600 sm:py-2">${Number(row.fouls) || 0}</td>
                                             </tr>
                                         `).join("") : `
                                             <tr>
@@ -1198,7 +1225,7 @@
                 };
 
                 return `
-                    <div class="${compact ? "mt-4" : ""} rounded-2xl border border-slate-200 bg-white/85 p-3 shadow-sm">
+                    <div class="student-basketball-score-preview ${compact ? "mt-4" : ""} rounded-2xl border border-slate-200 bg-white/85 p-3 shadow-sm">
                         <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Basketball Score Sheet Preview</p>
@@ -1206,7 +1233,7 @@
                             </div>
                             <p class="text-xs font-black text-slate-800">Q${activePeriod}: ${teamOneQuarterTotals.points} - ${teamTwoQuarterTotals.points}</p>
                         </div>
-                        <div class="grid grid-cols-1 gap-3 ${compact ? "" : "lg:grid-cols-2"}">
+                        <div class="student-basketball-score-grid grid gap-2 sm:gap-3">
                             ${renderTeamPreview("one", {
                                 border: "border-blue-200",
                                 bg: "bg-blue-50/70",
@@ -2085,6 +2112,10 @@
 
             function renderMatches() {
                 let filtered = [...studentMatchesData];
+                const showOngoingSingleColumn = activeScheduleFilter === "Ongoing";
+                studentMatchesGrid.className = showOngoingSingleColumn
+                    ? "grid grid-cols-1 gap-6"
+                    : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6";
 
                 if (activeScheduleFilter !== "All") {
                     filtered = filtered.filter(m => m.status === activeScheduleFilter);
