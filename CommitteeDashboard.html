@@ -7465,12 +7465,12 @@
                     conversations: false
                 };
 
-                function scheduleCommitteeRealtimeReload(tasks, delay = 250) {
+                function scheduleCommitteeRealtimeReload(tasks, delay = 250, options = {}) {
                     Object.assign(pendingCommitteeReloads, tasks);
                     window.clearTimeout(committeeRealtimeReloadTimer);
 
                     committeeRealtimeReloadTimer = window.setTimeout(async () => {
-                        if (isCommitteeUserBusy()) {
+                        if (!options.force && isCommitteeUserBusy()) {
                             scheduleCommitteeRealtimeReload({}, COMMITTEE_REFRESH_IDLE_DELAY);
                             return;
                         }
@@ -7522,7 +7522,7 @@
                 });
                 document.querySelectorAll(".basketball-point-choice").forEach(button => {
                     button.addEventListener("click", async function () {
-                        if (!pendingBasketballPointTarget?.statId) {
+                        if (!pendingBasketballPointTarget?.statId && !pendingBasketballPointTarget?.lineupStatId) {
                             closeBasketballPointModalFunction();
                             return;
                         }
@@ -7707,7 +7707,7 @@
                             overview: true,
                             matches: true,
                             leaderboard: true
-                        })
+                        }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
@@ -7719,7 +7719,7 @@
                         () => scheduleCommitteeRealtimeReload({
                             matches: true,
                             leaderboard: true
-                        })
+                        }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
@@ -7730,7 +7730,7 @@
                         },
                         () => scheduleCommitteeRealtimeReload({
                             matches: true
-                        })
+                        }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
