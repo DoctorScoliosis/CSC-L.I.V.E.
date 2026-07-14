@@ -1038,6 +1038,11 @@
                 display: flex;
             }
 
+            body.match-controls-pending #matchPrimaryControls,
+            body.match-controls-pending #matchViewFilterCard {
+                display: none !important;
+            }
+
             .match-control-bar {
                 display: flex;
                 align-items: center;
@@ -1188,7 +1193,7 @@
     </style>
     </head>
 
-    <body class="bg-gray-50 overflow-hidden">
+    <body class="bg-gray-50 overflow-hidden match-controls-pending">
         <div class="committee-shell min-h-screen flex">
 
             <!-- Sidebar -->
@@ -2632,6 +2637,10 @@
                         matchHeaderControls.classList.remove("is-active");
                         matchControlsHome.classList.toggle("match-controls-home-collapsed", isMatchesTab);
                     }
+                }
+
+                function revealPlacedMatchControls() {
+                    document.body.classList.remove("match-controls-pending");
                 }
 
                 window.onCommitteeTabSwitch = placeMatchControlsForTab;
@@ -7539,6 +7548,8 @@
 
                 if (!await loadCurrentDashboardUser()) return;
                 setActiveMatchScopeFilter(activeMatchScopeFilter);
+                placeMatchControlsForTab(document.querySelector(".tab-content:not(.hidden)")?.id || "overview");
+                revealPlacedMatchControls();
 
                 await Promise.all([
                     loadOverviewCounts(),
