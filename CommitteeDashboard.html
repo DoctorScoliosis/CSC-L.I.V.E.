@@ -742,6 +742,68 @@
                 width: 4.35rem;
             }
 
+            .basketball-score-teams-grid {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            }
+
+            @media (max-width: 640px) {
+                .basketball-score-sheet {
+                    padding: 0.5rem;
+                }
+
+                .basketball-score-teams-grid {
+                    gap: 0.45rem !important;
+                }
+
+                .basketball-score-team > div:first-child {
+                    padding-left: 0.55rem !important;
+                    padding-right: 0.55rem !important;
+                }
+
+                .basketball-score-team h4 {
+                    font-size: clamp(0.62rem, 2.6vw, 0.82rem) !important;
+                }
+
+                .basketball-score-team .basketball-team-total {
+                    font-size: clamp(1.15rem, 5.8vw, 1.7rem) !important;
+                }
+
+                .basketball-score-input {
+                    padding: 0.28rem 0.34rem;
+                    font-size: clamp(0.58rem, 2.35vw, 0.7rem);
+                }
+
+                .basketball-score-button {
+                    padding: 0.28rem 0.38rem;
+                    font-size: clamp(0.58rem, 2.35vw, 0.7rem);
+                    border-radius: 0.38rem;
+                }
+
+                .basketball-score-table {
+                    min-width: 0 !important;
+                    font-size: clamp(0.55rem, 2.1vw, 0.68rem) !important;
+                }
+
+                .basketball-score-table th,
+                .basketball-score-table td {
+                    padding-left: 0.18rem !important;
+                    padding-right: 0.18rem !important;
+                }
+
+                .basketball-score-table .basketball-active-column {
+                    width: clamp(2.35rem, 10vw, 3rem);
+                }
+
+                .basketball-score-table .basketball-stat-column {
+                    width: clamp(3.1rem, 14vw, 3.8rem);
+                }
+
+                .basketball-active-player-btn {
+                    width: clamp(1.55rem, 7vw, 1.9rem) !important;
+                    height: clamp(1.55rem, 7vw, 1.9rem) !important;
+                }
+            }
+
             .basketball-score-scroll {
                 overflow-y: hidden;
             }
@@ -3360,8 +3422,9 @@
                                             data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
                                             data-id-number="${escapeHTML(row.id_number || "")}"
                                             data-row-key="${escapeHTML(rowKey)}"
-                                            ${canManageCurrentMatch && hasSavedPlayer ? "" : "disabled"}
-                                            class="basketball-score-button basketball-points-btn ${hasSavedPlayer ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                            ${canManageCurrentMatch && hasSavedPlayer && isActive ? "" : "disabled"}
+                                            title="${isActive ? "Add points for the active quarter" : "Select this player as active before adding points"}"
+                                            class="basketball-score-button basketball-points-btn ${hasSavedPlayer && isActive ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
                                             ${Number(row.points) || 0}
                                         </button>
                                     </div>
@@ -3392,8 +3455,9 @@
                                             data-id-number="${escapeHTML(row.id_number || "")}"
                                             data-stat-field="fouls"
                                             data-stat-amount="1"
-                                            ${canManageCurrentMatch && hasSavedPlayer ? "" : "disabled"}
-                                            class="basketball-score-button basketball-stat-adjust-btn ${hasSavedPlayer ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
+                                            ${canManageCurrentMatch && hasSavedPlayer && isActive ? "" : "disabled"}
+                                            title="${isActive ? "Add foul for the active quarter" : "Select this player as active before adding fouls"}"
+                                            class="basketball-score-button basketball-stat-adjust-btn ${hasSavedPlayer && isActive ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
                                             ${Number(row.fouls) || 0}
                                         </button>
                                     </div>
@@ -3423,7 +3487,7 @@
                                 <div class="flex items-center justify-between gap-2 px-3 py-2">
                                     <h4 class="text-sm font-black uppercase ${theme.text}">${escapeHTML(teamName)}</h4>
                                     <div class="text-right">
-                                        <p class="text-3xl font-black leading-none ${theme.text}">${gameTotals.points}</p>
+                                        <p class="basketball-team-total text-3xl font-black leading-none ${theme.text}">${gameTotals.points}</p>
                                     </div>
                                 </div>
                                 <div class="basketball-score-scroll overflow-x-auto xl:overflow-x-visible">
@@ -3459,7 +3523,7 @@
                                 </div>
                                 <p class="text-xs font-bold text-slate-700">Game Scores: ${teamOneGameTotals.points} - ${teamTwoGameTotals.points}</p>
                             </div>
-                            <div class="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                            <div class="basketball-score-teams-grid grid gap-3">
                                 ${renderTeamSheet("one", {
                                     border: "#93c5fd",
                                     bg: "#eff6ff",
@@ -3816,6 +3880,11 @@
 
                     if (!statRow) {
                         alert("Please type and save the player ID first.");
+                        return;
+                    }
+
+                    if (Number(amount) > 0 && !statRow.is_active) {
+                        alert("Select this player as active in the current quarter before adding points or fouls.");
                         return;
                     }
 
