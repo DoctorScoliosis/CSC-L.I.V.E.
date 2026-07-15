@@ -4131,6 +4131,83 @@
                     return profile?.assigned_sport_name || profile?.sport_name || profile?.sport || "Unassigned";
                 }
 
+                function normalizeSportGroupKey(value) {
+                    return String(value || "")
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "");
+                }
+
+                function getGeneralSportName(name) {
+                    const cleanedName = String(name || "Unnamed sport")
+                        .replace(/\s+/g, " ")
+                        .trim();
+                    const categoryStartWords = new Set([
+                        "a", "b", "c", "d", "e",
+                        "boys", "boy", "girls", "girl",
+                        "men", "man", "mens", "male",
+                        "women", "woman", "womens", "female",
+                        "mixed", "singles", "single", "doubles", "double",
+                        "relay", "backstroke", "butterfly", "freestyle",
+                        "division", "div", "category", "cat",
+                        "bracket", "pool", "group", "class"
+                    ]);
+                    const normalizedName = cleanedName
+                        .replace(/[()']/g, " ")
+                        .replace(/[-:/]+/g, " ")
+                        .replace(/\s+/g, " ")
+                        .trim();
+                    const tokens = normalizedName.split(" ").filter(Boolean);
+
+                    for (let index = 1; index < tokens.length; index += 1) {
+                        const token = tokens[index].toLowerCase();
+
+                        if (
+                            categoryStartWords.has(token)
+                            || /^[a-e]$/i.test(token)
+                            || /^\d/.test(token)
+                            || /^\d+m$/i.test(token)
+                        ) {
+                            return tokens.slice(0, index).join(" ") || cleanedName;
+                        }
+                    }
+
+                    return tokens.join(" ") || cleanedName;
+                }
+
+                function getContactSportGroups(sports = registeredSportsData) {
+                    const groups = new Map();
+
+                    (sports || []).forEach(sport => {
+                        const sportName = sport.sport_name || sport.name || "Unnamed sport";
+                        const generalName = getGeneralSportName(sportName);
+                        const key = normalizeSportGroupKey(generalName);
+
+                        if (!groups.has(key)) {
+                            groups.set(key, {
+                                id: `__sport_group__:${key}`,
+                                sport_name: generalName,
+                                sourceSports: []
+                            });
+                        }
+
+                        groups.get(key).sourceSports.push(sport);
+                    });
+
+                    return [...groups.values()].sort((a, b) => a.sport_name.localeCompare(b.sport_name));
+                }
+
+                function getContactSportGroupKey(profile) {
+                    if (!profile || normalizeComparableValue(profile.role) === "admin") {
+                        return "";
+                    }
+
+                    const assignedSportId = String(profile.assigned_sport_id || profile.assigned_game_id || profile.sport_id || "").trim();
+                    const assignedSport = registeredSportsData.find(sport => String(sport.id) === assignedSportId);
+                    const assignedSportName = assignedSport?.sport_name || getProfileSportName(profile);
+                    return normalizeSportGroupKey(getGeneralSportName(assignedSportName));
+                }
+
                 function getProfilePhone(profile) {
                     return profile?.contact_phone || profile?.phone_number || profile?.phone || profile?.mobile_number || profile?.contact_number || "";
                 }
@@ -4170,7 +4247,7 @@
                         return "Admin";
                     }
 
-                    const selectedSport = registeredSportsData.find(sport => String(sport.id) === String(activeContactSportId));
+                    const selectedSport = getContactSportGroups().find(sport => String(sport.id) === String(activeContactSportId));
                     return selectedSport?.sport_name || "Selected sport";
                 }
 
@@ -4193,7 +4270,7 @@
                         <option value="__admin__">Admin</option>
                     `;
 
-                    (sports || []).forEach(sport => {
+                    getContactSportGroups(sports).forEach(sport => {
                         const option = document.createElement("option");
                         option.value = sport.id;
                         option.textContent = sport.sport_name;
@@ -4202,7 +4279,7 @@
 
                     const stillExists = !previousValue
                         || previousValue === "__admin__"
-                        || (sports || []).some(sport => String(sport.id) === String(previousValue));
+                        || getContactSportGroups(sports).some(sport => String(sport.id) === String(previousValue));
 
                     activeContactSportId = stillExists ? previousValue : "";
                     contactsSportSelect.value = activeContactSportId;
@@ -4220,9 +4297,12 @@
                         );
                     }
 
+                    const selectedGroup = getContactSportGroups().find(group => String(group.id) === String(sportId));
+                    const selectedGroupKey = normalizeSportGroupKey(selectedGroup?.sport_name || sportId);
+
                     return contactPersonnelData.filter(profile =>
                         normalizeComparableValue(profile.role) !== "admin"
-                        && String(profile.assigned_sport_id || "") === String(sportId)
+                        && getContactSportGroupKey(profile) === selectedGroupKey
                     );
                 }
 
