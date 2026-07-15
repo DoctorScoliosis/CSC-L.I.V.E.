@@ -3141,9 +3141,42 @@
                     return Math.min(4, Math.max(1, Number(match?.game_period) || 1));
                 }
 
+                function getSafeBasketballStatRows(rows) {
+                    const mergedRows = new Map();
+
+                    (Array.isArray(rows) ? rows : []).forEach(row => {
+                        const playerKey = normalizeTeamValue(row.id_number || row.participant_id || row.id);
+                        const key = [
+                            row.match_id,
+                            row.team_id,
+                            Number(row.game_period || 1),
+                            playerKey
+                        ].join(":");
+
+                        if (!mergedRows.has(key)) {
+                            mergedRows.set(key, { ...row });
+                            return;
+                        }
+
+                        const existing = mergedRows.get(key);
+                        mergedRows.set(key, {
+                            ...existing,
+                            ...row,
+                            points: Math.max(Number(existing.points) || 0, Number(row.points) || 0),
+                            fouls: Math.max(Number(existing.fouls) || 0, Number(row.fouls) || 0),
+                            is_active: Boolean(existing.is_active || row.is_active),
+                            player_name: row.player_name || existing.player_name,
+                            id_number: row.id_number || existing.id_number,
+                            participant_id: row.participant_id || existing.participant_id
+                        });
+                    });
+
+                    return Array.from(mergedRows.values());
+                }
+
                 function getBasketballTeamStats(match, teamSide, gamePeriod = getBasketballActivePeriod(match)) {
                     const teamId = getTeamId(match, teamSide);
-                    return getBasketballStatsForMatch(match.id)
+                    return getSafeBasketballStatRows(getBasketballStatsForMatch(match.id))
                         .filter(row => Number(row.team_id) === Number(teamId))
                         .filter(row => Number(row.game_period || 1) === Number(gamePeriod))
                         .sort((first, second) => {
@@ -3196,10 +3229,9 @@
                 function getBasketballDisplayRows(match, teamSide) {
                     const activePeriod = getBasketballActivePeriod(match);
                     const teamId = getTeamId(match, teamSide);
-                    const allTeamRows = getBasketballStatsForMatch(match.id)
+                    const allTeamRows = getSafeBasketballStatRows(getBasketballStatsForMatch(match.id))
                         .filter(row => Number(row.team_id) === Number(teamId));
-                    const periodRows = getBasketballStatsForMatch(match.id)
-                        .filter(row => Number(row.team_id) === Number(teamId))
+                    const periodRows = allTeamRows
                         .filter(row => Number(row.game_period || 1) === Number(activePeriod));
                     const periodRowsByIdNumber = new Map();
 
@@ -3242,7 +3274,7 @@
 
                 function getBasketballTotals(match, teamSide, gamePeriod = null) {
                     const teamId = getTeamId(match, teamSide);
-                    const rows = getBasketballStatsForMatch(match.id)
+                    const rows = getSafeBasketballStatRows(getBasketballStatsForMatch(match.id))
                         .filter(row => Number(row.team_id) === Number(teamId))
                         .filter(row => gamePeriod === null || Number(row.game_period || 1) === Number(gamePeriod));
 
@@ -3269,7 +3301,7 @@
                             : "";
                         return `
                             <tr class="border-b border-slate-200 bg-white/80">
-                                <td class="px-2 py-1 text-center text-xs font-black">
+                                <td class="basketball-active-column px-2 py-1 text-center text-xs font-black">
                                     <button
                                         type="button"
                                         data-match-id="${match.id}"
@@ -3284,7 +3316,7 @@
                                         ${index + 1}
                                     </button>
                                 </td>
-                                <td class="px-2 py-1">
+                                <td class="basketball-player-column px-2 py-1">
                                     <input
                                         type="text"
                                         value="${escapeHTML(displayValue)}"
@@ -3302,7 +3334,7 @@
                                         ${row.id || row.lineup_id ? "readonly" : ""}
                                         class="basketball-score-input basketball-player-id-input ${row.id || row.lineup_id ? "cursor-pointer truncate bg-slate-50" : ""}">
                                 </td>
-                                <td class="px-2 py-1 text-center">
+                                <td class="basketball-stat-column px-2 py-1 text-center">
                                     <div class="inline-flex items-center gap-1">
                                         <button
                                             type="button"
@@ -3311,6 +3343,7 @@
                                             data-game-period="${activePeriod}"
                                             data-stat-id="${escapeHTML(row.id || "")}"
                                             data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
+                                            data-id-number="${escapeHTML(row.id_number || "")}"
                                             data-stat-field="points"
                                             data-stat-amount="-1"
                                             ${canManageCurrentMatch && hasSavedPlayer ? "" : "disabled"}
@@ -3325,6 +3358,7 @@
                                             data-team-side="${teamSide}"
                                             data-stat-id="${escapeHTML(row.id || "")}"
                                             data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
+                                            data-id-number="${escapeHTML(row.id_number || "")}"
                                             data-row-key="${escapeHTML(rowKey)}"
                                             ${canManageCurrentMatch && hasSavedPlayer ? "" : "disabled"}
                                             class="basketball-score-button basketball-points-btn ${hasSavedPlayer ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
@@ -3332,7 +3366,7 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td class="px-2 py-1 text-center">
+                                <td class="basketball-stat-column px-2 py-1 text-center">
                                     <div class="inline-flex items-center gap-1">
                                         <button
                                             type="button"
@@ -3341,6 +3375,7 @@
                                             data-game-period="${activePeriod}"
                                             data-stat-id="${escapeHTML(row.id || "")}"
                                             data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
+                                            data-id-number="${escapeHTML(row.id_number || "")}"
                                             data-stat-field="fouls"
                                             data-stat-amount="-1"
                                             ${canManageCurrentMatch && hasSavedPlayer ? "" : "disabled"}
@@ -3354,6 +3389,7 @@
                                             data-game-period="${activePeriod}"
                                             data-stat-id="${escapeHTML(row.id || "")}"
                                             data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
+                                            data-id-number="${escapeHTML(row.id_number || "")}"
                                             data-stat-field="fouls"
                                             data-stat-amount="1"
                                             ${canManageCurrentMatch && hasSavedPlayer ? "" : "disabled"}
@@ -3648,8 +3684,8 @@
                         const primary = sortedRows[0];
                         const duplicateIds = sortedRows.slice(1).map(row => row.id).filter(Boolean);
                         const latestNamedRow = [...sortedRows].reverse().find(row => row.player_name || row.id_number) || primary;
-                        const mergedPoints = sortedRows.reduce((total, row) => total + (Number(row.points) || 0), 0);
-                        const mergedFouls = sortedRows.reduce((total, row) => total + (Number(row.fouls) || 0), 0);
+                        const mergedPoints = Math.max(...sortedRows.map(row => Number(row.points) || 0));
+                        const mergedFouls = Math.max(...sortedRows.map(row => Number(row.fouls) || 0));
 
                         const { error: updateError } = await supabase
                             .from(BASKETBALL_STATS_TABLE)
@@ -3687,7 +3723,8 @@
                         teamId: Number(button.dataset.teamId) || null,
                         gamePeriod: Math.min(4, Math.max(1, Number(button.dataset.gamePeriod) || 1)),
                         statId: button.dataset.statId || "",
-                        lineupStatId: button.dataset.lineupStatId || ""
+                        lineupStatId: button.dataset.lineupStatId || "",
+                        idNumber: button.dataset.idNumber || ""
                     };
 
                     const row = Array.from(basketballStatsByMatch.values())
@@ -3717,7 +3754,14 @@
 
                     const lineupRow = Array.from(basketballStatsByMatch.values())
                         .flat()
-                        .find(row => String(row.id) === String(options.lineupStatId || ""));
+                        .find(row =>
+                            String(row.id) === String(options.lineupStatId || "")
+                            || (
+                                Number(row.match_id) === Number(options.matchId)
+                                && Number(row.team_id) === Number(options.teamId)
+                                && normalizeTeamValue(row.id_number || row.participant_id) === normalizeTeamValue(options.idNumber)
+                            )
+                        );
 
                     if (!lineupRow) return null;
 
@@ -6739,7 +6783,7 @@
 
                     document.querySelectorAll(".basketball-points-btn").forEach(button => {
                         button.addEventListener("click", function () {
-                            if (!this.dataset.statId && !this.dataset.lineupStatId) {
+                            if (!this.dataset.statId && !this.dataset.lineupStatId && !this.dataset.idNumber) {
                                 alert("Please type and save the player ID first.");
                                 return;
                             }
@@ -6749,7 +6793,7 @@
 
                     document.querySelectorAll(".basketball-stat-adjust-btn").forEach(button => {
                         button.addEventListener("click", async function () {
-                            if (!this.dataset.statId && !this.dataset.lineupStatId) {
+                            if (!this.dataset.statId && !this.dataset.lineupStatId && !this.dataset.idNumber) {
                                 alert("Please type and save the player ID first.");
                                 return;
                             }
@@ -6761,7 +6805,8 @@
                                     matchId: this.dataset.matchId,
                                     teamId: this.dataset.teamId,
                                     gamePeriod: this.dataset.gamePeriod,
-                                    lineupStatId: this.dataset.lineupStatId
+                                    lineupStatId: this.dataset.lineupStatId,
+                                    idNumber: this.dataset.idNumber
                                 }
                             );
                         });
@@ -7565,7 +7610,7 @@
                 });
                 document.querySelectorAll(".basketball-point-choice").forEach(button => {
                     button.addEventListener("click", async function () {
-                        if (!pendingBasketballPointTarget?.statId && !pendingBasketballPointTarget?.lineupStatId) {
+                        if (!pendingBasketballPointTarget?.statId && !pendingBasketballPointTarget?.lineupStatId && !pendingBasketballPointTarget?.idNumber) {
                             closeBasketballPointModalFunction();
                             return;
                         }

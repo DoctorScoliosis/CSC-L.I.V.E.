@@ -1131,10 +1131,43 @@
                 return basketballStatsByMatch.get(Number(matchId)) || [];
             }
 
+            function getSafeBasketballStatRows(rows) {
+                const mergedRows = new Map();
+
+                (Array.isArray(rows) ? rows : []).forEach(row => {
+                    const playerKey = normalizeTeamValue(row.id_number || row.participant_id || row.id);
+                    const key = [
+                        row.match_id,
+                        row.team_id,
+                        Number(row.game_period || 1),
+                        playerKey
+                    ].join(":");
+
+                    if (!mergedRows.has(key)) {
+                        mergedRows.set(key, { ...row });
+                        return;
+                    }
+
+                    const existing = mergedRows.get(key);
+                    mergedRows.set(key, {
+                        ...existing,
+                        ...row,
+                        points: Math.max(Number(existing.points) || 0, Number(row.points) || 0),
+                        fouls: Math.max(Number(existing.fouls) || 0, Number(row.fouls) || 0),
+                        is_active: Boolean(existing.is_active || row.is_active),
+                        player_name: row.player_name || existing.player_name,
+                        id_number: row.id_number || existing.id_number,
+                        participant_id: row.participant_id || existing.participant_id
+                    });
+                });
+
+                return Array.from(mergedRows.values());
+            }
+
             function getStudentBasketballTeamRows(match, teamSide, activeOnly = false) {
                 const teamId = getTeamId(match, teamSide);
                 const activePeriod = getBasketballActivePeriod(match);
-                const allTeamRows = getBasketballStatsForMatch(match.id)
+                const allTeamRows = getSafeBasketballStatRows(getBasketballStatsForMatch(match.id))
                     .filter(row => Number(row.team_id) === Number(teamId));
 
                 return allTeamRows
@@ -1163,7 +1196,7 @@
 
             function getStudentBasketballTotals(match, teamSide, gamePeriod = null) {
                 const teamId = getTeamId(match, teamSide);
-                return getBasketballStatsForMatch(match.id)
+                return getSafeBasketballStatRows(getBasketballStatsForMatch(match.id))
                     .filter(row => Number(row.team_id) === Number(teamId))
                     .filter(row => gamePeriod === null || Number(row.game_period || 1) === Number(gamePeriod))
                     .reduce((totals, row) => {
