@@ -739,11 +739,12 @@
             const matchDetailsContent = document.getElementById("matchDetailsContent");
 
             const STUDENT_SCHEDULE_FILTER_KEY = "cscLiveStudentScheduleFilter";
+            const STUDENT_SPORT_CATEGORY_FILTER_KEY = "cscLiveStudentSportCategoryFilter";
             const VALID_STUDENT_SCHEDULE_FILTERS = ["Next", "Ongoing", "Done"];
             let activeScheduleFilter = VALID_STUDENT_SCHEDULE_FILTERS.includes(localStorage.getItem(STUDENT_SCHEDULE_FILTER_KEY))
                 ? localStorage.getItem(STUDENT_SCHEDULE_FILTER_KEY)
                 : "Next";
-            let activeSportCategoryFilter = "All";
+            let activeSportCategoryFilter = localStorage.getItem(STUDENT_SPORT_CATEGORY_FILTER_KEY) || "All";
             let studentMatchesData = [];
             let basketballStatsByMatch = new Map();
             let registeredSports = [];
@@ -1439,6 +1440,7 @@
 
                 const stillExists = previousValue === "All" || registeredSports.some(sport => String(sport.id) === String(previousValue));
                 activeSportCategoryFilter = stillExists ? previousValue : "All";
+                localStorage.setItem(STUDENT_SPORT_CATEGORY_FILTER_KEY, activeSportCategoryFilter);
                 gameCategoryFilter.value = activeSportCategoryFilter;
             }
 
@@ -2424,6 +2426,7 @@
             if (gameCategoryFilter) {
                 gameCategoryFilter.addEventListener("change", function () {
                     activeSportCategoryFilter = this.value || "All";
+                    localStorage.setItem(STUDENT_SPORT_CATEGORY_FILTER_KEY, activeSportCategoryFilter);
                     renderMatches();
                 });
             }
