@@ -1103,6 +1103,18 @@
                 return normalizeSportName(getSportName(match)).includes("volleyball");
             }
 
+            function hasPlayerScoreSheet(match) {
+                return isBasketballSport(match) || isVolleyballSport(match);
+            }
+
+            function getScoreSheetPeriodLimit(match) {
+                return isVolleyballSport(match) ? 5 : 4;
+            }
+
+            function getScoreSheetFaultLabel(match) {
+                return isVolleyballSport(match) ? "FLT" : "FLS";
+            }
+
             function getMatchStageLabel(stage) {
                 if (!String(stage || "").trim()) {
                     return "Elimination Round";
@@ -1124,7 +1136,7 @@
             }
 
             function getBasketballActivePeriod(match) {
-                return Math.min(4, Math.max(1, Number(match?.game_period) || 1));
+                return Math.min(getScoreSheetPeriodLimit(match), Math.max(1, Number(match?.game_period) || 1));
             }
 
             function getBasketballStatsForMatch(matchId) {
@@ -1207,11 +1219,14 @@
             }
 
             function renderStudentBasketballScoreSheet(match, options = {}) {
-                if (!isBasketballSport(match) || match.status !== "Ongoing") {
+                if (!hasPlayerScoreSheet(match) || match.status !== "Ongoing") {
                     return "";
                 }
 
                 const { compact = false } = options;
+                const isVolleyballMatch = isVolleyballSport(match);
+                const faultLabel = getScoreSheetFaultLabel(match);
+                const scoreSheetTitle = isVolleyballMatch ? "Volleyball Score Sheet Preview" : "Basketball Score Sheet Preview";
                 const teamOneGameTotals = getStudentBasketballTotals(match, "one");
                 const teamTwoGameTotals = getStudentBasketballTotals(match, "two");
 
@@ -1238,7 +1253,7 @@
                                             <th class="w-6 py-1.5 text-left sm:w-8 sm:py-2">#</th>
                                             <th class="py-1.5 text-left sm:py-2">Player</th>
                                             <th class="w-10 whitespace-nowrap py-1.5 text-center sm:w-12 sm:py-2">PTS</th>
-                                            <th class="w-10 whitespace-nowrap py-1.5 text-center sm:w-12 sm:py-2">FLS</th>
+                                            <th class="w-10 whitespace-nowrap py-1.5 text-center sm:w-12 sm:py-2">${faultLabel}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1267,7 +1282,7 @@
                     <div class="student-basketball-score-preview ${compact ? "mt-4" : ""} rounded-2xl border border-slate-200 bg-white/85 p-3 shadow-sm">
                         <div class="mb-3">
                             <div>
-                                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Basketball Score Sheet Preview</p>
+                                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">${scoreSheetTitle}</p>
                             </div>
                         </div>
                         <div class="student-basketball-score-grid grid gap-2 sm:gap-3">

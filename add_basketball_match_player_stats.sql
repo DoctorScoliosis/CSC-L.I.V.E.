@@ -12,7 +12,7 @@ create table if not exists public.basketball_match_player_stats (
     fouls integer not null default 0,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
-    constraint basketball_match_player_stats_period_check check (game_period between 1 and 4),
+    constraint basketball_match_player_stats_period_check check (game_period between 1 and 5),
     constraint basketball_match_player_stats_unique_player_period unique (match_id, team_id, game_period, id_number),
     constraint basketball_match_player_stats_points_nonnegative check (points >= 0),
     constraint basketball_match_player_stats_fouls_nonnegative check (fouls >= 0)
@@ -87,7 +87,7 @@ alter table public.basketball_match_player_stats
 
 alter table public.basketball_match_player_stats
     add constraint basketball_match_player_stats_period_check
-    check (game_period between 1 and 4);
+    check (game_period between 1 and 5);
 
 alter table public.basketball_match_player_stats
     drop constraint if exists basketball_match_player_stats_unique_player_period;
