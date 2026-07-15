@@ -742,6 +742,14 @@
                 width: 4.25rem;
             }
 
+            .basketball-score-control {
+                display: inline-flex;
+                width: 100%;
+                align-items: center;
+                justify-content: center;
+                gap: 0.25rem;
+            }
+
             .basketball-score-teams-grid {
                 grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             }
@@ -3397,7 +3405,7 @@
                                         class="basketball-score-input basketball-player-id-input ${row.id || row.lineup_id ? "cursor-pointer truncate bg-slate-50" : ""}">
                                 </td>
                                 <td class="basketball-stat-column px-2 py-1 text-center">
-                                    <div class="inline-flex items-center gap-1">
+                                    <div class="basketball-score-control">
                                         <button
                                             type="button"
                                             data-match-id="${match.id}"
@@ -3430,7 +3438,7 @@
                                     </div>
                                 </td>
                                 <td class="basketball-stat-column px-2 py-1 text-center">
-                                    <div class="inline-flex items-center gap-1">
+                                    <div class="basketball-score-control">
                                         <button
                                             type="button"
                                             data-match-id="${match.id}"
