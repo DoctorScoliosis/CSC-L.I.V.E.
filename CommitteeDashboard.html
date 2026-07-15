@@ -2479,6 +2479,7 @@
                 const MATCHES_TABLE = "scheduled_matches";
                 const GAME_HISTORY_TABLE = "game_history";
                 const BASKETBALL_STATS_TABLE = "basketball_match_player_stats";
+                const BASKETBALL_STAT_FIELDS = new Set(["points", "fouls"]);
                 const SPORTS_TABLE = "sports";
                 const ANNOUNCEMENTS_TABLE = "announcements";
                 const CONVERSATIONS_TABLE = "conversations";
@@ -3762,6 +3763,11 @@
                 }
 
                 async function addBasketballStatValue(statId, field, amount, options = {}) {
+                    if (!BASKETBALL_STAT_FIELDS.has(field)) {
+                        console.warn("Blocked invalid basketball stat field:", field);
+                        return;
+                    }
+
                     const statRow = await ensureBasketballPeriodStatRow(statId, options);
 
                     if (!statRow) {
