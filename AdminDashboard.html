@@ -2708,6 +2708,7 @@
             const SPORTS_TABLE = "sports";
             const ATTENDANCE_TABLE = "attendance";
             const GAME_HISTORY_TABLE = "game_history";
+            const BASKETBALL_STATS_TABLE = "basketball_match_player_stats";
             const STUDENT_FEEDBACK_TABLE = "student_feedback";
             const ANNOUNCEMENTS_TABLE = "announcements";
             const ACCOUNT_PROFILES_TABLE = "user_profiles";
@@ -4615,6 +4616,15 @@
                 }
 
                 try {
+                    const { error: playerStatsDeleteError } = await supabase
+                        .from(BASKETBALL_STATS_TABLE)
+                        .delete()
+                        .eq("match_id", matchId);
+
+                    if (playerStatsDeleteError) {
+                        throw playerStatsDeleteError;
+                    }
+
                     const { error: historyDeleteError } = await supabase
                         .from(GAME_HISTORY_TABLE)
                         .delete()
@@ -4634,6 +4644,8 @@
                         throw matchDeleteError;
                     }
 
+                    adminPendingDeleteRequests = adminPendingDeleteRequests.filter(match => Number(match.id) !== Number(matchId));
+                    updateAdminMessageNotification();
                     alert("Delete request approved. Match removed.");
                     await loadAdminOverviewCounts();
                 } catch (error) {
@@ -7788,12 +7800,12 @@
                 conversations: false
             };
 
-            function scheduleAdminRealtimeReload(tasks, delay = 250) {
+            function scheduleAdminRealtimeReload(tasks, delay = 250, options = {}) {
                 Object.assign(pendingAdminReloads, tasks);
                 window.clearTimeout(adminRealtimeReloadTimer);
 
                 adminRealtimeReloadTimer = window.setTimeout(async () => {
-                    if (isAdminUserBusy()) {
+                    if (!options.force && isAdminUserBusy()) {
                         scheduleAdminRealtimeReload({}, ADMIN_REFRESH_IDLE_DELAY);
                         return;
                     }
@@ -7956,7 +7968,7 @@
                         schema: "public",
                         table: MATCHES_TABLE
                     },
-                    () => scheduleAdminRealtimeReload({ overview: true })
+                    () => scheduleAdminRealtimeReload({ overview: true }, 0, { force: true })
                 )
                 .on(
                     "postgres_changes",
@@ -7983,7 +7995,7 @@
                         schema: "public",
                         table: STUDENT_FEEDBACK_TABLE
                     },
-                    () => scheduleAdminRealtimeReload({ feedback: true })
+                    () => scheduleAdminRealtimeReload({ feedback: true }, 0, { force: true })
                 )
                 .on(
                     "postgres_changes",
@@ -8001,7 +8013,7 @@
                         schema: "public",
                         table: ACCOUNT_PROFILES_TABLE
                     },
-                    () => scheduleAdminRealtimeReload({ accounts: true, contacts: true })
+                    () => scheduleAdminRealtimeReload({ accounts: true, contacts: true }, 0, { force: true })
                 )
                 .on(
                     "postgres_changes",

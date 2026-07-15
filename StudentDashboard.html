@@ -1367,11 +1367,11 @@
                 }, delay);
             }
 
-            function scheduleLiveLeaderboardReload(delay = 250) {
+            function scheduleLiveLeaderboardReload(delay = 250, { force = false } = {}) {
                 window.clearTimeout(leaderboardReloadTimer);
 
                 leaderboardReloadTimer = window.setTimeout(async () => {
-                    if (isStudentUserBusy()) {
+                    if (!force && isStudentUserBusy()) {
                         scheduleLiveLeaderboardReload(STUDENT_REFRESH_IDLE_DELAY);
                         return;
                     }
@@ -2470,29 +2470,29 @@
 
             supabase.channel("student-dashboard-realtime")
                 .on("postgres_changes", { event: "*", schema: "public", table: TEAMS_TABLE }, () => {
-                    scheduleLiveLeaderboardReload(150);
-                    scheduleLiveMatchReload(150);
+                    scheduleLiveLeaderboardReload(0, { force: true });
+                    scheduleLiveMatchReload(0, { force: true });
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: PARTICIPANTS_TABLE }, async () => {
                     await loadStats();
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: ATTENDANCE_TABLE }, () => {
-                    scheduleLiveLeaderboardReload(150);
+                    scheduleLiveLeaderboardReload(0, { force: true });
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: MATCHES_TABLE }, () => {
                     scheduleLiveMatchReload(0, { force: true });
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: GAME_HISTORY_TABLE }, () => {
-                    scheduleLiveLeaderboardReload(150);
-                    scheduleLiveMatchReload(150);
+                    scheduleLiveLeaderboardReload(0, { force: true });
+                    scheduleLiveMatchReload(0, { force: true });
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: BASKETBALL_STATS_TABLE }, () => {
                     scheduleLiveMatchReload(0, { force: true });
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: SPORTS_TABLE }, async () => {
-                    scheduleStudentSupplementalReload({ sports: true }, 150);
-                    scheduleLiveLeaderboardReload(150);
-                    scheduleLiveMatchReload(150);
+                    scheduleStudentSupplementalReload({ sports: true }, 0);
+                    scheduleLiveLeaderboardReload(0, { force: true });
+                    scheduleLiveMatchReload(0, { force: true });
                 })
                 .on("postgres_changes", { event: "*", schema: "public", table: ANNOUNCEMENTS_TABLE }, notifyStudentAnnouncementChange)
                 .subscribe((status) => {

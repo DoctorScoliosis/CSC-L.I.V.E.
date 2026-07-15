@@ -7862,7 +7862,7 @@
                             leaderboard: true,
                             teams: true,
                             matches: true
-                        })
+                        }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
@@ -7871,7 +7871,7 @@
                             schema: "public",
                             table: PARTICIPANTS_TABLE
                         },
-                        () => scheduleCommitteeRealtimeReload({ overview: true })
+                        () => scheduleCommitteeRealtimeReload({ overview: true }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
@@ -7883,7 +7883,7 @@
                         () => scheduleCommitteeRealtimeReload({
                             overview: true,
                             leaderboard: true
-                        })
+                        }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
@@ -7932,7 +7932,7 @@
                             sports: true,
                             matches: true,
                             leaderboard: true
-                        })
+                        }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
@@ -7950,7 +7950,7 @@
                             schema: "public",
                             table: "user_profiles"
                         },
-                        () => scheduleCommitteeRealtimeReload({ contacts: true })
+                        () => scheduleCommitteeRealtimeReload({ contacts: true }, 0, { force: true })
                     )
                     .on(
                         "postgres_changes",
