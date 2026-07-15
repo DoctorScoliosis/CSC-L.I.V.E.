@@ -3846,7 +3846,7 @@
 
                     const { data: insertedRow, error: insertError } = await supabase
                         .from(BASKETBALL_STATS_TABLE)
-                        .insert([{
+                        .upsert({
                             match_id: targetMatchId,
                             team_id: targetTeamId,
                             team_name: lineupRow.team_name,
@@ -3854,11 +3854,10 @@
                             participant_id: lineupRow.participant_id || null,
                             id_number: lineupRow.id_number,
                             player_name: lineupRow.player_name || lineupRow.id_number,
-                            points: 0,
-                            fouls: 0,
-                            is_active: Boolean(options.isActive),
                             updated_at: new Date().toISOString()
-                        }])
+                        }, {
+                            onConflict: "match_id,team_id,game_period,id_number"
+                        })
                         .select("*")
                         .single();
 
@@ -3924,7 +3923,7 @@
 
                         const { data: insertedRows, error: insertError } = await supabase
                             .from(BASKETBALL_STATS_TABLE)
-                            .insert([{
+                            .upsert({
                                 match_id: Number(options.matchId) || lineupRow.match_id,
                                 team_id: Number(options.teamId) || lineupRow.team_id,
                                 team_name: lineupRow.team_name,
@@ -3932,11 +3931,11 @@
                                 participant_id: lineupRow.participant_id || null,
                                 id_number: lineupRow.id_number,
                                 player_name: lineupRow.player_name || lineupRow.id_number,
-                                points: 0,
-                                fouls: 0,
                                 is_active: Boolean(nextActive),
                                 updated_at: new Date().toISOString()
-                            }])
+                            }, {
+                                onConflict: "match_id,team_id,game_period,id_number"
+                            })
                             .select("*")
                             .single();
 

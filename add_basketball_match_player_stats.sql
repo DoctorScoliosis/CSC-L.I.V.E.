@@ -34,8 +34,8 @@ with grouped as (
         game_period,
         lower(trim(id_number)) as normalized_id_number,
         (array_agg(id order by created_at asc nulls last))[1] as keep_id,
-        sum(points) as merged_points,
-        sum(fouls) as merged_fouls
+        max(points) as merged_points,
+        max(fouls) as merged_fouls
     from public.basketball_match_player_stats
     group by match_id, team_id, game_period, lower(trim(id_number))
     having count(*) > 1
