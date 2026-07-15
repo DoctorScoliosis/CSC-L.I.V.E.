@@ -720,6 +720,28 @@
                 font-weight: 900;
             }
 
+            .basketball-score-table th,
+            .basketball-score-table td {
+                white-space: nowrap;
+            }
+
+            .basketball-score-table th {
+                font-size: clamp(0.58rem, 0.78vw, 0.75rem);
+                line-height: 1;
+            }
+
+            .basketball-score-table .basketball-active-column {
+                width: 4.4rem;
+            }
+
+            .basketball-score-table .basketball-player-column {
+                width: auto;
+            }
+
+            .basketball-score-table .basketball-stat-column {
+                width: 4.35rem;
+            }
+
             .basketball-score-scroll {
                 overflow-y: hidden;
             }
@@ -3371,10 +3393,10 @@
                                     <table class="basketball-score-table w-full min-w-[26rem] table-fixed text-xs xl:min-w-0">
                                         <thead>
                                             <tr class="${theme.header}">
-                                                <th class="w-10 px-1 py-2 text-center">Active</th>
-                                                <th class="px-1.5 py-2 text-left">Player</th>
-                                                <th class="w-20 px-1 py-2 text-center">PTS</th>
-                                                <th class="w-20 px-1 py-2 text-center">FLS</th>
+                                                <th class="basketball-active-column px-1 py-2 text-center">Active</th>
+                                                <th class="basketball-player-column px-1.5 py-2 text-left">Player</th>
+                                                <th class="basketball-stat-column px-1 py-2 text-center">PTS</th>
+                                                <th class="basketball-stat-column px-1 py-2 text-center">FLS</th>
                                             </tr>
                                         </thead>
                                         <tbody class="basketball-score-body">${renderBasketballRows(match, teamSide, canManageCurrentMatch)}</tbody>
@@ -6213,6 +6235,10 @@
 
                 function renderMatchesIntoGrid(gridElement, matches, statusLabel) {
                     gridElement.innerHTML = "";
+                    const isOngoingGrid = statusLabel === "Ongoing";
+                    gridElement.className = isOngoingGrid
+                        ? "grid grid-cols-1 gap-6 justify-items-center"
+                        : "grid grid-cols-1 md:grid-cols-2 gap-6";
 
                     if (matches.length === 0) {
                         gridElement.innerHTML = `
@@ -6421,7 +6447,9 @@
                         `;
 
                         const matchCard = document.createElement("div");
-                        matchCard.className = "p-3 bg-white border-0 shadow-md rounded-lg";
+                        matchCard.className = isOngoing
+                            ? "w-full max-w-6xl p-3 bg-white border-0 shadow-md rounded-lg"
+                            : "p-3 bg-white border-0 shadow-md rounded-lg";
 
                         matchCard.innerHTML = `
                             <div class="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-2.5">
