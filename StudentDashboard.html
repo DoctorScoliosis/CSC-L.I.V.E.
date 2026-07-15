@@ -1095,6 +1095,10 @@
                 return String(value || "").trim().toLowerCase();
             }
 
+            function normalizeTeamValue(value) {
+                return String(value || "").trim().toLowerCase();
+            }
+
             function isBasketballSport(match) {
                 return normalizeSportName(getSportName(match)).includes("basketball");
             }
