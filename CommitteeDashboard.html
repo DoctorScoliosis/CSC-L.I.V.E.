@@ -2211,7 +2211,7 @@
             <div class="dashboard-modal-panel w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
                 <div class="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 class="text-lg font-black text-gray-900">Add Basketball Points</h2>
+                        <h2 id="basketballPointModalTitle" class="text-lg font-black text-gray-900">Add Points</h2>
                         <p id="basketballPointPlayerLabel" class="mt-1 text-sm font-semibold text-gray-600">Select points to add.</p>
                     </div>
 
@@ -2659,6 +2659,7 @@
                 const winnerActualPointsInput = document.getElementById("winnerActualPointsInput");
                 const loserActualPointsInput = document.getElementById("loserActualPointsInput");
                 const basketballPointModal = document.getElementById("basketballPointModal");
+                const basketballPointModalTitle = document.getElementById("basketballPointModalTitle");
                 const basketballPointPlayerLabel = document.getElementById("basketballPointPlayerLabel");
                 const closeBasketballPointModal = document.getElementById("closeBasketballPointModal");
 
@@ -3397,7 +3398,7 @@
                                         data-lineup-stat-id="${escapeHTML(row.lineup_id || row.id || "")}"
                                         data-is-active="${isActive ? "true" : "false"}"
                                         ${canManageCurrentMatch && (row.id || row.lineup_id) ? "" : "disabled"}
-                                        title="${row.id || row.lineup_id ? "Click to mark active for this quarter" : "Save player first"}"
+                                        title="${row.id || row.lineup_id ? `Click to mark active for this ${getScoreSheetPeriodLabel(match).toLowerCase()}` : "Save player first"}"
                                         class="basketball-active-player-btn inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${isActive ? "bg-green-600 text-white shadow" : row.id || row.lineup_id ? "bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-green-100" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
                                         ${index + 1}
                                     </button>
@@ -3447,7 +3448,7 @@
                                             data-id-number="${escapeHTML(row.id_number || "")}"
                                             data-row-key="${escapeHTML(rowKey)}"
                                             ${canManageCurrentMatch && hasSavedPlayer && isActive ? "" : "disabled"}
-                                            title="${isActive ? "Add points for the active quarter" : "Select this player as active before adding points"}"
+                                            title="${isActive ? `Add points for the active ${getScoreSheetPeriodLabel(match).toLowerCase()}` : "Select this player as active before adding points"}"
                                             class="basketball-score-button basketball-points-btn ${hasSavedPlayer && isActive ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
                                             ${Number(row.points) || 0}
                                         </button>
@@ -3480,7 +3481,7 @@
                                             data-stat-field="fouls"
                                             data-stat-amount="1"
                                             ${canManageCurrentMatch && hasSavedPlayer && isActive ? "" : "disabled"}
-                                            title="${isActive ? "Add foul for the active quarter" : "Select this player as active before adding fouls"}"
+                                            title="${isActive ? `Add ${getScoreSheetFaultLabel(match).toLowerCase()} for the active ${getScoreSheetPeriodLabel(match).toLowerCase()}` : `Select this player as active before adding ${getScoreSheetFaultLabel(match).toLowerCase()}`}"
                                             class="basketball-score-button basketball-stat-adjust-btn ${hasSavedPlayer && isActive ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"}">
                                             ${Number(row.fouls) || 0}
                                         </button>
@@ -3598,7 +3599,10 @@
                     const teamId = Number(input.dataset.teamId);
                     const selectedMatch = matchesData.find(match => Number(match.id) === matchId);
                     if (!selectedMatch || !enforceMatchPermission(selectedMatch)) return;
-                    const gamePeriod = Math.min(4, Math.max(1, Number(input.dataset.gamePeriod) || getBasketballActivePeriod(selectedMatch)));
+                    const gamePeriod = Math.min(
+                        getScoreSheetPeriodLimit(selectedMatch),
+                        Math.max(1, Number(input.dataset.gamePeriod) || getBasketballActivePeriod(selectedMatch))
+                    );
 
                     const teamSide = input.dataset.teamSide;
                     const teamName = getTeamName(selectedMatch, teamSide);
@@ -3810,10 +3814,12 @@
                 }
 
                 function openBasketballPointModal(button) {
+                    const selectedMatch = matchesData.find(match => Number(match.id) === Number(button.dataset.matchId));
+                    const periodLimit = getScoreSheetPeriodLimit(selectedMatch || "");
                     pendingBasketballPointTarget = {
                         matchId: Number(button.dataset.matchId),
                         teamId: Number(button.dataset.teamId) || null,
-                        gamePeriod: Math.min(4, Math.max(1, Number(button.dataset.gamePeriod) || 1)),
+                        gamePeriod: Math.min(periodLimit, Math.max(1, Number(button.dataset.gamePeriod) || 1)),
                         statId: button.dataset.statId || "",
                         lineupStatId: button.dataset.lineupStatId || "",
                         idNumber: button.dataset.idNumber || ""
@@ -3826,6 +3832,9 @@
                             || String(item.id) === String(pendingBasketballPointTarget.lineupStatId)
                         );
 
+                    if (basketballPointModalTitle) {
+                        basketballPointModalTitle.textContent = isVolleyballSport(selectedMatch || "") ? "Add Volleyball Points" : "Add Basketball Points";
+                    }
                     basketballPointPlayerLabel.textContent = row?.player_name || row?.id_number || "Selected player";
                     basketballPointModal.classList.remove("hidden");
                     basketballPointModal.classList.add("flex");
@@ -3857,9 +3866,10 @@
 
                     if (!lineupRow) return null;
 
-                    const targetPeriod = Math.min(4, Math.max(1, Number(options.gamePeriod) || 1));
                     const targetMatchId = Number(options.matchId) || lineupRow.match_id;
                     const targetTeamId = Number(options.teamId) || lineupRow.team_id;
+                    const selectedMatch = matchesData.find(match => Number(match.id) === Number(targetMatchId));
+                    const targetPeriod = Math.min(getScoreSheetPeriodLimit(selectedMatch || ""), Math.max(1, Number(options.gamePeriod) || 1));
                     const lineupKey = normalizeTeamValue(lineupRow.id_number || lineupRow.participant_id);
                     const periodRow = Array.from(basketballStatsByMatch.values())
                         .flat()
@@ -3911,7 +3921,8 @@
                     }
 
                     if (Number(amount) > 0 && !statRow.is_active) {
-                        alert("Select this player as active in the current quarter before adding points or fouls.");
+                        const selectedMatch = matchesData.find(match => Number(match.id) === Number(statRow.match_id || options.matchId));
+                        alert(`Select this player as active in the current ${getScoreSheetPeriodLabel(selectedMatch || "").toLowerCase()} before adding points or ${getScoreSheetFaultLabel(selectedMatch || "").toLowerCase()}.`);
                         return;
                     }
 
@@ -3949,13 +3960,14 @@
                             return;
                         }
 
+                        const selectedMatch = matchesData.find(match => Number(match.id) === Number(options.matchId || lineupRow.match_id));
                         const { data: insertedRows, error: insertError } = await supabase
                             .from(BASKETBALL_STATS_TABLE)
                             .upsert({
                                 match_id: Number(options.matchId) || lineupRow.match_id,
                                 team_id: Number(options.teamId) || lineupRow.team_id,
                                 team_name: lineupRow.team_name,
-                                game_period: Math.min(4, Math.max(1, Number(options.gamePeriod) || 1)),
+                                game_period: Math.min(getScoreSheetPeriodLimit(selectedMatch || ""), Math.max(1, Number(options.gamePeriod) || 1)),
                                 participant_id: lineupRow.participant_id || null,
                                 id_number: lineupRow.id_number,
                                 player_name: lineupRow.player_name || lineupRow.id_number,
