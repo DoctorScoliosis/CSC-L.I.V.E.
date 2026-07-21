@@ -81,6 +81,10 @@
         .leaderboard-team-cell { width: 40%; }
         .leaderboard-stat-cell { width: 16%; }
 
+        .leaderboard-defeated-short {
+            display: none;
+        }
+
         .leaderboard-points-badge {
             max-width: 100%;
             min-width: 2.6rem;
@@ -209,6 +213,23 @@
 
             .leaderboard-stat-cell {
                 width: 18%;
+            }
+
+            .leaderboard-stat-label {
+                display: inline-block;
+                max-width: 100%;
+                font-size: clamp(0.48rem, 2vw, 0.62rem);
+                letter-spacing: 0.02em;
+                line-height: 1;
+                white-space: nowrap;
+            }
+
+            .leaderboard-defeated-full {
+                display: none;
+            }
+
+            .leaderboard-defeated-short {
+                display: inline;
             }
 
             .leaderboard-table th:nth-child(3),
@@ -404,8 +425,8 @@
                                 <th class="leaderboard-rank-cell text-left py-5 px-6 font-bold uppercase text-xs tracking-wider">Rank</th>
                                 <th class="leaderboard-team-cell text-left py-5 px-6 font-bold uppercase text-xs tracking-wider">Team Name</th>
                                 <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Points</th>
-                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Victory</th>
-                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider">Defeated</th>
+                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider"><span class="leaderboard-stat-label">Victory</span></th>
+                                <th class="leaderboard-stat-cell text-center py-5 px-6 font-bold uppercase text-xs tracking-wider"><span class="leaderboard-stat-label"><span class="leaderboard-defeated-full">Defeated</span><span class="leaderboard-defeated-short">Def.</span></span></th>
                             </tr>
                         </thead>
 
