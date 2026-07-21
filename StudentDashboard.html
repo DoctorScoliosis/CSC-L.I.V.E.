@@ -1117,6 +1117,76 @@
                 return String(value || "").trim().toLowerCase();
             }
 
+            function normalizeSportGroupKey(value) {
+                return String(value || "")
+                    .trim()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "");
+            }
+
+            function getGeneralSportName(name) {
+                const cleanedName = String(name || "Unnamed sport")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                const categoryStartWords = new Set([
+                    "a", "b", "c", "d", "e",
+                    "boys", "boy", "girls", "girl",
+                    "men", "man", "mens", "male",
+                    "women", "woman", "womens", "female",
+                    "mixed", "singles", "single", "doubles", "double",
+                    "relay", "backstroke", "butterfly", "freestyle",
+                    "division", "div", "category", "cat",
+                    "bracket", "pool", "group", "class"
+                ]);
+                const normalizedName = cleanedName
+                    .replace(/[()']/g, " ")
+                    .replace(/[-:/]+/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                const tokens = normalizedName.split(" ").filter(Boolean);
+
+                for (let index = 1; index < tokens.length; index += 1) {
+                    const token = tokens[index].toLowerCase();
+
+                    if (
+                        categoryStartWords.has(token)
+                        || /^[a-e]$/i.test(token)
+                        || /^\d/.test(token)
+                        || /^\d+m$/i.test(token)
+                    ) {
+                        return tokens.slice(0, index).join(" ") || cleanedName;
+                    }
+                }
+
+                return tokens.join(" ") || cleanedName;
+            }
+
+            function getStudentSportCategoryGroups(sports = registeredSports) {
+                const groups = new Map();
+
+                (sports || []).forEach(sport => {
+                    const sportName = sport.sport_name || sport.name || "Unnamed sport";
+                    const generalName = getGeneralSportName(sportName);
+                    const key = normalizeSportGroupKey(generalName);
+
+                    if (!groups.has(key)) {
+                        groups.set(key, {
+                            id: `__sport_group__:${key}`,
+                            sport_name: generalName,
+                            sourceSports: []
+                        });
+                    }
+
+                    groups.get(key).sourceSports.push(sport);
+                });
+
+                return [...groups.values()].sort((a, b) => a.sport_name.localeCompare(b.sport_name));
+            }
+
+            function getMatchSportGroupId(match) {
+                return `__sport_group__:${normalizeSportGroupKey(getGeneralSportName(getSportName(match)))}`;
+            }
+
             function normalizeTeamValue(value) {
                 return String(value || "").trim().toLowerCase();
             }
@@ -1452,15 +1522,20 @@
                 const previousValue = activeSportCategoryFilter || "All";
                 gameCategoryFilter.innerHTML = `<option value="All">All Sports</option>`;
 
-                registeredSports.forEach(sport => {
+                const sportGroups = getStudentSportCategoryGroups(registeredSports);
+                sportGroups.forEach(sport => {
                     const option = document.createElement("option");
                     option.value = sport.id;
                     option.textContent = sport.sport_name || "Unnamed Sport";
                     gameCategoryFilter.appendChild(option);
                 });
 
-                const stillExists = previousValue === "All" || registeredSports.some(sport => String(sport.id) === String(previousValue));
-                activeSportCategoryFilter = stillExists ? previousValue : "All";
+                const savedExactSport = registeredSports.find(sport => String(sport.id) === String(previousValue));
+                const migratedGroupValue = savedExactSport
+                    ? `__sport_group__:${normalizeSportGroupKey(getGeneralSportName(savedExactSport.sport_name || savedExactSport.name))}`
+                    : previousValue;
+                const stillExists = migratedGroupValue === "All" || sportGroups.some(sport => String(sport.id) === String(migratedGroupValue));
+                activeSportCategoryFilter = stillExists ? migratedGroupValue : "All";
                 localStorage.setItem(STUDENT_SPORT_CATEGORY_FILTER_KEY, activeSportCategoryFilter);
                 gameCategoryFilter.value = activeSportCategoryFilter;
             }
@@ -2203,7 +2278,8 @@
                 if (activeSportCategoryFilter !== "All") {
                     filtered = filtered.filter(m =>
                         String(m.sport_id) === String(activeSportCategoryFilter) ||
-                        String(m.sport?.id) === String(activeSportCategoryFilter)
+                        String(m.sport?.id) === String(activeSportCategoryFilter) ||
+                        getMatchSportGroupId(m) === activeSportCategoryFilter
                     );
                 }
 
