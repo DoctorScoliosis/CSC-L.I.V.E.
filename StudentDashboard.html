@@ -1526,6 +1526,10 @@
                 activeSportCategoryFilter = stillExists ? migratedGroupValue : "All";
                 localStorage.setItem(STUDENT_SPORT_CATEGORY_FILTER_KEY, activeSportCategoryFilter);
                 gameCategoryFilter.value = activeSportCategoryFilter;
+
+                if (studentMatchesData.length > 0) {
+                    renderMatches();
+                }
             }
 
             function getStatusMeta(status) {
