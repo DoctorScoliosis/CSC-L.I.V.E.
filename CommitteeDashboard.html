@@ -6013,7 +6013,7 @@
                     try {
                         const { data: participant, error: participantError } = await supabase
                             .from(PARTICIPANTS_TABLE)
-                            .select("id, name, student_id, team, status")
+                            .select("id, name, student_id, team, home_college, import_college, status")
                             .eq("student_id", studentId)
                             .maybeSingle();
 
@@ -6037,7 +6037,7 @@
 
                         const { data: attendance, error: attendanceError } = await supabase
                             .from(ATTENDANCE_TABLE)
-                            .select("id, student_id, participant_name, team, status, attendance_date, checked_at")
+                            .select("id, student_id, participant_name, team, home_college, status, attendance_date, checked_at")
                             .eq("student_id", participant.student_id)
                             .eq("attendance_date", today)
                             .maybeSingle();
@@ -6069,7 +6069,12 @@
                                         </div>
 
                                         <div>
-                                            <p class="text-xs uppercase tracking-wide text-green-700">Team</p>
+                                            <p class="text-xs uppercase tracking-wide text-green-700">Home College</p>
+                                            <p class="font-semibold">${escapeHTML(participant.home_college || attendance?.home_college || participant.team || "No college")}</p>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs uppercase tracking-wide text-green-700">Team to Join</p>
                                             <p class="font-semibold">${escapeHTML(participant.team || "No team")}</p>
                                         </div>
 
@@ -6112,7 +6117,12 @@
                                         </div>
 
                                         <div>
-                                            <p class="text-xs uppercase tracking-wide text-red-700">Team</p>
+                                            <p class="text-xs uppercase tracking-wide text-red-700">Home College</p>
+                                            <p class="font-semibold">${escapeHTML(participant.home_college || attendance?.home_college || participant.team || "No college")}</p>
+                                        </div>
+
+                                        <div>
+                                            <p class="text-xs uppercase tracking-wide text-red-700">Team to Join</p>
                                             <p class="font-semibold">${escapeHTML(participant.team || "No team")}</p>
                                         </div>
 

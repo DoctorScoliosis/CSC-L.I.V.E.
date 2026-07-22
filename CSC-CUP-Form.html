@@ -344,9 +344,16 @@
                     </label>
 
                     <label class="block sm:col-span-2">
-                        <span class="mb-1 block text-sm font-black text-slate-700">Team to Join</span>
+                        <span class="mb-1 block text-sm font-black text-slate-700">Home College</span>
                         <select id="teamSelect" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
-                            <option value="">Loading teams...</option>
+                            <option value="">Loading colleges...</option>
+                        </select>
+                    </label>
+
+                    <label id="importCollegeField" class="hidden block sm:col-span-2">
+                        <span class="mb-1 block text-sm font-black text-slate-700">Team to Join for Import Player</span>
+                        <select id="importCollegeSelect" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                            <option value="">Loading colleges...</option>
                         </select>
                     </label>
 
@@ -517,6 +524,8 @@
         const formAlert = document.getElementById("formAlert");
         const submitButton = document.getElementById("submitButton");
         const teamSelect = document.getElementById("teamSelect");
+        const importCollegeField = document.getElementById("importCollegeField");
+        const importCollegeSelect = document.getElementById("importCollegeSelect");
         const gameScopeSelect = document.getElementById("gameScopeSelect");
         const majorSportField = document.getElementById("majorSportField");
         const majorSportSelect = document.getElementById("majorSportSelect");
@@ -713,16 +722,46 @@
 
             if (error) {
                 console.error("Team load error:", error);
-                teamSelect.innerHTML = `<option value="">Unable to load teams</option>`;
-                setAlert("Unable to load teams. Please refresh the page or contact the CSC admin.");
+                teamSelect.innerHTML = `<option value="">Unable to load colleges</option>`;
+                importCollegeSelect.innerHTML = `<option value="">Unable to load colleges</option>`;
+                setAlert("Unable to load colleges. Please refresh the page or contact the CSC admin.");
                 return;
             }
 
             const teams = data || [];
+            const optionsMarkup = teams.map(team => `<option value="${String(team.id)}" data-name="${escapeHTML(team.team || "")}">${escapeHTML(team.team || "Unnamed college")}</option>`).join("");
             teamSelect.innerHTML = `
-                <option value="">Select a team</option>
-                ${teams.map(team => `<option value="${String(team.id)}" data-name="${escapeHTML(team.team || "")}">${escapeHTML(team.team || "Unnamed team")}</option>`).join("")}
+                <option value="">Select your home college</option>
+                ${optionsMarkup}
             `;
+            importCollegeSelect.innerHTML = `
+                <option value="">Select the team to join</option>
+                ${optionsMarkup}
+            `;
+        }
+
+        function getSelectedOptionName(select) {
+            const selectedOption = select?.options?.[select.selectedIndex];
+            return selectedOption?.dataset?.name || selectedOption?.textContent || "";
+        }
+
+        function getSelectedOptionValue(select) {
+            return select?.value || "";
+        }
+
+        function getPlayableCollegeSelection(isImport) {
+            const select = isImport ? importCollegeSelect : teamSelect;
+            return {
+                id: getSelectedOptionValue(select),
+                name: getSelectedOptionName(select)
+            };
+        }
+
+        function getHomeCollegeSelection() {
+            return {
+                id: getSelectedOptionValue(teamSelect),
+                name: getSelectedOptionName(teamSelect)
+            };
         }
 
         function normalizeGameType(value) {
@@ -787,8 +826,11 @@
         function updateImportFormVisibility() {
             const isImport = isImportCheckbox.checked;
             importFormCard.classList.toggle("hidden", !isImport);
+            importCollegeField.classList.toggle("hidden", !isImport);
+            importCollegeSelect.required = isImport;
 
             if (!isImport) {
+                importCollegeSelect.value = "";
                 resetCameraCapture("importFormPage1");
                 resetCameraCapture("importFormPage2");
             }
@@ -883,6 +925,12 @@
 
             const isImport = isImportCheckbox.checked;
 
+            if (isImport && !importCollegeSelect.value) {
+                setAlert("Please select the team to join as an import player.");
+                importCollegeSelect.focus();
+                return;
+            }
+
             if (isImport && (!cameras.importFormPage1.blob || !cameras.importFormPage2.blob)) {
                 setAlert("Please take a picture of Import Form with Signatures Page 1 and Page 2.");
                 importFormCard.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -905,7 +953,6 @@
                 return;
             }
 
-            const selectedTeam = teamSelect.options[teamSelect.selectedIndex];
             const selectedMajorSport = majorSportSelect.options[majorSportSelect.selectedIndex];
             const selectedMinorSport = minorSportSelect.options[minorSportSelect.selectedIndex];
             const participantId = getParticipantId();
@@ -915,7 +962,8 @@
             try {
                 const fullName = document.getElementById("fullName").value.trim();
                 const idNumber = document.getElementById("idNumber").value.trim();
-                const teamName = selectedTeam?.dataset?.name || selectedTeam?.textContent || "";
+                const homeCollege = getHomeCollegeSelection();
+                const playableCollege = getPlayableCollegeSelection(isImport);
                 const majorSportName = requiresMajor ? (selectedMajorSport?.dataset?.name || selectedMajorSport?.textContent || "") : "";
                 const minorSportName = requiresMinor ? (selectedMinorSport?.dataset?.name || selectedMinorSport?.textContent || "") : "";
                 const parentConsentPage1Url = await uploadDocument(participantId, "parent-consent-page-1", cameras.parentPage1.blob);
@@ -941,9 +989,13 @@
                     age: Number(document.getElementById("age").value),
                     id_number: idNumber,
                     student_id: idNumber,
-                    team_id: teamSelect.value || null,
-                    team_name: teamName,
-                    team: teamName,
+                    home_college_id: homeCollege.id || null,
+                    home_college: homeCollege.name,
+                    import_college_id: isImport ? (playableCollege.id || null) : null,
+                    import_college: isImport ? playableCollege.name : null,
+                    team_id: playableCollege.id || null,
+                    team_name: playableCollege.name,
+                    team: playableCollege.name,
                     game_scope: gameScope,
                     major_sport_id: requiresMajor ? majorSportSelect.value : null,
                     major_sport_name: majorSportName,

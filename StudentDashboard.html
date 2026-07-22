@@ -1681,7 +1681,7 @@
 
                         supabase
                             .from(ATTENDANCE_TABLE)
-                            .select("student_id, participant_id, team, status, attendance_date, checked_at")
+                            .select("student_id, participant_id, team, home_college, status, attendance_date, checked_at")
                     ]);
 
                     if (historyError) {
@@ -2037,7 +2037,7 @@
                 const groups = new Map();
 
                 (attendanceRows || []).forEach(row => {
-                    const team = String(row.team || "").trim();
+                    const team = String(row.home_college || row.team || "").trim();
                     const date = getAttendanceBonusDate(row);
 
                     if (!team || !date || !isPresentAttendanceStatus(row.status)) {

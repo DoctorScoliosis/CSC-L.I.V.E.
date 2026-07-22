@@ -5362,6 +5362,14 @@
                 return participant.team_name || participant.team || "-";
             }
 
+            function getParticipantHomeCollege(participant) {
+                return participant.home_college || participant.home_college_name || participant.homeCollege || getParticipantTeamName(participant);
+            }
+
+            function getParticipantImportCollege(participant) {
+                return participant.import_college || participant.import_college_name || participant.importCollege || (isParticipantImport(participant) ? getParticipantTeamName(participant) : "-");
+            }
+
             function normalizeGameType(value) {
                 const normalized = String(value || "").trim().toLowerCase();
                 return normalized === "minor" ? "minor" : "major";
@@ -5623,7 +5631,7 @@
                 const thead = printDocument.createElement("thead");
                 const headerRow = printDocument.createElement("tr");
 
-                ["#", "Name", "Student ID", "Team", "Playing In", "Major Sport", "Minor Sport", "Status", "Created"].forEach(label => {
+                ["#", "Name", "Student ID", "Home College", "Team to Join", "Playing In", "Major Sport", "Minor Sport", "Status", "Created"].forEach(label => {
                     const th = printDocument.createElement("th");
                     th.textContent = label;
                     headerRow.appendChild(th);
@@ -5637,7 +5645,7 @@
                 if (filteredParticipants.length === 0) {
                     const row = printDocument.createElement("tr");
                     const cell = printDocument.createElement("td");
-                    cell.colSpan = 9;
+                    cell.colSpan = 10;
                     cell.className = "empty";
                     cell.textContent = "No participants found for this filter.";
                     row.appendChild(cell);
@@ -5649,6 +5657,7 @@
                             index + 1,
                             getParticipantDisplayName(participant),
                             getParticipantIdNumber(participant),
+                            getParticipantHomeCollege(participant),
                             getParticipantTeamName(participant),
                             getParticipantGameScopeLabel(participant),
                             getParticipantMajorSportName(participant),
@@ -6384,7 +6393,9 @@
                                 <div><dt class="font-bold text-gray-500">Course</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantCourse(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Age</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantAge(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">ID Number</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantIdNumber(participant))}</dd></div>
-                                <div><dt class="font-bold text-gray-500">Team Joined</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantTeamName(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Home College</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantHomeCollege(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Team to Join</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantTeamName(participant))}</dd></div>
+                                <div><dt class="font-bold text-gray-500">Import College</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantImportCollege(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Playing In</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantGameScopeLabel(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Major Sport</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantMajorSportName(participant))}</dd></div>
                                 <div><dt class="font-bold text-gray-500">Minor Sport</dt><dd class="font-semibold text-gray-900">${escapeHTML(getParticipantMinorSportName(participant))}</dd></div>
@@ -6604,15 +6615,17 @@
             async function saveParticipant(event) {
                 event.preventDefault();
 
-                const participantData = {
-                    name: participantName.value.trim(),
-                    full_name: participantName.value.trim(),
-                    student_id: participantStudentId.value.trim(),
-                    id_number: participantStudentId.value.trim(),
-                    team: participantTeam.value.trim(),
-                    team_name: participantTeam.value.trim(),
-                    status: normalizeParticipantStatus(participantStatus.value)
-                };
+                    const selectedTeamName = participantTeam.value.trim();
+                    const participantData = {
+                        name: participantName.value.trim(),
+                        full_name: participantName.value.trim(),
+                        student_id: participantStudentId.value.trim(),
+                        id_number: participantStudentId.value.trim(),
+                        home_college: selectedTeamName,
+                        team: selectedTeamName,
+                        team_name: selectedTeamName,
+                        status: normalizeParticipantStatus(participantStatus.value)
+                    };
 
                 if (!participantData.name || !participantData.student_id || !participantData.team) {
                     alert("Please complete the participant name, student ID, and team.");
@@ -7511,7 +7524,7 @@
                 try {
                     const { data: participant, error: lookupError } = await supabase
                         .from(PARTICIPANTS_TABLE)
-                        .select("id, name, student_id, team, status")
+                        .select("id, name, student_id, team, home_college, status")
                         .eq("student_id", studentId)
                         .maybeSingle();
 
@@ -7529,21 +7542,23 @@
                         return;
                     }
 
+                    const attendanceCollege = participant.home_college || participant.team || "";
                     const attendanceRecord = {
-    participant_id: participant.id,
-    student_id: participant.student_id,
-    participant_name: participant.name || "",
-    team: participant.team || "",
-    status: "Present",
-    checked_at: new Date().toISOString()
-};
+                        participant_id: participant.id,
+                        student_id: participant.student_id,
+                        participant_name: participant.name || "",
+                        team: attendanceCollege,
+                        home_college: attendanceCollege,
+                        status: "Present",
+                        checked_at: new Date().toISOString()
+                    };
 
                     const { data: savedAttendance, error: attendanceError } = await supabase
                         .from(ATTENDANCE_TABLE)
                         .upsert([attendanceRecord], {
                             onConflict: "student_id,attendance_date"
                         })
-                        .select("id, participant_id, student_id, participant_name, team, status, attendance_date, checked_at")
+                        .select("id, participant_id, student_id, participant_name, team, home_college, status, attendance_date, checked_at")
                         .single();
 
                     if (attendanceError) {
@@ -7553,12 +7568,12 @@
                     const attendanceDate = savedAttendance?.attendance_date || getLocalISODate();
                     let attendanceBonusNotice = "";
 
-                    if (participant.team) {
+                    if (attendanceCollege) {
                         const { count: teamAttendanceCount, error: teamAttendanceError } = await supabase
                             .from(ATTENDANCE_TABLE)
                             .select("student_id", { count: "exact", head: true })
                             .eq("attendance_date", attendanceDate)
-                            .eq("team", participant.team)
+                            .eq("home_college", attendanceCollege)
                             .eq("status", "Present");
 
                         if (teamAttendanceError) {
@@ -7566,8 +7581,8 @@
                         } else {
                             const remainingAttendance = Math.max(0, 100 - Number(teamAttendanceCount || 0));
                             attendanceBonusNotice = Number(teamAttendanceCount || 0) >= 100
-                                ? `<p class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-800">Daily team attendance bonus active: ${escapeHTML(participant.team)} has ${Number(teamAttendanceCount || 0).toLocaleString()} present records today, so +5 points will be added to the leaderboard.</p>`
-                                : `<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">${escapeHTML(participant.team)} has ${Number(teamAttendanceCount || 0).toLocaleString()}/100 present records today. ${remainingAttendance.toLocaleString()} more needed for the +5 daily team bonus.</p>`;
+                                ? `<p class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-800">Daily home college attendance bonus active: ${escapeHTML(attendanceCollege)} has ${Number(teamAttendanceCount || 0).toLocaleString()} present records today, so +5 points will be added to the leaderboard.</p>`
+                                : `<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">${escapeHTML(attendanceCollege)} has ${Number(teamAttendanceCount || 0).toLocaleString()}/100 present records today. ${remainingAttendance.toLocaleString()} more needed for the +5 daily home college bonus.</p>`;
                         }
                     }
 
@@ -7590,8 +7605,8 @@
                                 </div>
 
                                 <div>
-                                    <p class="text-xs uppercase tracking-wide text-green-700">Team</p>
-                                    <p class="font-semibold">${escapeHTML(participant.team || "No team")}</p>
+                                    <p class="text-xs uppercase tracking-wide text-green-700">Home College</p>
+                                    <p class="font-semibold">${escapeHTML(attendanceCollege || "No college")}</p>
                                 </div>
 
                                 <div>
