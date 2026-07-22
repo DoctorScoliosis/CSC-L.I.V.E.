@@ -6043,11 +6043,20 @@
                     return participant?.is_import ? "Yes" : "No";
                 }
 
+                function getParticipantApprovalLabel(status) {
+                    const normalizedStatus = normalizeStatus(status || "pending");
+                    if (normalizedStatus === "approved") return "Approved";
+                    if (normalizedStatus === "rejected") return "Rejected";
+                    return "Pending";
+                }
+
                 function setParticipantCheckResult(type, htmlContent) {
                     participantCheckResult.className = "rounded-lg border p-6";
 
                     if (type === "registered") {
                         participantCheckResult.classList.add("bg-green-50", "border-green-200", "text-green-900");
+                    } else if (type === "not-allowed") {
+                        participantCheckResult.classList.add("bg-amber-50", "border-amber-200", "text-amber-950");
                     } else if (type === "missing") {
                         participantCheckResult.classList.add("bg-red-50", "border-red-200", "text-red-900");
                     } else {
@@ -6106,61 +6115,82 @@
                             return;
                         }
 
-                        setParticipantCheckResult("registered", `
+                        const participantStatus = normalizeStatus(participant.status || "pending");
+                        const isApprovedParticipant = participantStatus === "approved";
+                        const statusLabel = getParticipantApprovalLabel(participant.status);
+                        const resultType = isApprovedParticipant ? "registered" : "not-allowed";
+                        const statusTextClass = isApprovedParticipant ? "text-green-700" : participantStatus === "rejected" ? "text-red-700" : "text-amber-700";
+                        const resultTitle = isApprovedParticipant
+                            ? "Participant is registered and allowed to play."
+                            : `Participant is ${statusLabel.toLowerCase()} and not allowed to play.`;
+                        const resultSubtitle = isApprovedParticipant
+                            ? "Registration record is approved in the participants database."
+                            : "This participant must be approved by admin before joining any game.";
+                        const detailBorderClass = isApprovedParticipant ? "border-green-100" : "border-amber-100";
+                        const detailLabelClass = isApprovedParticipant ? "text-green-700" : "text-amber-700";
+
+                        setParticipantCheckResult(resultType, `
                             <div class="space-y-4">
                                 <div>
-                                    <p class="text-2xl font-bold">Participant is registered.</p>
-                                    <p class="text-sm">Registration record found in the participants database.</p>
+                                    <p class="text-2xl font-bold">${escapeHTML(resultTitle)}</p>
+                                    <p class="text-sm">${escapeHTML(resultSubtitle)}</p>
                                 </div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white bg-opacity-80 rounded-lg p-4 border border-green-100">
+                                ${!isApprovedParticipant ? `
+                                    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+                                        <p class="text-sm font-black uppercase tracking-wide">Not Allowed to Play</p>
+                                        <p class="mt-1 text-sm font-semibold">Current status: ${escapeHTML(statusLabel)}</p>
+                                    </div>
+                                ` : ""}
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-white bg-opacity-80 rounded-lg p-4 border ${detailBorderClass}">
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Name</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Name</p>
                                         <p class="font-semibold">${escapeHTML(getParticipantDisplayName(participant))}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Student ID</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Student ID</p>
                                         <p class="font-semibold">${escapeHTML(getParticipantIdNumber(participant))}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Team</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Team</p>
                                         <p class="font-semibold">${escapeHTML(getParticipantTeamName(participant))}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Status</p>
-                                        <p class="font-semibold">${escapeHTML(participant.status || "-")}</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Status</p>
+                                        <p class="font-semibold ${statusTextClass}">${escapeHTML(statusLabel)}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Course</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Course</p>
                                         <p class="font-semibold">${escapeHTML(participant.course || "-")}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Playing In</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Playing In</p>
                                         <p class="font-semibold">${escapeHTML(getParticipantGameScopeLabel(participant))}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Major Sport</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Major Sport</p>
                                         <p class="font-semibold">${escapeHTML(participant.major_sport_name || "-")}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Minor Sport</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Minor Sport</p>
                                         <p class="font-semibold">${escapeHTML(participant.minor_sport_name || "-")}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Import Player</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Import Player</p>
                                         <p class="font-semibold">${escapeHTML(getParticipantImportLabel(participant))}</p>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs uppercase tracking-wide text-green-700">Registered At</p>
+                                        <p class="text-xs uppercase tracking-wide ${detailLabelClass}">Registered At</p>
                                         <p class="font-semibold">${escapeHTML(formatDateTime(participant.created_at))}</p>
                                     </div>
                                 </div>
