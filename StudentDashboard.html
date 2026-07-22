@@ -1314,6 +1314,7 @@
                 const { compact = false } = options;
                 const isVolleyballMatch = isVolleyballSport(match);
                 const faultLabel = getScoreSheetFaultLabel(match);
+                const periodName = isVolleyballMatch ? "set" : "quarter";
                 const scoreSheetTitle = isVolleyballMatch ? "Volleyball Score Sheet Preview" : "Basketball Score Sheet Preview";
                 const teamOneGameTotals = getStudentBasketballTotals(match, "one");
                 const teamTwoGameTotals = getStudentBasketballTotals(match, "two");
@@ -1355,7 +1356,7 @@
                                         `).join("") : `
                                             <tr>
                                                 <td colspan="4" class="px-3 py-4 text-center text-[11px] font-semibold text-slate-500">
-                                                    No active players selected for this ${getScoreSheetPeriodLabel(match).toLowerCase()} yet.
+                                                    No active players selected for this ${periodName} yet.
                                                 </td>
                                             </tr>
                                         `}
