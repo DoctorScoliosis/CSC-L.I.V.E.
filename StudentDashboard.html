@@ -2121,19 +2121,28 @@
                 const meritTotal = sortedHistory.reduce((sum, game) => sum + getTeamAdjustments(game).merit, 0);
                 const demeritTotal = sortedHistory.reduce((sum, game) => sum + getTeamAdjustments(game).demerit, 0);
                 const historyCategories = [...new Set(sortedHistory.map(getHistorySportName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+                const hasAdjustmentRecord = (game, adjustmentFilter) => {
+                    const adjustments = getTeamAdjustments(game);
+                    return adjustmentFilter === "Merit"
+                        ? adjustments.merit > 0 || Boolean(String(adjustments.meritRemarks || "").trim())
+                        : adjustments.demerit > 0 || Boolean(String(adjustments.demeritRemarks || "").trim());
+                };
                 const renderHistoryCards = (category = "All", adjustmentFilter = "All") => {
                     let visibleHistory = category === "All"
                         ? sortedHistory
                         : sortedHistory.filter(game => getHistorySportName(game) === category);
 
                     if (adjustmentFilter === "Merit") {
-                        visibleHistory = visibleHistory.filter(game => getTeamAdjustments(game).merit > 0);
+                        visibleHistory = visibleHistory.filter(game => hasAdjustmentRecord(game, "Merit"));
                     } else if (adjustmentFilter === "Demerit") {
-                        visibleHistory = visibleHistory.filter(game => getTeamAdjustments(game).demerit > 0);
+                        visibleHistory = visibleHistory.filter(game => hasAdjustmentRecord(game, "Demerit"));
                     }
 
                     if (visibleHistory.length === 0) {
-                        return '<p class="text-center py-8 text-slate-500 italic">No match history found for this game category.</p>';
+                        const emptyMessage = adjustmentFilter === "All"
+                            ? "No match history found for this game category."
+                            : `No ${adjustmentFilter.toLowerCase()} history or remarks found for this game category.`;
+                        return `<p class="text-center py-8 text-slate-500 italic">${emptyMessage}</p>`;
                     }
 
                     return visibleHistory.map(game => {
@@ -2141,6 +2150,44 @@
                         const opponent = isWin ? game.loser_team_name : game.winner_team_name;
                         const pts = resolveHistoryPoints(game, isWin ? "winner" : "loser");
                         const adjustments = getTeamAdjustments(game);
+
+                        if (adjustmentFilter !== "All") {
+                            const isMerit = adjustmentFilter === "Merit";
+                            const adjustmentPoints = isMerit ? adjustments.merit : adjustments.demerit;
+                            const adjustmentRemarks = isMerit ? adjustments.meritRemarks : adjustments.demeritRemarks;
+                            const adjustmentTone = isMerit
+                                ? "border-emerald-200 bg-emerald-50/70 text-emerald-900"
+                                : "border-red-200 bg-red-50/70 text-red-900";
+                            const adjustmentSign = isMerit ? "+" : "-";
+
+                            return `
+                                <div class="p-5 rounded-2xl border ${adjustmentTone}">
+                                    <div class="flex justify-between items-start gap-3 mb-4">
+                                        <div>
+                                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">${escapeHTML(getHistorySportName(game))}</p>
+                                            <p class="font-black text-slate-950 text-lg">vs ${escapeHTML(opponent || "Unknown Opponent")}</p>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter bg-white/80">
+                                            ${adjustmentFilter}
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-3 text-sm">
+                                        <div class="bg-white/80 p-3 rounded-xl border border-white">
+                                            <p class="text-[10px] font-bold text-slate-600 uppercase mb-1">${adjustmentFilter} Points</p>
+                                            <p class="font-black text-xl">${adjustmentSign}${Number(adjustmentPoints || 0).toLocaleString()}</p>
+                                        </div>
+                                        <div class="bg-white/80 p-3 rounded-xl border border-white">
+                                            <p class="text-[10px] font-bold text-slate-600 uppercase mb-1">Remarks</p>
+                                            <p class="font-bold text-slate-950">${escapeHTML(adjustmentRemarks || "No remarks recorded.")}</p>
+                                        </div>
+                                        <div class="bg-white/70 p-3 rounded-xl border border-white">
+                                            <p class="text-[10px] font-bold text-slate-600 uppercase mb-1">Date</p>
+                                            <p class="font-bold text-slate-950">${formatDateTime(game.declared_at || game.match_time)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
 
                         return `
                             <div class="p-5 rounded-2xl border ${isWin ? 'border-emerald-200 bg-emerald-50/50' : 'border-red-200 bg-red-50/50'} relative overflow-hidden">
@@ -2216,7 +2263,7 @@
                         </div>
 
                         <div class="space-y-4">
-                            <h3 class="font-bold text-slate-950">
+                            <h3 id="teamHistorySectionTitle" class="font-bold text-slate-950">
                                 Recent Match History
                             </h3>
                             <select
@@ -2234,19 +2281,38 @@
 
                 const teamHistoryCategoryFilter = document.getElementById("teamHistoryCategoryFilter");
                 const teamHistoryList = document.getElementById("teamHistoryList");
+                const teamHistorySectionTitle = document.getElementById("teamHistorySectionTitle");
                 let activeAdjustmentFilter = "All";
+                const updateAdjustmentButtons = () => {
+                    document.querySelectorAll(".student-adjustment-filter").forEach(button => {
+                        const isActive = activeAdjustmentFilter === (button.dataset.adjustmentFilter || "All");
+                        button.classList.toggle("ring-4", isActive);
+                        button.classList.toggle("ring-blue-200", isActive);
+                        button.classList.toggle("scale-[1.01]", isActive);
+                    });
+                };
+                const renderActiveHistory = () => {
+                    if (teamHistorySectionTitle) {
+                        teamHistorySectionTitle.textContent = activeAdjustmentFilter === "All"
+                            ? "Recent Match History"
+                            : `${activeAdjustmentFilter} History and Remarks`;
+                    }
+                    if (teamHistoryList) {
+                        teamHistoryList.innerHTML = renderHistoryCards(teamHistoryCategoryFilter?.value || "All", activeAdjustmentFilter);
+                    }
+                    updateAdjustmentButtons();
+                };
                 if (teamHistoryCategoryFilter && teamHistoryList) {
                     teamHistoryCategoryFilter.addEventListener("change", function () {
-                        teamHistoryList.innerHTML = renderHistoryCards(this.value || "All", activeAdjustmentFilter);
+                        renderActiveHistory();
                     });
                 }
                 document.querySelectorAll(".student-adjustment-filter").forEach(button => {
                     button.addEventListener("click", function () {
                         const selectedFilter = this.dataset.adjustmentFilter || "All";
                         activeAdjustmentFilter = activeAdjustmentFilter === selectedFilter ? "All" : selectedFilter;
-                        if (teamHistoryList) {
-                            teamHistoryList.innerHTML = renderHistoryCards(teamHistoryCategoryFilter?.value || "All", activeAdjustmentFilter);
-                        }
+                        renderActiveHistory();
+                        teamHistoryList?.scrollIntoView({ behavior: "smooth", block: "start" });
                     });
                 });
             }

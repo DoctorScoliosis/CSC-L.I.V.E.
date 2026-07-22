@@ -5815,6 +5815,12 @@
                     const demeritTotal = sortedHistory.reduce((sum, game) => sum + getTeamAdjustments(game).demerit, 0);
                     const historyCategories = [...new Set(sortedHistory.map(getHistorySportName).filter(Boolean))]
                         .sort((a, b) => a.localeCompare(b));
+                    const hasAdjustmentRecord = (game, adjustmentFilter) => {
+                        const adjustments = getTeamAdjustments(game);
+                        return adjustmentFilter === "Merit"
+                            ? adjustments.merit > 0 || Boolean(String(adjustments.meritRemarks || "").trim())
+                            : adjustments.demerit > 0 || Boolean(String(adjustments.demeritRemarks || "").trim());
+                    };
 
                     function renderHistoryCards(category = "All", adjustmentFilter = "All") {
                         let visibleHistory = category === "All"
@@ -5822,13 +5828,16 @@
                             : sortedHistory.filter(game => getHistorySportName(game) === category);
 
                         if (adjustmentFilter === "Merit") {
-                            visibleHistory = visibleHistory.filter(game => getTeamAdjustments(game).merit > 0);
+                            visibleHistory = visibleHistory.filter(game => hasAdjustmentRecord(game, "Merit"));
                         } else if (adjustmentFilter === "Demerit") {
-                            visibleHistory = visibleHistory.filter(game => getTeamAdjustments(game).demerit > 0);
+                            visibleHistory = visibleHistory.filter(game => hasAdjustmentRecord(game, "Demerit"));
                         }
 
                         if (visibleHistory.length === 0) {
-                            return `<div class="text-center py-10 text-gray-500">No game history found for this category.</div>`;
+                            const emptyMessage = adjustmentFilter === "All"
+                                ? "No game history found for this category."
+                                : `No ${adjustmentFilter.toLowerCase()} history or remarks found for this category.`;
+                            return `<div class="text-center py-10 text-gray-500">${emptyMessage}</div>`;
                         }
 
                         return visibleHistory.map(game => {
@@ -5839,6 +5848,44 @@
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800";
                             const adjustments = getTeamAdjustments(game);
+
+                            if (adjustmentFilter !== "All") {
+                                const isMerit = adjustmentFilter === "Merit";
+                                const adjustmentPoints = isMerit ? adjustments.merit : adjustments.demerit;
+                                const adjustmentRemarks = isMerit ? adjustments.meritRemarks : adjustments.demeritRemarks;
+                                const adjustmentTone = isMerit
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                                    : "border-red-200 bg-red-50 text-red-900";
+                                const adjustmentSign = isMerit ? "+" : "-";
+
+                                return `
+                                    <div class="border rounded-xl p-4 mb-4 ${adjustmentTone}">
+                                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
+                                            <div>
+                                                <p class="text-xs font-bold uppercase tracking-widest text-slate-500">${escapeHTML(getHistorySportName(game))}</p>
+                                                <h3 class="font-bold text-lg text-gray-800">vs ${escapeHTML(opponent || "Unknown Opponent")}</h3>
+                                            </div>
+                                            <span class="inline-flex w-fit items-center px-3 py-1 rounded-full bg-white/80 text-sm font-bold">
+                                                ${adjustmentFilter}
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                            <div class="rounded-xl border border-white bg-white/80 p-3">
+                                                <p class="text-gray-600">${adjustmentFilter} Points</p>
+                                                <p class="text-xl font-black">${adjustmentSign}${Number(adjustmentPoints || 0).toLocaleString()}</p>
+                                            </div>
+                                            <div class="rounded-xl border border-white bg-white/80 p-3">
+                                                <p class="text-gray-600">Date</p>
+                                                <p class="font-semibold">${escapeHTML(formatDateTime(game.declared_at || game.match_time))}</p>
+                                            </div>
+                                            <div class="sm:col-span-2 rounded-xl border border-white bg-white/80 p-3">
+                                                <p class="text-gray-600">Remarks</p>
+                                                <p class="font-semibold">${escapeHTML(adjustmentRemarks || "No remarks recorded.")}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
 
                             return `
                                 <div class="border rounded-xl p-4 mb-4 bg-gray-50">
@@ -5916,7 +5963,7 @@
                         </div>
 
                         <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <h3 class="font-bold text-gray-900">Recent Match History</h3>
+                            <h3 id="committeeHistorySectionTitle" class="font-bold text-gray-900">Recent Match History</h3>
                             <select
                                 id="committeeHistoryCategoryFilter"
                                 class="w-full sm:w-56 rounded-xl border border-slate-300 bg-white/80 px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
@@ -5931,19 +5978,38 @@
 
                     const committeeHistoryCategoryFilter = document.getElementById("committeeHistoryCategoryFilter");
                     const committeeHistoryList = document.getElementById("committeeHistoryList");
+                    const committeeHistorySectionTitle = document.getElementById("committeeHistorySectionTitle");
                     let activeAdjustmentFilter = "All";
+                    const updateAdjustmentButtons = () => {
+                        document.querySelectorAll(".committee-adjustment-filter").forEach(button => {
+                            const isActive = activeAdjustmentFilter === (button.dataset.adjustmentFilter || "All");
+                            button.classList.toggle("ring-4", isActive);
+                            button.classList.toggle("ring-blue-200", isActive);
+                            button.classList.toggle("scale-[1.01]", isActive);
+                        });
+                    };
+                    const renderActiveHistory = () => {
+                        if (committeeHistorySectionTitle) {
+                            committeeHistorySectionTitle.textContent = activeAdjustmentFilter === "All"
+                                ? "Recent Match History"
+                                : `${activeAdjustmentFilter} History and Remarks`;
+                        }
+                        if (committeeHistoryList) {
+                            committeeHistoryList.innerHTML = renderHistoryCards(committeeHistoryCategoryFilter?.value || "All", activeAdjustmentFilter);
+                        }
+                        updateAdjustmentButtons();
+                    };
                     if (committeeHistoryCategoryFilter && committeeHistoryList) {
                         committeeHistoryCategoryFilter.addEventListener("change", function () {
-                            committeeHistoryList.innerHTML = renderHistoryCards(this.value || "All", activeAdjustmentFilter);
+                            renderActiveHistory();
                         });
                     }
                     document.querySelectorAll(".committee-adjustment-filter").forEach(button => {
                         button.addEventListener("click", function () {
                             const selectedFilter = this.dataset.adjustmentFilter || "All";
                             activeAdjustmentFilter = activeAdjustmentFilter === selectedFilter ? "All" : selectedFilter;
-                            if (committeeHistoryList) {
-                                committeeHistoryList.innerHTML = renderHistoryCards(committeeHistoryCategoryFilter?.value || "All", activeAdjustmentFilter);
-                            }
+                            renderActiveHistory();
+                            committeeHistoryList?.scrollIntoView({ behavior: "smooth", block: "start" });
                         });
                     });
                 }
