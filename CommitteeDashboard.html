@@ -751,7 +751,13 @@
             }
 
             .basketball-score-teams-grid {
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            @media (min-width: 641px) {
+                .basketball-score-teams-grid {
+                    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                }
             }
 
             @media (max-width: 640px) {
@@ -761,6 +767,7 @@
 
                 .basketball-score-teams-grid {
                     gap: 0.45rem !important;
+                    grid-template-columns: minmax(0, 1fr) !important;
                 }
 
                 .basketball-score-team > div:first-child {
