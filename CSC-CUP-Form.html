@@ -375,19 +375,28 @@
                         </select>
                     </label>
 
-                    <label id="majorSportField" class="hidden block">
-                        <span class="mb-1 block text-sm font-black text-slate-700">Major Game</span>
-                        <select id="majorSportSelect" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
-                            <option value="">Select a major game</option>
-                        </select>
-                    </label>
+                    <div id="majorSportField" class="hidden space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:col-span-2">
+                        <div>
+                            <span class="block text-sm font-black text-slate-700">Major Game</span>
+                            <p id="majorSelectionHint" class="mt-1 text-xs font-semibold text-slate-500">Select allowed major games.</p>
+                        </div>
+                        <div>
+                            <p class="mb-2 text-xs font-black uppercase tracking-wide text-blue-700">Major Games Indoor</p>
+                            <div id="majorIndoorOptions" class="grid grid-cols-1 gap-2 sm:grid-cols-2"></div>
+                        </div>
+                        <div>
+                            <p class="mb-2 text-xs font-black uppercase tracking-wide text-emerald-700">Major Games Outdoor</p>
+                            <div id="majorOutdoorOptions" class="grid grid-cols-1 gap-2 sm:grid-cols-2"></div>
+                        </div>
+                    </div>
 
-                    <label id="minorSportField" class="hidden block">
-                        <span class="mb-1 block text-sm font-black text-slate-700">Minor Game</span>
-                        <select id="minorSportSelect" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
-                            <option value="">Select a minor game</option>
-                        </select>
-                    </label>
+                    <div id="minorSportField" class="hidden space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:col-span-2">
+                        <div>
+                            <span class="block text-sm font-black text-slate-700">Minor Game</span>
+                            <p class="mt-1 text-xs font-semibold text-slate-500">Select up to 2 minor games.</p>
+                        </div>
+                        <div id="minorSportOptions" class="grid grid-cols-1 gap-2 sm:grid-cols-2"></div>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -528,9 +537,11 @@
         const importCollegeSelect = document.getElementById("importCollegeSelect");
         const gameScopeSelect = document.getElementById("gameScopeSelect");
         const majorSportField = document.getElementById("majorSportField");
-        const majorSportSelect = document.getElementById("majorSportSelect");
+        const majorSelectionHint = document.getElementById("majorSelectionHint");
+        const majorIndoorOptions = document.getElementById("majorIndoorOptions");
+        const majorOutdoorOptions = document.getElementById("majorOutdoorOptions");
         const minorSportField = document.getElementById("minorSportField");
-        const minorSportSelect = document.getElementById("minorSportSelect");
+        const minorSportOptions = document.getElementById("minorSportOptions");
         const isImportCheckbox = document.getElementById("isImportCheckbox");
         const importFormCard = document.getElementById("importFormCard");
         const cameraOverlay = document.getElementById("cameraOverlay");
@@ -545,6 +556,17 @@
         let activeCameraType = null;
         let activeCameraStream = null;
         let sportsData = [];
+        const MAJOR_GAME_OPTIONS = [
+            { key: "basketball", label: "Basketball", venue: "indoor" },
+            { key: "volleyball", label: "Volleyball", venue: "indoor" },
+            { key: "frisbee", label: "Frisbee", venue: "outdoor" },
+            { key: "softball", label: "Softball", venue: "outdoor" }
+        ];
+        const MAJOR_LIMITS = {
+            major: { indoor: 1, outdoor: 2 },
+            both: { indoor: 1, outdoor: 1 }
+        };
+        const MINOR_LIMIT = 2;
 
         const cameras = {
             parentPage1: {
@@ -773,20 +795,126 @@
             return sport?.sport_name || sport?.name || sport?.game_name || "Unnamed game";
         }
 
-        function renderSportSelect(select, type) {
-            const sports = sportsData
-                .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === type)
-                .sort((a, b) => getSportName(a).localeCompare(getSportName(b)));
-            const label = type === "major" ? "major game" : "minor game";
+        function normalizeSportKey(value) {
+            return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+        }
 
-            select.innerHTML = `
-                <option value="">${sports.length ? `Select a ${label}` : `No ${label}s listed yet`}</option>
-                ${sports.map(sport => `
-                    <option value="${String(sport.id)}" data-name="${escapeHTML(getSportName(sport))}">
-                        ${escapeHTML(getSportName(sport))}
-                    </option>
-                `).join("")}
+        function getRegisteredSportsByGameKey(gameKey, type = "major") {
+            return sportsData
+                .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === type)
+                .filter(sport => normalizeSportKey(getSportName(sport)).includes(gameKey))
+                .sort((a, b) => getSportName(a).localeCompare(getSportName(b)));
+        }
+
+        function renderSportCheckbox(container, sport, name) {
+            return `
+                <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700">
+                    <input
+                        type="checkbox"
+                        name="${name}"
+                        value="${escapeHTML(sport.value)}"
+                        data-name="${escapeHTML(sport.label)}"
+                        data-venue="${escapeHTML(sport.venue || "")}"
+                        class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-500">
+                    <span class="min-w-0">
+                        <span class="block">${escapeHTML(sport.label)}</span>
+                        ${sport.note ? `<span class="mt-0.5 block text-[11px] font-semibold text-slate-500">${escapeHTML(sport.note)}</span>` : ""}
+                    </span>
+                </label>
             `;
+        }
+
+        function renderSportCheckboxes() {
+            const majorChoices = MAJOR_GAME_OPTIONS.map(option => {
+                const registeredMatches = getRegisteredSportsByGameKey(option.key, "major");
+                return {
+                    ...option,
+                    value: registeredMatches.map(sport => sport.id).join(",") || option.key,
+                    note: registeredMatches.length > 1
+                        ? `${registeredMatches.length} registered categories`
+                        : (registeredMatches[0] ? getSportName(registeredMatches[0]) : "General major game")
+                };
+            });
+            const minorChoices = sportsData
+                .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === "minor")
+                .sort((a, b) => getSportName(a).localeCompare(getSportName(b)))
+                .map(sport => ({
+                    value: String(sport.id),
+                    label: getSportName(sport),
+                    note: "Minor game"
+                }));
+
+            majorIndoorOptions.innerHTML = majorChoices
+                .filter(option => option.venue === "indoor")
+                .map(option => renderSportCheckbox(majorIndoorOptions, option, "majorSport"))
+                .join("") || `<p class="text-xs font-semibold text-slate-500">No indoor major games listed.</p>`;
+            majorOutdoorOptions.innerHTML = majorChoices
+                .filter(option => option.venue === "outdoor")
+                .map(option => renderSportCheckbox(majorOutdoorOptions, option, "majorSport"))
+                .join("") || `<p class="text-xs font-semibold text-slate-500">No outdoor major games listed.</p>`;
+            minorSportOptions.innerHTML = minorChoices
+                .map(option => renderSportCheckbox(minorSportOptions, option, "minorSport"))
+                .join("") || `<p class="text-xs font-semibold text-slate-500">No minor games listed yet.</p>`;
+
+            document.querySelectorAll('input[name="majorSport"], input[name="minorSport"]').forEach(input => {
+                input.addEventListener("change", enforceSportSelectionLimits);
+            });
+        }
+
+        function getCheckedSports(name) {
+            return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`))
+                .map(input => ({
+                    id: input.value,
+                    name: input.dataset.name || input.value,
+                    venue: input.dataset.venue || ""
+                }));
+        }
+
+        function clearCheckedSports(name) {
+            document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+                input.checked = false;
+            });
+        }
+
+        function getMajorLimitForVenue(venue) {
+            return MAJOR_LIMITS[gameScopeSelect.value]?.[venue] || 0;
+        }
+
+        function enforceSportSelectionLimits(event) {
+            const target = event?.target;
+
+            ["indoor", "outdoor"].forEach(venue => {
+                const limit = getMajorLimitForVenue(venue);
+                const checkedInputs = Array.from(document.querySelectorAll(`input[name="majorSport"][data-venue="${venue}"]:checked`));
+                checkedInputs.slice(limit).forEach(input => {
+                    input.checked = false;
+                });
+            });
+
+            const checkedMinorInputs = Array.from(document.querySelectorAll('input[name="minorSport"]:checked'));
+            checkedMinorInputs.slice(MINOR_LIMIT).forEach(input => {
+                input.checked = false;
+            });
+
+            if (target?.name === "majorSport" && target.checked) {
+                const venue = target.dataset.venue || "";
+                const limit = getMajorLimitForVenue(venue);
+                const checkedInVenue = getCheckedSports("majorSport").filter(item => item.venue === venue);
+                if (checkedInVenue.length > limit) {
+                    target.checked = false;
+                    setAlert(`You can select only ${limit} major ${venue} game${limit === 1 ? "" : "s"} for this category.`);
+                    return;
+                }
+            }
+
+            if (target?.name === "minorSport" && target.checked && getCheckedSports("minorSport").length > MINOR_LIMIT) {
+                target.checked = false;
+                setAlert(`You can select only ${MINOR_LIMIT} minor games.`);
+            }
+        }
+
+        function joinSelectionValues(items, field) {
+            return items.map(item => item[field]).filter(Boolean).join(", ");
         }
 
         function updateSportSelectionVisibility() {
@@ -796,16 +924,19 @@
 
             majorSportField.classList.toggle("hidden", !showMajor);
             minorSportField.classList.toggle("hidden", !showMinor);
-            majorSportSelect.required = showMajor;
-            minorSportSelect.required = showMinor;
+            majorSelectionHint.textContent = scope === "both"
+                ? "Select 1 indoor major game and 1 outdoor major game."
+                : "Select 1 indoor major game and 2 outdoor major games.";
 
             if (!showMajor) {
-                majorSportSelect.value = "";
+                clearCheckedSports("majorSport");
             }
 
             if (!showMinor) {
-                minorSportSelect.value = "";
+                clearCheckedSports("minorSport");
             }
+
+            enforceSportSelectionLimits();
         }
 
         function resetCameraCapture(type) {
@@ -845,15 +976,13 @@
             if (error) {
                 console.error("Sports load error:", error);
                 sportsData = [];
-                renderSportSelect(majorSportSelect, "major");
-                renderSportSelect(minorSportSelect, "minor");
+                renderSportCheckboxes();
                 setAlert("Unable to load major/minor games. Please refresh the page or contact the CSC admin.");
                 return;
             }
 
             sportsData = data || [];
-            renderSportSelect(majorSportSelect, "major");
-            renderSportSelect(minorSportSelect, "minor");
+            renderSportCheckboxes();
             updateSportSelectionVisibility();
         }
 
@@ -940,21 +1069,29 @@
             const gameScope = gameScopeSelect.value;
             const requiresMajor = gameScope === "major" || gameScope === "both";
             const requiresMinor = gameScope === "minor" || gameScope === "both";
+            const selectedMajorSports = getCheckedSports("majorSport");
+            const selectedMinorSports = getCheckedSports("minorSport");
+            const selectedIndoorMajorSports = selectedMajorSports.filter(item => item.venue === "indoor");
+            const selectedOutdoorMajorSports = selectedMajorSports.filter(item => item.venue === "outdoor");
 
-            if (requiresMajor && !majorSportSelect.value) {
-                setAlert("Please select one major game.");
-                majorSportSelect.focus();
+            if (requiresMajor && selectedIndoorMajorSports.length !== getMajorLimitForVenue("indoor")) {
+                setAlert(`Please select exactly ${getMajorLimitForVenue("indoor")} indoor major game.`);
+                majorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
 
-            if (requiresMinor && !minorSportSelect.value) {
-                setAlert("Please select one minor game.");
-                minorSportSelect.focus();
+            if (requiresMajor && selectedOutdoorMajorSports.length !== getMajorLimitForVenue("outdoor")) {
+                setAlert(`Please select exactly ${getMajorLimitForVenue("outdoor")} outdoor major game${getMajorLimitForVenue("outdoor") === 1 ? "" : "s"}.`);
+                majorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
 
-            const selectedMajorSport = majorSportSelect.options[majorSportSelect.selectedIndex];
-            const selectedMinorSport = minorSportSelect.options[minorSportSelect.selectedIndex];
+            if (requiresMinor && selectedMinorSports.length !== MINOR_LIMIT) {
+                setAlert(`Please select exactly ${MINOR_LIMIT} minor games.`);
+                minorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
+                return;
+            }
+
             const participantId = getParticipantId();
             submitButton.disabled = true;
             submitButton.textContent = "Submitting registration...";
@@ -964,8 +1101,10 @@
                 const idNumber = document.getElementById("idNumber").value.trim();
                 const homeCollege = getHomeCollegeSelection();
                 const playableCollege = getPlayableCollegeSelection(isImport);
-                const majorSportName = requiresMajor ? (selectedMajorSport?.dataset?.name || selectedMajorSport?.textContent || "") : "";
-                const minorSportName = requiresMinor ? (selectedMinorSport?.dataset?.name || selectedMinorSport?.textContent || "") : "";
+                const majorSportName = requiresMajor ? joinSelectionValues(selectedMajorSports, "name") : "";
+                const minorSportName = requiresMinor ? joinSelectionValues(selectedMinorSports, "name") : "";
+                const majorSportIds = requiresMajor ? joinSelectionValues(selectedMajorSports, "id") : null;
+                const minorSportIds = requiresMinor ? joinSelectionValues(selectedMinorSports, "id") : null;
                 const parentConsentPage1Url = await uploadDocument(participantId, "parent-consent-page-1", cameras.parentPage1.blob);
                 const parentConsentPage2Url = await uploadDocument(participantId, "parent-consent-page-2", cameras.parentPage2.blob);
                 const medicalCertificateUrl = await uploadDocument(participantId, "medical-certificate", cameras.medical.blob);
@@ -997,9 +1136,9 @@
                     team_name: playableCollege.name,
                     team: playableCollege.name,
                     game_scope: gameScope,
-                    major_sport_id: requiresMajor ? majorSportSelect.value : null,
+                    major_sport_id: majorSportIds,
                     major_sport_name: majorSportName,
-                    minor_sport_id: requiresMinor ? minorSportSelect.value : null,
+                    minor_sport_id: minorSportIds,
                     minor_sport_name: minorSportName,
                     is_import: isImport,
                     import_form_photo: importFormPhotoValue,

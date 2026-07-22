@@ -5506,6 +5506,13 @@
                 return participant.minor_sport_name || participant.minor_game_name || participant.selected_minor_sport || "-";
             }
 
+            function splitParticipantSportNames(value) {
+                return String(value || "")
+                    .split(",")
+                    .map(name => normalizeParticipantSport(name))
+                    .filter(name => name && name !== "-");
+            }
+
             function isParticipantImport(participant) {
                 const value = participant.is_import ?? participant.import_player ?? participant.isImport;
 
@@ -5575,7 +5582,7 @@
                 const sportNames = [
                     getParticipantMajorSportName(participant),
                     getParticipantMinorSportName(participant)
-                ].map(name => normalizeParticipantSport(name).toLowerCase());
+                ].flatMap(splitParticipantSportNames).map(name => name.toLowerCase());
 
                 return sportNames.includes(normalizedSelectedSport);
             }
@@ -5652,10 +5659,7 @@
 
                 participantsData.forEach(participant => {
                     [getParticipantMajorSportName(participant), getParticipantMinorSportName(participant)].forEach(sportName => {
-                        const normalizedSportName = normalizeParticipantSport(sportName);
-                        if (normalizedSportName && normalizedSportName !== "-") {
-                            sportNames.add(normalizedSportName);
-                        }
+                        splitParticipantSportNames(sportName).forEach(normalizedSportName => sportNames.add(normalizedSportName));
                     });
                 });
 
