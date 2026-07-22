@@ -1199,6 +1199,10 @@
                 return isVolleyballSport(match) ? "FLT" : "FLS";
             }
 
+            function getScoreSheetPeriodLabel(match) {
+                return isVolleyballSport(match) ? "set" : "quarter";
+            }
+
             function getMatchStageLabel(stage) {
                 if (!String(stage || "").trim()) {
                     return "Elimination Round";
