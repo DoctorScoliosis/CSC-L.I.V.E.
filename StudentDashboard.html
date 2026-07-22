@@ -1823,7 +1823,7 @@
                     if (winnerId || winnerName) {
                         const winner = getRegisteredTeamStat(winnerId, winnerName);
                         if (winner) {
-                            winner.points += resolveHistoryPoints(history, "winner");
+                            winner.points += resolveHistoryPoints(history, "winner") + getHistoryTeamAdjustment(history, winnerId, winnerName);
                             winner.wins += 1;
                         }
                     }
@@ -1831,7 +1831,7 @@
                     if (loserId || loserName) {
                         const loser = getRegisteredTeamStat(loserId, loserName);
                         if (loser) {
-                            loser.points += resolveHistoryPoints(history, "loser");
+                            loser.points += resolveHistoryPoints(history, "loser") + getHistoryTeamAdjustment(history, loserId, loserName);
                             loser.losses += 1;
                         }
                     }
@@ -1923,6 +1923,24 @@
 
                 if (side === "loser" && explicitLoserPoints.found) {
                     return explicitLoserPoints.value;
+                }
+
+                return 0;
+            }
+
+            function getHistoryTeamAdjustment(history, teamId, teamName) {
+                const normalizedTeamName = String(teamName || "").trim().toLowerCase();
+                const isTeamOne = (history.team_one_id && Number(history.team_one_id) === Number(teamId))
+                    || (normalizedTeamName && String(history.team_one_name || "").trim().toLowerCase() === normalizedTeamName);
+                const isTeamTwo = (history.team_two_id && Number(history.team_two_id) === Number(teamId))
+                    || (normalizedTeamName && String(history.team_two_name || "").trim().toLowerCase() === normalizedTeamName);
+
+                if (isTeamOne) {
+                    return (Number(history.team_one_merit_points) || 0) - (Number(history.team_one_demerit_points) || 0);
+                }
+
+                if (isTeamTwo) {
+                    return (Number(history.team_two_merit_points) || 0) - (Number(history.team_two_demerit_points) || 0);
                 }
 
                 return 0;
@@ -2086,11 +2104,45 @@
 
                 const sortedHistory = teamHistory.sort((a, b) => new Date(b.declared_at || b.created_at) - new Date(a.declared_at || a.created_at));
                 const getHistorySportName = (game) => game.sport_name || game.sport?.sport_name || game.game_category || game.category || "Uncategorized";
+                const getTeamAdjustments = (game) => {
+                    const isTeamOne = (game.team_one_id && Number(game.team_one_id) === Number(teamId))
+                        || (selectedName && normalizeTeamName(game.team_one_name) === selectedName);
+                    const isTeamTwo = (game.team_two_id && Number(game.team_two_id) === Number(teamId))
+                        || (selectedName && normalizeTeamName(game.team_two_name) === selectedName);
+
+                    if (isTeamOne) {
+                        return {
+                            merit: Number(game.team_one_merit_points) || 0,
+                            meritRemarks: game.team_one_merit_remarks || "",
+                            demerit: Number(game.team_one_demerit_points) || 0,
+                            demeritRemarks: game.team_one_demerit_remarks || ""
+                        };
+                    }
+
+                    if (isTeamTwo) {
+                        return {
+                            merit: Number(game.team_two_merit_points) || 0,
+                            meritRemarks: game.team_two_merit_remarks || "",
+                            demerit: Number(game.team_two_demerit_points) || 0,
+                            demeritRemarks: game.team_two_demerit_remarks || ""
+                        };
+                    }
+
+                    return { merit: 0, meritRemarks: "", demerit: 0, demeritRemarks: "" };
+                };
+                const meritTotal = sortedHistory.reduce((sum, game) => sum + getTeamAdjustments(game).merit, 0);
+                const demeritTotal = sortedHistory.reduce((sum, game) => sum + getTeamAdjustments(game).demerit, 0);
                 const historyCategories = [...new Set(sortedHistory.map(getHistorySportName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-                const renderHistoryCards = (category = "All") => {
-                    const visibleHistory = category === "All"
+                const renderHistoryCards = (category = "All", adjustmentFilter = "All") => {
+                    let visibleHistory = category === "All"
                         ? sortedHistory
                         : sortedHistory.filter(game => getHistorySportName(game) === category);
+
+                    if (adjustmentFilter === "Merit") {
+                        visibleHistory = visibleHistory.filter(game => getTeamAdjustments(game).merit > 0);
+                    } else if (adjustmentFilter === "Demerit") {
+                        visibleHistory = visibleHistory.filter(game => getTeamAdjustments(game).demerit > 0);
+                    }
 
                     if (visibleHistory.length === 0) {
                         return '<p class="text-center py-8 text-slate-500 italic">No match history found for this game category.</p>';
@@ -2100,6 +2152,7 @@
                         const isWin = (game.winner_team_id && Number(game.winner_team_id) === Number(teamId)) || normalizeTeamName(game.winner_team_name) === selectedName;
                         const opponent = isWin ? game.loser_team_name : game.winner_team_name;
                         const pts = resolveHistoryPoints(game, isWin ? "winner" : "loser");
+                        const adjustments = getTeamAdjustments(game);
 
                         return `
                             <div class="p-5 rounded-2xl border ${isWin ? 'border-emerald-200 bg-emerald-50/50' : 'border-red-200 bg-red-50/50'} relative overflow-hidden">
@@ -2120,6 +2173,16 @@
                                     <div class="bg-white/70 p-3 rounded-xl border border-slate-200">
                                         <p class="text-[10px] font-bold text-slate-600 uppercase mb-1">Date</p>
                                         <p class="font-bold text-slate-950">${formatDateTime(game.match_time)}</p>
+                                    </div>
+                                    <div class="bg-white/70 p-3 rounded-xl border border-emerald-200">
+                                        <p class="text-[10px] font-bold text-emerald-600 uppercase mb-1">Merit</p>
+                                        <p class="font-bold text-emerald-800">+${Number(adjustments.merit || 0).toLocaleString()}</p>
+                                        ${adjustments.meritRemarks ? `<p class="mt-1 text-xs text-slate-500">${escapeHTML(adjustments.meritRemarks)}</p>` : ""}
+                                    </div>
+                                    <div class="bg-white/70 p-3 rounded-xl border border-red-200">
+                                        <p class="text-[10px] font-bold text-red-600 uppercase mb-1">Demerit</p>
+                                        <p class="font-bold text-red-800">-${Number(adjustments.demerit || 0).toLocaleString()}</p>
+                                        ${adjustments.demeritRemarks ? `<p class="mt-1 text-xs text-slate-500">${escapeHTML(adjustments.demeritRemarks)}</p>` : ""}
                                     </div>
                                 </div>
                                 <div class="mt-4 bg-white/75 p-3 rounded-xl border border-slate-200 text-sm">
@@ -2153,6 +2216,17 @@
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-2 gap-4">
+                            <button type="button" data-adjustment-filter="Merit" class="student-adjustment-filter bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
+                                <p class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Merit</p>
+                                <p class="team-detail-score-value text-2xl font-black text-emerald-900">+${Number(meritTotal || 0).toLocaleString()}</p>
+                            </button>
+                            <button type="button" data-adjustment-filter="Demerit" class="student-adjustment-filter bg-red-50 p-4 rounded-2xl border border-red-100 text-center">
+                                <p class="text-[10px] uppercase font-bold text-red-600 mb-1">Demerit</p>
+                                <p class="team-detail-score-value text-2xl font-black text-red-900">-${Number(demeritTotal || 0).toLocaleString()}</p>
+                            </button>
+                        </div>
+
                         <div class="space-y-4">
                             <h3 class="font-bold text-slate-950">
                                 Recent Match History
@@ -2164,7 +2238,7 @@
                                 ${historyCategories.map(category => `<option value="${escapeHTML(category)}">${escapeHTML(category)}</option>`).join("")}
                             </select>
                             <div id="teamHistoryList" class="space-y-4">
-                                ${renderHistoryCards("All")}
+                                ${renderHistoryCards("All", "All")}
                             </div>
                         </div>
                     </div>
@@ -2172,11 +2246,21 @@
 
                 const teamHistoryCategoryFilter = document.getElementById("teamHistoryCategoryFilter");
                 const teamHistoryList = document.getElementById("teamHistoryList");
+                let activeAdjustmentFilter = "All";
                 if (teamHistoryCategoryFilter && teamHistoryList) {
                     teamHistoryCategoryFilter.addEventListener("change", function () {
-                        teamHistoryList.innerHTML = renderHistoryCards(this.value || "All");
+                        teamHistoryList.innerHTML = renderHistoryCards(this.value || "All", activeAdjustmentFilter);
                     });
                 }
+                document.querySelectorAll(".student-adjustment-filter").forEach(button => {
+                    button.addEventListener("click", function () {
+                        const selectedFilter = this.dataset.adjustmentFilter || "All";
+                        activeAdjustmentFilter = activeAdjustmentFilter === selectedFilter ? "All" : selectedFilter;
+                        if (teamHistoryList) {
+                            teamHistoryList.innerHTML = renderHistoryCards(teamHistoryCategoryFilter?.value || "All", activeAdjustmentFilter);
+                        }
+                    });
+                });
             }
 
             async function loadMatches(options = {}) {
