@@ -3478,7 +3478,17 @@
                             <span class="mt-1 block text-xs text-gray-400">${account.created_at ? escapeHTML(formatDateTime(account.created_at)) : ""}</span>
                         </button>
                     `);
-                adminNotificationList.innerHTML = [...messageItems, ...deleteItems, ...feedbackItems, ...approvalItems].join("") || `
+                const participantItems = participantsData
+                    .filter(participant => normalizeParticipantStatus(participant.status) === "pending")
+                    .map(participant => `
+                        <button type="button" data-admin-participant-notification-id="${escapeHTML(participant.id || "")}" class="admin-participant-notification w-full rounded-xl px-3 py-3 text-left hover:bg-sky-50">
+                            <span class="block text-xs font-bold uppercase tracking-wide text-sky-700">New participant registration</span>
+                            <span class="mt-1 block font-bold text-gray-900">${escapeHTML(getParticipantDisplayName(participant))}</span>
+                            <span class="mt-1 block text-sm text-gray-600">${escapeHTML(getParticipantIdNumber(participant))} • ${escapeHTML(getParticipantHomeCollege(participant))}</span>
+                            <span class="mt-1 block text-xs text-gray-400">${participant.created_at ? escapeHTML(formatDateTime(participant.created_at)) : ""}</span>
+                        </button>
+                    `);
+                adminNotificationList.innerHTML = [...messageItems, ...participantItems, ...deleteItems, ...feedbackItems, ...approvalItems].join("") || `
                     <div class="px-3 py-6 text-center text-sm font-semibold text-gray-500">No new notifications.</div>
                 `;
 
@@ -3546,6 +3556,22 @@
                         switchTab("feedback");
                     });
                 });
+                document.querySelectorAll(".admin-participant-notification").forEach(button => {
+                    button.addEventListener("click", async function () {
+                        setAdminNotificationPanelVisible(false);
+                        switchTab("participants");
+                        await loadParticipants();
+                        const participantId = String(this.dataset.adminParticipantNotificationId || "");
+                        window.setTimeout(() => {
+                            const row = [...document.querySelectorAll(".participant-row")]
+                                .find(item => String(item.dataset.participantId || "") === participantId);
+                            if (!row) return;
+                            row.scrollIntoView({ behavior: "smooth", block: "center" });
+                            row.classList.add("ring-4", "ring-sky-300");
+                            window.setTimeout(() => row.classList.remove("ring-4", "ring-sky-300"), 1800);
+                        }, 100);
+                    });
+                });
                 document.querySelectorAll(".admin-account-approval-notification").forEach(button => {
                     button.addEventListener("click", function () {
                         setAdminNotificationPanelVisible(false);
@@ -3568,7 +3594,11 @@
                 const pendingAccountCount = accountApprovalsData.filter(
                     account => normalizeAccountStatus(account.approval_status) === "pending"
                 ).length;
+                const pendingParticipantCount = participantsData.filter(
+                    participant => normalizeParticipantStatus(participant.status) === "pending"
+                ).length;
                 const unreadCount = unreadMessageCount
+                    + pendingParticipantCount
                     + adminPendingDeleteRequests.length
                     + newFeedbackCount
                     + pendingAccountCount;
@@ -6208,6 +6238,7 @@
                 renderParticipantSportFilter();
                 renderPrintTeamOptions();
                 renderParticipants();
+                updateAdminMessageNotification();
             }
 
             function renderParticipants() {
@@ -7988,7 +8019,7 @@
                         schema: "public",
                         table: PARTICIPANTS_TABLE
                     },
-                    () => scheduleAdminRealtimeReload({ participants: true, teams: true, overview: true })
+                    () => scheduleAdminRealtimeReload({ participants: true, teams: true, overview: true }, 0, { force: true })
                 )
                 .on(
                     "postgres_changes",
