@@ -3049,6 +3049,56 @@
                 return currentAdminUser?.fullName || currentAdminUser?.email || currentAdminUser?.id || "Admin";
             }
 
+            function showDashboardToast(message, type = "success") {
+                const toast = document.createElement("div");
+                const toneClass = type === "error"
+                    ? "border-red-200 bg-red-50 text-red-800"
+                    : type === "warning"
+                        ? "border-amber-200 bg-amber-50 text-amber-800"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-800";
+                toast.className = `fixed bottom-5 right-5 z-[9999] max-w-sm rounded-2xl border px-4 py-3 text-sm font-bold shadow-2xl ${toneClass}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                window.setTimeout(() => {
+                    toast.classList.add("opacity-0", "transition-opacity", "duration-300");
+                    window.setTimeout(() => toast.remove(), 350);
+                }, 2600);
+            }
+
+            function showDashboardConfirm(message, options = {}) {
+                return new Promise(resolve => {
+                    const overlay = document.createElement("div");
+                    overlay.className = "fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4";
+                    overlay.innerHTML = `
+                        <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+                            <h2 class="text-xl font-black text-slate-950">${escapeHTML(options.title || "Confirm Action")}</h2>
+                            <p class="mt-3 whitespace-pre-wrap text-sm font-semibold text-slate-600">${escapeHTML(message)}</p>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <button type="button" data-confirm-cancel class="rounded-xl bg-slate-100 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-200">${escapeHTML(options.cancelText || "Cancel")}</button>
+                                <button type="button" data-confirm-ok class="rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white hover:bg-red-700">${escapeHTML(options.confirmText || "Delete")}</button>
+                            </div>
+                        </div>
+                    `;
+                    const handleEscape = event => {
+                        if (event.key !== "Escape") return;
+                        close(false);
+                    };
+                    const close = value => {
+                        document.removeEventListener("keydown", handleEscape);
+                        overlay.remove();
+                        resolve(value);
+                    };
+                    overlay.querySelector("[data-confirm-ok]")?.addEventListener("click", () => close(true));
+                    overlay.querySelector("[data-confirm-cancel]")?.addEventListener("click", () => close(false));
+                    overlay.addEventListener("click", event => {
+                        if (event.target === overlay) close(false);
+                    });
+                    document.addEventListener("keydown", handleEscape);
+                    document.body.appendChild(overlay);
+                    overlay.querySelector("[data-confirm-cancel]")?.focus();
+                });
+            }
+
             function normalizeAccountStatus(status) {
                 return String(status || "pending").trim().toLowerCase();
             }
@@ -3640,7 +3690,11 @@
                     ? activeAdminContactConversationIds
                     : [activeAdminContactConversationId].filter(Boolean);
                 if (!conversationIds.length) return;
-                if (!confirm("Remove this conversation from your recent messages? The other participant will keep their copy.")) return;
+                const confirmDelete = await showDashboardConfirm("Remove this conversation from your recent messages? The other participant will keep their copy.", {
+                    title: "Remove Conversation",
+                    confirmText: "Remove"
+                });
+                if (!confirmDelete) return;
 
                 setAdminConversationMenuVisible(false);
                 const { error } = await supabase.rpc("set_conversation_visibility", {
@@ -3656,6 +3710,7 @@
 
                 resetActiveAdminContactConversation();
                 await loadAdminConversations();
+                showDashboardToast("Conversation removed from recent messages.");
             }
 
             function setAdminContactsVisible(isVisible) {
@@ -4653,7 +4708,10 @@
             }
 
             async function approveMatchDelete(matchId) {
-                const shouldApprove = confirm("Approve this delete request? This will permanently remove the match and its game history.");
+                const shouldApprove = await showDashboardConfirm("Approve this delete request? This will permanently remove the match and its game history.", {
+                    title: "Approve Delete Request",
+                    confirmText: "Approve Delete"
+                });
 
                 if (!shouldApprove) {
                     return;
@@ -4690,7 +4748,7 @@
 
                     adminPendingDeleteRequests = adminPendingDeleteRequests.filter(match => Number(match.id) !== Number(matchId));
                     updateAdminMessageNotification();
-                    alert("Delete request approved. Match removed.");
+                    showDashboardToast("Delete request approved. Match removed.");
                     await loadAdminOverviewCounts();
                 } catch (error) {
                     console.error("Approve match delete error:", error.message || error);
@@ -4699,7 +4757,10 @@
             }
 
             async function rejectMatchDelete(matchId) {
-                const shouldReject = confirm("Reject this delete request and keep the match?");
+                const shouldReject = await showDashboardConfirm("Reject this delete request and keep the match?", {
+                    title: "Reject Delete Request",
+                    confirmText: "Reject Request"
+                });
 
                 if (!shouldReject) {
                     return;
@@ -4721,7 +4782,7 @@
                         throw error;
                     }
 
-                    alert("Delete request rejected. Match kept.");
+                    showDashboardToast("Delete request rejected. Match kept.", "warning");
                     await loadAdminOverviewCounts();
                 } catch (error) {
                     console.error("Reject match delete error:", error.message || error);
@@ -5049,11 +5110,14 @@
                 const selectedTeam = teamsData.find(team => Number(team.id) === Number(id));
 
                 if (selectedTeam && selectedTeam.membersCount > 0) {
-                    alert("You cannot delete this team because it still has participants assigned.");
+                    showDashboardToast("You cannot delete this team because it still has participants assigned.", "warning");
                     return;
                 }
 
-                const confirmDelete = confirm("Are you sure you want to delete this team?");
+                const confirmDelete = await showDashboardConfirm("Are you sure you want to delete this team?", {
+                    title: "Delete Team",
+                    confirmText: "Delete Team"
+                });
 
                 if (!confirmDelete) {
                     return;
@@ -5070,7 +5134,7 @@
                     return;
                 }
 
-                alert("Team deleted successfully!");
+                showDashboardToast("Team deleted successfully!");
                 await Promise.all([
                     loadTeams(),
                     loadAdminOverviewCounts()
@@ -5318,7 +5382,10 @@
             }
 
             async function deleteSport(id) {
-                const confirmDelete = confirm("Are you sure you want to delete this sport?");
+                const confirmDelete = await showDashboardConfirm("Are you sure you want to delete this sport?", {
+                    title: "Delete Sport",
+                    confirmText: "Delete Sport"
+                });
 
                 if (!confirmDelete) {
                     return;
@@ -5335,7 +5402,7 @@
                     return;
                 }
 
-                alert("Sport deleted successfully!");
+                showDashboardToast("Sport deleted successfully!");
                 await Promise.all([
                     loadSports(),
                     loadAdminOverviewCounts()
@@ -6780,7 +6847,10 @@
             }
 
             async function deleteParticipant(id) {
-                const confirmDelete = confirm("Are you sure you want to remove this participant?");
+                const confirmDelete = await showDashboardConfirm("Are you sure you want to remove this participant?", {
+                    title: "Remove Participant",
+                    confirmText: "Remove"
+                });
 
                 if (!confirmDelete) {
                     return;
@@ -6810,9 +6880,10 @@
                     }
                 }
 
-                alert(storageDeleteWarning
+                showDashboardToast(storageDeleteWarning
                     ? "Participant removed from the database, but some uploaded document images could not be deleted from storage."
-                    : "Participant and uploaded document images removed successfully!");
+                    : "Participant and uploaded document images removed successfully!",
+                    storageDeleteWarning ? "warning" : "success");
 
                 await Promise.all([
                     loadParticipants(),
@@ -6976,7 +7047,11 @@
             }
 
             async function deleteStudentFeedback(id) {
-                if (!confirm("Are you sure you want to permanently delete this student feedback?")) {
+                const confirmDelete = await showDashboardConfirm("Are you sure you want to permanently delete this student feedback?", {
+                    title: "Delete Feedback",
+                    confirmText: "Delete Feedback"
+                });
+                if (!confirmDelete) {
                     return;
                 }
 
@@ -6992,6 +7067,7 @@
                 }
 
                 await loadStudentFeedback();
+                showDashboardToast("Student feedback deleted.");
             }
 
             async function loadAccountApprovals() {
@@ -7235,7 +7311,12 @@
                 };
                 const confirmMessage = `Are you sure you want to ${actionLabels[normalizedStatus]}?`;
 
-                if (!confirm(confirmMessage)) {
+                const shouldUpdate = await showDashboardConfirm(confirmMessage, {
+                    title: "Update Account Status",
+                    confirmText: "Continue"
+                });
+
+                if (!shouldUpdate) {
                     return;
                 }
 
@@ -7262,7 +7343,10 @@
                 }
 
                 const label = accountEmail ? ` (${accountEmail})` : "";
-                const confirmDelete = confirm(`Delete this account${label}? This removes the user profile and, after running the SQL function, the Supabase Auth user too.`);
+                const confirmDelete = await showDashboardConfirm(`Delete this account${label}? This removes the user profile and, after running the SQL function, the Supabase Auth user too.`, {
+                    title: "Delete Account",
+                    confirmText: "Delete Account"
+                });
 
                 if (!confirmDelete) {
                     return;
@@ -7291,6 +7375,7 @@
                 }
 
                 await loadAccountApprovals();
+                showDashboardToast("Account deleted.");
             }
 
             async function loadAnnouncements() {
@@ -7514,7 +7599,10 @@
             }
 
             async function deleteAnnouncement(id) {
-                const confirmDelete = confirm("Delete this announcement?");
+                const confirmDelete = await showDashboardConfirm("Delete this announcement?", {
+                    title: "Delete Announcement",
+                    confirmText: "Delete"
+                });
 
                 if (!confirmDelete) {
                     return;
@@ -7532,6 +7620,7 @@
                 }
 
                 await loadAnnouncements();
+                showDashboardToast("Announcement deleted.");
             }
 
             async function checkAttendance(event) {
