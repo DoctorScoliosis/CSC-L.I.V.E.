@@ -373,6 +373,7 @@
                             <option value="minor">Minor game Only</option>
                             <option value="both">Both major and minor game</option>
                         </select>
+                        <p id="sportSelectionGateHint" class="mt-1 text-xs font-semibold text-red-600">Select your home college first before choosing a sport category.</p>
                     </label>
 
                     <div id="majorSportField" class="hidden space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:col-span-2">
@@ -558,6 +559,7 @@
         const importCollegeField = document.getElementById("importCollegeField");
         const importCollegeSelect = document.getElementById("importCollegeSelect");
         const gameScopeSelect = document.getElementById("gameScopeSelect");
+        const sportSelectionGateHint = document.getElementById("sportSelectionGateHint");
         const majorSportField = document.getElementById("majorSportField");
         const majorSelectionHint = document.getElementById("majorSelectionHint");
         const majorIndoorOptions = document.getElementById("majorIndoorOptions");
@@ -821,6 +823,11 @@
 
         function getCurrentPlayableCollegeSelection() {
             return getPlayableCollegeSelection(isImportCheckbox.checked);
+        }
+
+        function hasCurrentPlayableCollegeSelection() {
+            const playableCollege = getCurrentPlayableCollegeSelection();
+            return Boolean(playableCollege.id || playableCollege.name);
         }
 
         function normalizeGameType(value) {
@@ -1222,7 +1229,21 @@
         }
 
         function updateSportSelectionVisibility() {
-            const scope = gameScopeSelect.value;
+            const hasPlayableCollege = hasCurrentPlayableCollegeSelection();
+            const isImport = isImportCheckbox.checked;
+            gameScopeSelect.disabled = !hasPlayableCollege;
+            gameScopeSelect.classList.toggle("cursor-not-allowed", !hasPlayableCollege);
+            gameScopeSelect.classList.toggle("opacity-60", !hasPlayableCollege);
+            sportSelectionGateHint.textContent = isImport
+                ? "Select the team to join first before choosing a sport category."
+                : "Select your home college first before choosing a sport category.";
+            sportSelectionGateHint.classList.toggle("hidden", hasPlayableCollege);
+
+            if (!hasPlayableCollege) {
+                gameScopeSelect.value = "";
+            }
+
+            const scope = hasPlayableCollege ? gameScopeSelect.value : "";
             const showMajor = scope === "major" || scope === "both";
             const showMinor = scope === "minor" || scope === "both";
 
@@ -1369,16 +1390,22 @@
                 return;
             }
 
-            if (!cameras.parentPage1.blob || !cameras.parentPage2.blob || !cameras.medical.blob) {
-                setAlert("Please take a picture of Parent Consent Page 1, Parent Consent Page 2, and the Medical Certificate before registering.");
-                return;
-            }
-
             const isImport = isImportCheckbox.checked;
 
             if (isImport && !importCollegeSelect.value) {
                 setAlert("Please select the team to join as an import player.");
                 importCollegeSelect.focus();
+                return;
+            }
+
+            if (!hasCurrentPlayableCollegeSelection()) {
+                setAlert(isImport ? "Please select the team to join before choosing a sport category." : "Please select your home college before choosing a sport category.");
+                (isImport ? importCollegeSelect : teamSelect).focus();
+                return;
+            }
+
+            if (!cameras.parentPage1.blob || !cameras.parentPage2.blob || !cameras.medical.blob) {
+                setAlert("Please take a picture of Parent Consent Page 1, Parent Consent Page 2, and the Medical Certificate before registering.");
                 return;
             }
 
