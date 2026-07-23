@@ -612,7 +612,7 @@
             { key: "frisbee", label: "Frisbee", venue: "outdoor" },
             { key: "softball", label: "Softball", venue: "outdoor" }
         ];
-        const MAJOR_SELECTION_RULE_MESSAGE = "Players may choose either 1 indoor and 1 outdoor major game, or 2 outdoor major games only.";
+        const MAJOR_SELECTION_RULE_MESSAGE = "Players may choose 1 major game, or choose 2 major games as either 1 indoor and 1 outdoor, or 2 outdoor games only.";
         const MINOR_LIMIT = 2;
 
         const cameras = {
@@ -1317,6 +1317,10 @@
         }
 
         function hasValidMajorSportSelection(selectedMajorSports) {
+            if (selectedMajorSports.length === 1) {
+                return true;
+            }
+
             const selectedIndoorMajorSports = selectedMajorSports.filter(item => item.venue === "indoor");
             const selectedOutdoorMajorSports = selectedMajorSports.filter(item => item.venue === "outdoor");
             return (selectedIndoorMajorSports.length === 1 && selectedOutdoorMajorSports.length === 1)
@@ -1621,12 +1625,7 @@
             const requiresMinor = gameScope === "minor" || gameScope === "both";
             const selectedMajorSports = getCheckedSports("majorSport");
             const selectedMinorSports = getCheckedSports("minorSport");
-            const selectedIndoorMajorSports = selectedMajorSports.filter(item => item.venue === "indoor");
-            const selectedOutdoorMajorSports = selectedMajorSports.filter(item => item.venue === "outdoor");
-
-            const hasValidMajorCombination = (selectedIndoorMajorSports.length === 1 && selectedOutdoorMajorSports.length === 1)
-                || (selectedIndoorMajorSports.length === 0 && selectedOutdoorMajorSports.length === 2);
-            if (requiresMajor && !hasValidMajorCombination) {
+            if (requiresMajor && !hasValidMajorSportSelection(selectedMajorSports)) {
                 openRuleNoticeModal();
                 majorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
