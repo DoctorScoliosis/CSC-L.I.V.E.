@@ -1053,6 +1053,16 @@
                 .sort((a, b) => getSportName(a).localeCompare(getSportName(b)));
         }
 
+        function inferMajorSportVenue(sport) {
+            const sportKey = normalizeSportKey(getSportName(sport));
+
+            if (sportKey.includes("frisbee") || sportKey.includes("softball")) {
+                return "outdoor";
+            }
+
+            return "indoor";
+        }
+
         function renderSportCheckbox(container, sport, name) {
             const singlesDoublesCategory = getSinglesDoublesCategory(sport.label);
             const singlesDoublesGroup = getSinglesDoublesGroupKey(sport.label);
@@ -1088,16 +1098,15 @@
         }
 
         function renderSportCheckboxes() {
-            const majorChoices = MAJOR_GAME_OPTIONS.map(option => {
-                const registeredMatches = getRegisteredSportsByGameKey(option.key, "major");
-                return {
-                    ...option,
-                    value: registeredMatches.map(sport => sport.id).join(",") || option.key,
-                    note: registeredMatches.length > 1
-                        ? `${registeredMatches.length} registered categories`
-                        : (registeredMatches[0] ? getSportName(registeredMatches[0]) : "General major game")
-                };
-            });
+            const majorChoices = sportsData
+                .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === "major")
+                .sort((a, b) => getSportName(a).localeCompare(getSportName(b)))
+                .map(sport => ({
+                    value: String(sport.id),
+                    label: getSportName(sport),
+                    venue: inferMajorSportVenue(sport),
+                    note: "Major game"
+                }));
             const minorChoices = sportsData
                 .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === "minor")
                 .sort((a, b) => getSportName(a).localeCompare(getSportName(b)))
