@@ -583,6 +583,7 @@
         let activeCameraStream = null;
         let sportsData = [];
         let registrationSlotCounts = [];
+        let isSyncingSportSlots = false;
         const MAJOR_GAME_OPTIONS = [
             { key: "basketball", label: "Basketball", venue: "indoor" },
             { key: "volleyball", label: "Volleyball", venue: "indoor" },
@@ -904,6 +905,10 @@
         }
 
         function getSportSlotNote(value) {
+            if (isSyncingSportSlots) {
+                return "Checking available slots...";
+            }
+
             const availability = getRemainingSlotsForSportIds(value);
 
             if (availability.needsCollege) {
@@ -994,7 +999,7 @@
             const genderMixedCategory = getGenderMixedCategory(sport.label);
             const genderMixedGroup = getGenderMixedGroupKey(sport.label);
             const availability = getRemainingSlotsForSportIds(sport.value);
-            const isUnavailable = availability.needsCollege || (availability.hasLimit && availability.remaining <= 0);
+            const isUnavailable = isSyncingSportSlots || availability.needsCollege || (availability.hasLimit && availability.remaining <= 0);
 
             return `
                 <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700">
@@ -1293,7 +1298,7 @@
             updateSportSelectionVisibility();
         }
 
-        async function loadRegistrationSlotCounts() {
+        async function loadRegistrationSlotCounts({ render = true } = {}) {
             const { data, error } = await supabase
                 .from(REGISTRATION_SLOT_COUNTS_VIEW)
                 .select("sport_id, team_id, team_name, registered_count");
@@ -1306,8 +1311,24 @@
             }
 
             registrationSlotCounts = data || [];
+            if (render) {
+                renderSportCheckboxes();
+                updateSportSelectionVisibility();
+            }
+        }
+
+        async function syncSportSlotAvailability() {
+            isSyncingSportSlots = true;
             renderSportCheckboxes();
             updateSportSelectionVisibility();
+
+            try {
+                await loadRegistrationSlotCounts({ render: false });
+            } finally {
+                isSyncingSportSlots = false;
+                renderSportCheckboxes();
+                updateSportSelectionVisibility();
+            }
         }
 
         async function loadSports() {
@@ -1401,6 +1422,11 @@
             if (!hasCurrentPlayableCollegeSelection()) {
                 setAlert(isImport ? "Please select the team to join before choosing a sport category." : "Please select your home college before choosing a sport category.");
                 (isImport ? importCollegeSelect : teamSelect).focus();
+                return;
+            }
+
+            if (isSyncingSportSlots) {
+                setAlert("Please wait while available slots are being checked.");
                 return;
             }
 
@@ -1556,10 +1582,10 @@
         gameScopeSelect.addEventListener("change", updateSportSelectionVisibility);
         isImportCheckbox.addEventListener("change", updateImportFormVisibility);
         teamSelect.addEventListener("change", () => {
-            loadRegistrationSlotCounts();
+            syncSportSlotAvailability();
         });
         importCollegeSelect.addEventListener("change", () => {
-            loadRegistrationSlotCounts();
+            syncSportSlotAvailability();
         });
         captureCameraOverlay.addEventListener("click", () => capturePhoto());
         cancelCameraOverlay.addEventListener("click", () => stopCamera());
