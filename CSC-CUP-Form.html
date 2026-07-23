@@ -543,7 +543,7 @@
     <div id="ruleNoticeModal" class="registration-success-modal" role="dialog" aria-modal="true" aria-labelledby="ruleNoticeTitle">
         <div class="w-full max-w-md rounded-3xl border border-red-100 bg-white p-6 text-center shadow-2xl sm:p-8">
             <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-2xl font-black text-red-700">!</div>
-            <h2 id="ruleNoticeTitle" class="text-xl font-black text-slate-950">Major Game Selection</h2>
+            <h2 id="ruleNoticeTitle" class="text-xl font-black text-slate-950">Sport Selection Rule</h2>
             <p id="ruleNoticeMessage" class="mt-4 text-sm font-bold leading-relaxed text-slate-700 sm:text-base"></p>
             <button id="closeRuleNotice" type="button" class="mt-6 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-800 sm:w-auto sm:min-w-32">
                 OK
@@ -1151,13 +1151,13 @@
 
                 if (availability.needsCollege) {
                     target.checked = false;
-                    setAlert("Please select your college first so available slots can be checked.");
+                    openRuleNoticeModal("Please select your college first so available slots can be checked.");
                     return;
                 }
 
                 if (availability.hasLimit && availability.remaining <= 0) {
                     target.checked = false;
-                    setAlert(`${target.dataset.name || "This sport category"} has no available slots left for your selected college.`);
+                    openRuleNoticeModal(`${target.dataset.name || "This sport category"} has no available slots left for your selected college.`);
                     return;
                 }
             }
@@ -1177,7 +1177,7 @@
 
                     if (hasOppositeCategorySelected) {
                         target.checked = false;
-                        setAlert("You cannot select singles and doubles categories for the same game at the same time.");
+                        openRuleNoticeModal("You cannot select singles and doubles categories for the same game at the same time.");
                         return;
                     }
                 }
@@ -1198,7 +1198,7 @@
 
                     if (hasOtherGenderMixedCategorySelected) {
                         target.checked = false;
-                        setAlert("You cannot select boys, girls, and mixed doubles categories for the same game at the same time.");
+                        openRuleNoticeModal("You cannot select boys, girls, and mixed doubles categories for the same game at the same time.");
                         return;
                     }
                 }
@@ -1226,7 +1226,7 @@
                 const limit = venue === "outdoor" ? 2 : 1;
                 if (checkedInVenue.length > limit) {
                     target.checked = false;
-                    setAlert(`You can select only ${limit} major ${venue} game${limit === 1 ? "" : "s"} for this category.`);
+                    openRuleNoticeModal(`You can select only ${limit} major ${venue} game${limit === 1 ? "" : "s"} for this category.`);
                     return;
                 }
 
@@ -1244,7 +1244,7 @@
 
             if (target?.name === "minorSport" && target.checked && getCheckedSports("minorSport").length > MINOR_LIMIT) {
                 target.checked = false;
-                setAlert(`You can select only ${MINOR_LIMIT} minor games.`);
+                openRuleNoticeModal(`You can select only ${MINOR_LIMIT} minor games.`);
             }
         }
 
@@ -1575,19 +1575,19 @@
             }
 
             if (requiresMinor && selectedMinorSports.length !== MINOR_LIMIT) {
-                setAlert(`Please select exactly ${MINOR_LIMIT} minor games.`);
+                openRuleNoticeModal(`Please select exactly ${MINOR_LIMIT} minor games.`);
                 minorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
 
             if (hasSinglesDoublesConflict([...selectedMajorSports, ...selectedMinorSports])) {
-                setAlert("You cannot select singles and doubles categories for the same game at the same time.");
+                openRuleNoticeModal("You cannot select singles and doubles categories for the same game at the same time.");
                 minorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
 
             if (hasGenderMixedConflict([...selectedMajorSports, ...selectedMinorSports])) {
-                setAlert("You cannot select boys, girls, and mixed doubles categories for the same game at the same time.");
+                openRuleNoticeModal("You cannot select boys, girls, and mixed doubles categories for the same game at the same time.");
                 minorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
@@ -1595,7 +1595,7 @@
             const selectedSportsWithNoSlots = [...selectedMajorSports, ...selectedMinorSports].filter(sport => hasSelectedSportsWithNoSlots([sport]));
 
             if (selectedSportsWithNoSlots.length) {
-                setAlert(`${selectedSportsWithNoSlots[0].name} has no available slots left for your selected college.`);
+                openRuleNoticeModal(`${selectedSportsWithNoSlots[0].name} has no available slots left for your selected college.`);
                 return;
             }
 
