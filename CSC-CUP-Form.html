@@ -506,19 +506,22 @@
     </div>
 
     <div id="privacyNoticeModal" class="registration-success-modal" role="dialog" aria-modal="true" aria-labelledby="privacyNoticeTitle">
-        <div class="w-full max-w-2xl rounded-3xl border border-blue-100 bg-white shadow-2xl">
-            <div class="border-b border-slate-200 px-6 py-5 sm:px-8">
-                <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Data Privacy Notice</p>
-                <h2 id="privacyNoticeTitle" class="mt-2 text-2xl font-black text-slate-950">CSC Cup 2026 Registration</h2>
+        <div class="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-8 sm:py-5">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Data Privacy Notice</p>
+                    <h2 id="privacyNoticeTitle" class="mt-2 text-xl font-black text-slate-950 sm:text-2xl">CSC Cup 2026 Registration</h2>
+                </div>
+                <button id="closePrivacyNoticeX" type="button" class="shrink-0 rounded-full px-3 py-1 text-3xl font-black leading-none text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Close data privacy notice">&times;</button>
             </div>
-            <div class="max-h-[68vh] overflow-y-auto px-6 py-5 text-sm font-semibold leading-relaxed text-slate-700 sm:px-8 sm:text-base">
+            <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-sm font-semibold leading-relaxed text-slate-700 sm:px-8 sm:py-5 sm:text-base">
                 <p>The Central Student Council collects your personal information and submitted documents for the purpose of processing, reviewing, and verifying your registration for the <strong>CSC Cup 2026</strong>.</p>
                 <p class="mt-4">The information collected may include your name, age, course, student ID number, contact information, team selection, medical certificate, notarized parental consent, and other required registration documents.</p>
                 <p class="mt-4">Your information will only be accessed by authorized CSC Cup organizers and assigned personnel. It will be used only for registration verification, eligibility checking, participant coordination, safety purposes, and other activities directly related to the CSC Cup 2026.</p>
                 <p class="mt-4">Your personal information and documents will not be shared with unauthorized individuals or used for unrelated purposes. Reasonable measures will be taken to protect your information from unauthorized access, loss, misuse, or disclosure.</p>
                 <p class="mt-4">By submitting this form, you confirm that the information you provided is accurate and that you consent to the collection and processing of your personal information and documents for the purposes stated above.</p>
             </div>
-            <div class="border-t border-slate-200 px-6 py-4 sm:px-8">
+            <div class="border-t border-slate-200 px-5 py-4 sm:px-8">
                 <button id="closePrivacyNotice" type="button" class="w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-800 sm:w-auto sm:min-w-40">
                     I Understand
                 </button>
@@ -575,6 +578,7 @@
         const captureCameraOverlay = document.getElementById("captureCameraOverlay");
         const privacyNoticeModal = document.getElementById("privacyNoticeModal");
         const closePrivacyNotice = document.getElementById("closePrivacyNotice");
+        const closePrivacyNoticeX = document.getElementById("closePrivacyNoticeX");
         const successModal = document.getElementById("successModal");
         const successModalMessage = document.getElementById("successModalMessage");
         const closeSuccessModal = document.getElementById("closeSuccessModal");
@@ -657,7 +661,6 @@
         function openPrivacyNotice() {
             privacyNoticeModal.classList.add("is-open");
             document.body.classList.add("overflow-hidden");
-            closePrivacyNotice.focus();
         }
 
         function closePrivacyNoticeFunction() {
@@ -1683,6 +1686,12 @@
         captureCameraOverlay.addEventListener("click", () => capturePhoto());
         cancelCameraOverlay.addEventListener("click", () => stopCamera());
         closePrivacyNotice.addEventListener("click", closePrivacyNoticeFunction);
+        closePrivacyNoticeX.addEventListener("click", closePrivacyNoticeFunction);
+        privacyNoticeModal.addEventListener("click", event => {
+            if (event.target === privacyNoticeModal) {
+                closePrivacyNoticeFunction();
+            }
+        });
         closeSuccessModal.addEventListener("click", closeSuccessModalFunction);
         successModal.addEventListener("click", event => {
             if (event.target === successModal) {
@@ -1690,6 +1699,11 @@
             }
         });
         document.addEventListener("keydown", event => {
+            if (event.key === "Escape" && privacyNoticeModal.classList.contains("is-open")) {
+                closePrivacyNoticeFunction();
+                return;
+            }
+
             if (event.key === "Escape" && successModal.classList.contains("is-open")) {
                 closeSuccessModalFunction();
             }
