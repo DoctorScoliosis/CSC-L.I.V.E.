@@ -400,7 +400,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div id="documentRequirementsSection" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <div class="mb-3">
                             <h2 class="text-lg font-black text-slate-950">Parent Consent - Page 1</h2>
@@ -581,6 +581,7 @@
         const minorSportField = document.getElementById("minorSportField");
         const minorSportOptions = document.getElementById("minorSportOptions");
         const isImportCheckbox = document.getElementById("isImportCheckbox");
+        const documentRequirementsSection = document.getElementById("documentRequirementsSection");
         const importFormCard = document.getElementById("importFormCard");
         const cameraOverlay = document.getElementById("cameraOverlay");
         const cameraOverlayVideo = document.getElementById("cameraOverlayVideo");
@@ -889,6 +890,11 @@
         function hasCurrentPlayableCollegeSelection() {
             const playableCollege = getCurrentPlayableCollegeSelection();
             return Boolean(playableCollege.id);
+        }
+
+        function isFacultySelection() {
+            const homeCollege = getHomeCollegeSelection();
+            return normalizeSportKey(homeCollege.name) === "faculty";
         }
 
         function normalizeGameType(value) {
@@ -1319,6 +1325,7 @@
 
         function isRegistrationReadyToSubmit() {
             const isImport = isImportCheckbox.checked;
+            const isFaculty = isFacultySelection();
             const gameScope = gameScopeSelect.value;
             const requiresMajor = gameScope === "major" || gameScope === "both";
             const requiresMinor = gameScope === "minor" || gameScope === "both";
@@ -1330,11 +1337,11 @@
                 && hasCurrentPlayableCollegeSelection()
                 && !isSyncingSportSlots
                 && Boolean(gameScope)
-                && Boolean(cameras.parentPage1.blob)
-                && Boolean(cameras.parentPage2.blob)
-                && Boolean(cameras.medical.blob)
+                && (isFacultySelection() || Boolean(cameras.parentPage1.blob))
+                && (isFacultySelection() || Boolean(cameras.parentPage2.blob))
+                && (isFacultySelection() || Boolean(cameras.medical.blob))
                 && (!isImport || Boolean(importCollegeSelect.value))
-                && (!isImport || (Boolean(cameras.importFormPage1.blob) && Boolean(cameras.importFormPage2.blob)))
+                && (isFacultySelection() || !isImport || (Boolean(cameras.importFormPage1.blob) && Boolean(cameras.importFormPage2.blob)))
                 && (!requiresMajor || hasValidMajorSportSelection(selectedMajorSports))
                 && (!requiresMinor || selectedMinorSports.length === MINOR_LIMIT)
                 && !hasSinglesDoublesConflict(selectedSports)
@@ -1423,12 +1430,23 @@
 
         function updateImportFormVisibility() {
             const isImport = isImportCheckbox.checked;
-            importFormCard.classList.toggle("hidden", !isImport);
+            const isFaculty = isFacultySelection();
+            documentRequirementsSection.classList.toggle("hidden", isFaculty);
+            importFormCard.classList.toggle("hidden", !isImport || isFaculty);
             importCollegeField.classList.toggle("hidden", !isImport);
             importCollegeSelect.required = isImport;
 
+            if (isFaculty) {
+                resetCameraCapture("parentPage1");
+                resetCameraCapture("parentPage2");
+                resetCameraCapture("medical");
+            }
+
             if (!isImport) {
                 importCollegeSelect.value = "";
+            }
+
+            if (!isImport || isFaculty) {
                 resetCameraCapture("importFormPage1");
                 resetCameraCapture("importFormPage2");
             }
@@ -1587,12 +1605,12 @@
                 return;
             }
 
-            if (!cameras.parentPage1.blob || !cameras.parentPage2.blob || !cameras.medical.blob) {
+            if (!isFaculty && (!cameras.parentPage1.blob || !cameras.parentPage2.blob || !cameras.medical.blob)) {
                 setAlert("Please take a picture of Parent Consent Page 1, Parent Consent Page 2, and the Medical Certificate before registering.");
                 return;
             }
 
-            if (isImport && (!cameras.importFormPage1.blob || !cameras.importFormPage2.blob)) {
+            if (!isFaculty && isImport && (!cameras.importFormPage1.blob || !cameras.importFormPage2.blob)) {
                 setAlert("Please take a picture of Import Form with Signatures Page 1 and Page 2.");
                 importFormCard.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
@@ -1653,16 +1671,16 @@
                 const minorSportName = requiresMinor ? joinSelectionValues(selectedMinorSports, "name") : "";
                 const majorSportIds = requiresMajor ? joinSelectionValues(selectedMajorSports, "id") : null;
                 const minorSportIds = requiresMinor ? joinSelectionValues(selectedMinorSports, "id") : null;
-                const parentConsentPage1Url = await uploadDocument(participantId, "parent-consent-page-1", cameras.parentPage1.blob);
-                const parentConsentPage2Url = await uploadDocument(participantId, "parent-consent-page-2", cameras.parentPage2.blob);
-                const medicalCertificateUrl = await uploadDocument(participantId, "medical-certificate", cameras.medical.blob);
-                const importFormPage1Url = isImport
+                const parentConsentPage1Url = isFaculty ? null : await uploadDocument(participantId, "parent-consent-page-1", cameras.parentPage1.blob);
+                const parentConsentPage2Url = isFaculty ? null : await uploadDocument(participantId, "parent-consent-page-2", cameras.parentPage2.blob);
+                const medicalCertificateUrl = isFaculty ? null : await uploadDocument(participantId, "medical-certificate", cameras.medical.blob);
+                const importFormPage1Url = !isFaculty && isImport
                     ? await uploadDocument(participantId, "import-form-with-signatures-page-1", cameras.importFormPage1.blob)
                     : null;
-                const importFormPage2Url = isImport
+                const importFormPage2Url = !isFaculty && isImport
                     ? await uploadDocument(participantId, "import-form-with-signatures-page-2", cameras.importFormPage2.blob)
                     : null;
-                const importFormPhotoValue = isImport
+                const importFormPhotoValue = !isFaculty && isImport
                     ? JSON.stringify({
                         page1: importFormPage1Url,
                         page2: importFormPage2Url
@@ -1690,7 +1708,7 @@
                     minor_sport_name: minorSportName,
                     is_import: isImport,
                     import_form_photo: importFormPhotoValue,
-                    parent_consent_photo: JSON.stringify({
+                    parent_consent_photo: isFaculty ? null : JSON.stringify({
                         page1: parentConsentPage1Url,
                         page2: parentConsentPage2Url
                     }),
