@@ -540,6 +540,17 @@
         </div>
     </div>
 
+    <div id="ruleNoticeModal" class="registration-success-modal" role="dialog" aria-modal="true" aria-labelledby="ruleNoticeTitle">
+        <div class="w-full max-w-md rounded-3xl border border-red-100 bg-white p-6 text-center shadow-2xl sm:p-8">
+            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-2xl font-black text-red-700">!</div>
+            <h2 id="ruleNoticeTitle" class="text-xl font-black text-slate-950">Major Game Selection</h2>
+            <p id="ruleNoticeMessage" class="mt-4 text-sm font-bold leading-relaxed text-slate-700 sm:text-base"></p>
+            <button id="closeRuleNotice" type="button" class="mt-6 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-800 sm:w-auto sm:min-w-32">
+                OK
+            </button>
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -582,6 +593,9 @@
         const successModal = document.getElementById("successModal");
         const successModalMessage = document.getElementById("successModalMessage");
         const closeSuccessModal = document.getElementById("closeSuccessModal");
+        const ruleNoticeModal = document.getElementById("ruleNoticeModal");
+        const ruleNoticeMessage = document.getElementById("ruleNoticeMessage");
+        const closeRuleNotice = document.getElementById("closeRuleNotice");
         const REGISTRATION_SUCCESS_MESSAGE = "Your registration has been submitted successfully. The CSC will review your registration. If your registration is forfeited or rejected, your team president will be notified. If you do not receive any notice from your president, your registration will be considered approved.";
         let activeCameraType = null;
         let activeCameraStream = null;
@@ -677,6 +691,17 @@
 
         function closeSuccessModalFunction() {
             successModal.classList.remove("is-open");
+            document.body.classList.remove("overflow-hidden");
+        }
+
+        function openRuleNoticeModal(message = MAJOR_SELECTION_RULE_MESSAGE) {
+            ruleNoticeMessage.textContent = message;
+            ruleNoticeModal.classList.add("is-open");
+            document.body.classList.add("overflow-hidden");
+        }
+
+        function closeRuleNoticeModal() {
+            ruleNoticeModal.classList.remove("is-open");
             document.body.classList.remove("overflow-hidden");
         }
 
@@ -1212,7 +1237,7 @@
                     document.querySelectorAll('input[name="majorSport"][data-venue="indoor"]:checked').forEach(input => {
                         input.checked = false;
                     });
-                    setAlert(MAJOR_SELECTION_RULE_MESSAGE);
+                    openRuleNoticeModal();
                     return;
                 }
             }
@@ -1544,7 +1569,7 @@
             const hasValidMajorCombination = (selectedIndoorMajorSports.length === 1 && selectedOutdoorMajorSports.length === 1)
                 || (selectedIndoorMajorSports.length === 0 && selectedOutdoorMajorSports.length === 2);
             if (requiresMajor && !hasValidMajorCombination) {
-                setAlert(MAJOR_SELECTION_RULE_MESSAGE);
+                openRuleNoticeModal();
                 majorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
@@ -1693,6 +1718,12 @@
             }
         });
         closeSuccessModal.addEventListener("click", closeSuccessModalFunction);
+        closeRuleNotice.addEventListener("click", closeRuleNoticeModal);
+        ruleNoticeModal.addEventListener("click", event => {
+            if (event.target === ruleNoticeModal) {
+                closeRuleNoticeModal();
+            }
+        });
         successModal.addEventListener("click", event => {
             if (event.target === successModal) {
                 closeSuccessModalFunction();
@@ -1701,6 +1732,11 @@
         document.addEventListener("keydown", event => {
             if (event.key === "Escape" && privacyNoticeModal.classList.contains("is-open")) {
                 closePrivacyNoticeFunction();
+                return;
+            }
+
+            if (event.key === "Escape" && ruleNoticeModal.classList.contains("is-open")) {
+                closeRuleNoticeModal();
                 return;
             }
 
