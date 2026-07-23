@@ -394,7 +394,7 @@
                     <div id="minorSportField" class="hidden space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-4 sm:col-span-2">
                         <div>
                             <span class="block text-sm font-black text-slate-700">Minor Game</span>
-                            <p class="mt-1 text-xs font-semibold text-slate-500">Select 1 or 2 minor games.</p>
+                            <p id="minorSelectionHint" class="mt-1 text-xs font-semibold text-slate-500">Select 1 or 2 minor games.</p>
                         </div>
                         <div id="minorSportOptions" class="grid grid-cols-1 gap-2 sm:grid-cols-2"></div>
                     </div>
@@ -579,6 +579,7 @@
         const majorIndoorOptions = document.getElementById("majorIndoorOptions");
         const majorOutdoorOptions = document.getElementById("majorOutdoorOptions");
         const minorSportField = document.getElementById("minorSportField");
+        const minorSelectionHint = document.getElementById("minorSelectionHint");
         const minorSportOptions = document.getElementById("minorSportOptions");
         const isImportCheckbox = document.getElementById("isImportCheckbox");
         const documentRequirementsSection = document.getElementById("documentRequirementsSection");
@@ -613,9 +614,9 @@
             { key: "softball", label: "Softball", venue: "outdoor" }
         ];
         const MAJOR_ONLY_LIMIT = 2;
-        const MAJOR_WITH_MINOR_LIMIT = 1;
         const MINOR_MIN = 1;
         const MINOR_LIMIT = 2;
+        const MINOR_WITH_MAJOR_LIMIT = 1;
         const MAJOR_SELECTION_RULE_MESSAGE = "Players may choose 1 major game, or choose 2 major games as either 1 indoor and 1 outdoor, or 2 outdoor games only.";
 
         const cameras = {
@@ -1231,7 +1232,7 @@
             }
 
             if (target?.name === "majorSport" && target.checked) {
-                const majorLimit = gameScopeSelect.value === "both" ? MAJOR_WITH_MINOR_LIMIT : MAJOR_ONLY_LIMIT;
+                const majorLimit = MAJOR_ONLY_LIMIT;
                 if (getCheckedSports("majorSport").length > majorLimit) {
                     target.checked = false;
                     openRuleNoticeModal(`You can select only ${majorLimit} major game${majorLimit === 1 ? "" : "s"}.`);
@@ -1254,20 +1255,21 @@
                 }
             }
 
-            if (target?.name === "minorSport" && target.checked && getCheckedSports("minorSport").length > MINOR_LIMIT) {
+            const minorLimit = getMinorSportLimit();
+            if (target?.name === "minorSport" && target.checked && getCheckedSports("minorSport").length > minorLimit) {
                 target.checked = false;
-                openRuleNoticeModal(`You can select only up to ${MINOR_LIMIT} minor games.`);
+                openRuleNoticeModal(`You can select only ${minorLimit} minor game${minorLimit === 1 ? "" : "s"}.`);
             }
 
             if (!target?.name) {
                 const checkedMajorInputs = Array.from(document.querySelectorAll('input[name="majorSport"]:checked'));
-                const majorLimit = gameScopeSelect.value === "both" ? MAJOR_WITH_MINOR_LIMIT : MAJOR_ONLY_LIMIT;
+                const majorLimit = MAJOR_ONLY_LIMIT;
                 checkedMajorInputs.slice(majorLimit).forEach(input => {
                     input.checked = false;
                 });
 
                 const checkedMinorInputs = Array.from(document.querySelectorAll('input[name="minorSport"]:checked'));
-                checkedMinorInputs.slice(MINOR_LIMIT).forEach(input => {
+                checkedMinorInputs.slice(minorLimit).forEach(input => {
                     input.checked = false;
                 });
             }
@@ -1318,11 +1320,7 @@
             });
         }
 
-        function hasValidMajorSportSelection(selectedMajorSports, gameScope = gameScopeSelect.value) {
-            if (gameScope === "both") {
-                return selectedMajorSports.length === MAJOR_WITH_MINOR_LIMIT;
-            }
-
+        function hasValidMajorSportSelection(selectedMajorSports) {
             if (selectedMajorSports.length === 1) {
                 return true;
             }
@@ -1334,6 +1332,15 @@
                     (selectedIndoorMajorSports.length === 1 && selectedOutdoorMajorSports.length === 1)
                     || (selectedIndoorMajorSports.length === 0 && selectedOutdoorMajorSports.length === 2)
                 );
+        }
+
+        function getMinorSportLimit(gameScope = gameScopeSelect.value) {
+            return gameScope === "both" ? MINOR_WITH_MAJOR_LIMIT : MINOR_LIMIT;
+        }
+
+        function hasValidMinorSportSelection(selectedMinorSports, gameScope = gameScopeSelect.value) {
+            const minorLimit = getMinorSportLimit(gameScope);
+            return selectedMinorSports.length >= MINOR_MIN && selectedMinorSports.length <= minorLimit;
         }
 
         function isRegistrationReadyToSubmit() {
@@ -1355,8 +1362,8 @@
                 && (isFacultySelection() || Boolean(cameras.medical.blob))
                 && (!isImport || Boolean(importCollegeSelect.value))
                 && (isFacultySelection() || !isImport || (Boolean(cameras.importFormPage1.blob) && Boolean(cameras.importFormPage2.blob)))
-                && (!requiresMajor || hasValidMajorSportSelection(selectedMajorSports, gameScope))
-                && (!requiresMinor || (selectedMinorSports.length >= MINOR_MIN && selectedMinorSports.length <= MINOR_LIMIT))
+                && (!requiresMajor || hasValidMajorSportSelection(selectedMajorSports))
+                && (!requiresMinor || hasValidMinorSportSelection(selectedMinorSports, gameScope))
                 && !hasSinglesDoublesConflict(selectedSports)
                 && !hasGenderMixedConflict(selectedSports)
                 && !hasSelectedSportsWithNoSlots(selectedSports);
@@ -1396,9 +1403,10 @@
 
             majorSportField.classList.toggle("hidden", !showMajor);
             minorSportField.classList.toggle("hidden", !showMinor);
-            majorSelectionHint.textContent = scope === "both"
-                ? "Select 1 major game."
-                : "Select 1 major game, or 2 valid major games.";
+            majorSelectionHint.textContent = "Select 1 major game, or 2 valid major games.";
+            minorSelectionHint.textContent = scope === "both"
+                ? "Select exactly 1 minor game."
+                : "Select 1 or 2 minor games.";
 
             if (!showMajor) {
                 clearCheckedSports("majorSport");
@@ -1636,14 +1644,17 @@
             const requiresMinor = gameScope === "minor" || gameScope === "both";
             const selectedMajorSports = getCheckedSports("majorSport");
             const selectedMinorSports = getCheckedSports("minorSport");
-            if (requiresMajor && !hasValidMajorSportSelection(selectedMajorSports, gameScope)) {
+            if (requiresMajor && !hasValidMajorSportSelection(selectedMajorSports)) {
                 openRuleNoticeModal();
                 majorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
 
-            if (requiresMinor && (selectedMinorSports.length < MINOR_MIN || selectedMinorSports.length > MINOR_LIMIT)) {
-                openRuleNoticeModal(`Please select ${MINOR_MIN} or ${MINOR_LIMIT} minor games.`);
+            if (requiresMinor && !hasValidMinorSportSelection(selectedMinorSports, gameScope)) {
+                const minorLimit = getMinorSportLimit(gameScope);
+                openRuleNoticeModal(minorLimit === MINOR_WITH_MAJOR_LIMIT
+                    ? "Please select exactly 1 minor game."
+                    : `Please select ${MINOR_MIN} or ${MINOR_LIMIT} minor games.`);
                 minorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
