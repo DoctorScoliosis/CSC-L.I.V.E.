@@ -1711,6 +1711,8 @@
                             <tr class="border-b border-gray-200">
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Sport</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Players / Team</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Slots Available</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Updated</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
                             </tr>
@@ -1718,7 +1720,7 @@
 
                         <tbody id="sportsTableBody">
                             <tr>
-                                <td colspan="4" class="py-4 px-4 text-gray-600">
+                                <td colspan="6" class="py-4 px-4 text-gray-600">
                                     Loading sports...
                                 </td>
                             </tr>
@@ -2301,6 +2303,24 @@
                     </select>
                 </div>
 
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Number of Players per Team
+                    </label>
+
+                    <input
+                        type="number"
+                        id="sportPlayerLimitInput"
+                        min="1"
+                        step="1"
+                        placeholder="Example: 12"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2">
+
+                    <p class="mt-1 text-xs text-gray-500">
+                        This is the registration limit for each college/team in this sport category.
+                    </p>
+                </div>
+
                 <div class="flex justify-end space-x-2 pt-4">
                     <button 
                         type="button"
@@ -2387,8 +2407,8 @@
         id="participantModal"
         class="dashboard-modal-overlay fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
 
-        <div class="dashboard-modal-panel modal-panel bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-            <div class="flex items-center justify-between mb-4">
+        <div class="dashboard-modal-panel modal-panel max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-lg">
+            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                 <h2 id="participantModalTitle" class="text-xl font-semibold text-gray-900">
                     Add Participant
                 </h2>
@@ -2401,67 +2421,118 @@
                 </button>
             </div>
 
-            <form id="participantForm" class="space-y-4">
+            <form id="participantForm" class="max-h-[calc(90vh-84px)] space-y-5 overflow-y-auto p-6">
                 <input type="hidden" id="participantId">
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Name
-                    </label>
+                <section class="rounded-2xl border border-gray-200 bg-white p-4">
+                    <h3 class="mb-4 text-sm font-black uppercase tracking-widest text-gray-500">Registration Details</h3>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Full Name</span>
+                            <input type="text" id="participantName" required placeholder="Enter participant name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
 
-                    <input 
-                        type="text"
-                        id="participantName"
-                        required
-                        placeholder="Enter participant name"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Student ID</span>
+                            <input type="text" id="participantStudentId" required placeholder="Enter student ID" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Student ID
-                    </label>
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Course</span>
+                            <input type="text" id="participantCourse" placeholder="Example: BSIT" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
 
-                    <input 
-                        type="text"
-                        id="participantStudentId"
-                        required
-                        placeholder="Enter student ID"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Age</span>
+                            <input type="number" id="participantAge" min="1" max="120" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Team
-                    </label>
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Home College</span>
+                            <select id="participantHomeCollege" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">Select home college</option>
+                            </select>
+                        </label>
 
-                    <select
-                        id="participantTeam"
-                        required
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="">Select a registered team</option>
-                    </select>
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Team to Join</span>
+                            <select id="participantTeam" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">Select a registered team</option>
+                            </select>
+                        </label>
 
-                    <p class="text-xs text-gray-500 mt-1">
-                        Choose from the teams registered in Manage Teams.
-                    </p>
-                </div>
+                        <label class="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3 md:col-span-2">
+                            <input id="participantIsImport" type="checkbox" class="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span>
+                                <span class="block text-sm font-black text-gray-800">Import Player</span>
+                                <span class="mt-1 block text-xs font-semibold text-gray-500">Enable this if the participant is joining a different team.</span>
+                            </span>
+                        </label>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        Status
-                    </label>
+                        <label id="participantImportCollegeGroup" class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Import College</span>
+                            <select id="participantImportCollege" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">Select import college</option>
+                            </select>
+                        </label>
 
-                    <select 
-                        id="participantStatus"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="Approved">Approved</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Rejected">Rejected</option>
-                    </select>
-                </div>
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Playing In</span>
+                            <select id="participantGameScope" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="">Select game category</option>
+                                <option value="major">Major Game Only</option>
+                                <option value="minor">Minor Game Only</option>
+                                <option value="both">Both Major and Minor Game</option>
+                            </select>
+                        </label>
 
-                <div class="flex justify-end space-x-2 pt-4">
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Major Sport</span>
+                            <input type="text" id="participantMajorSportName" placeholder="Example: Basketball, Frisbee" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
+
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Minor Sport</span>
+                            <input type="text" id="participantMinorSportName" placeholder="Example: Chess, Scrabble" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
+
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Date Registered</span>
+                            <input type="datetime-local" id="participantCreatedAt" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
+
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Status</span>
+                            <select id="participantStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                <option value="Approved">Approved</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <h3 class="mb-4 text-sm font-black uppercase tracking-widest text-gray-500">Review Details</h3>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Reviewed By</span>
+                            <input type="text" id="participantReviewedByName" placeholder="Reviewer name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
+
+                        <label class="block">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Reviewed At</span>
+                            <input type="datetime-local" id="participantReviewedAt" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </label>
+
+                        <label class="block md:col-span-2">
+                            <span class="block text-sm font-medium text-gray-700 mb-1">Rejection Reason</span>
+                            <textarea id="participantRejectionReasonEdit" rows="3" placeholder="Reason shown when the participant is rejected" class="w-full resize-y border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+                        </label>
+                    </div>
+                </section>
+
+                <div class="flex justify-end space-x-2 border-t border-gray-200 pt-4">
                     <button 
                         type="button"
                         id="cancelParticipantModal"
@@ -2753,6 +2824,7 @@
             const sportId = document.getElementById("sportId");
             const sportNameInput = document.getElementById("sportNameInput");
             const sportGameTypeInput = document.getElementById("sportGameTypeInput");
+            const sportPlayerLimitInput = document.getElementById("sportPlayerLimitInput");
             const sportsTableBody = document.getElementById("sportsTableBody");
 
             const openParticipantModalButton = document.getElementById("openParticipantModal");
@@ -2764,8 +2836,21 @@
             const participantId = document.getElementById("participantId");
             const participantName = document.getElementById("participantName");
             const participantStudentId = document.getElementById("participantStudentId");
+            const participantCourse = document.getElementById("participantCourse");
+            const participantAge = document.getElementById("participantAge");
+            const participantHomeCollege = document.getElementById("participantHomeCollege");
             const participantTeam = document.getElementById("participantTeam");
+            const participantIsImport = document.getElementById("participantIsImport");
+            const participantImportCollegeGroup = document.getElementById("participantImportCollegeGroup");
+            const participantImportCollege = document.getElementById("participantImportCollege");
+            const participantGameScope = document.getElementById("participantGameScope");
+            const participantMajorSportName = document.getElementById("participantMajorSportName");
+            const participantMinorSportName = document.getElementById("participantMinorSportName");
+            const participantCreatedAt = document.getElementById("participantCreatedAt");
             const participantStatus = document.getElementById("participantStatus");
+            const participantReviewedByName = document.getElementById("participantReviewedByName");
+            const participantReviewedAt = document.getElementById("participantReviewedAt");
+            const participantRejectionReasonEdit = document.getElementById("participantRejectionReasonEdit");
             const participantsTableBody = document.getElementById("participantsTableBody");
             const participantTeamFilter = document.getElementById("participantTeamFilter");
             const participantSportFilter = document.getElementById("participantSportFilter");
@@ -2858,6 +2943,7 @@
             let teamsData = [];
             let sportsData = [];
             let participantsData = [];
+            let activeParticipantEditRecord = null;
             let studentFeedbackData = [];
             let isLoadingStudentFeedback = false;
             let shouldReloadStudentFeedbackAgain = false;
@@ -2926,6 +3012,32 @@
                 }
 
                 return dateValue.toLocaleString();
+            }
+
+            function formatDateTimeLocalInput(value) {
+                if (!value) {
+                    return "";
+                }
+
+                const dateValue = new Date(value);
+
+                if (Number.isNaN(dateValue.getTime())) {
+                    return "";
+                }
+
+                const offsetMs = dateValue.getTimezoneOffset() * 60000;
+                return new Date(dateValue.getTime() - offsetMs).toISOString().slice(0, 16);
+            }
+
+            function getDateTimeLocalInputISO(input) {
+                const rawValue = input?.value || "";
+
+                if (!rawValue) {
+                    return null;
+                }
+
+                const dateValue = new Date(rawValue);
+                return Number.isNaN(dateValue.getTime()) ? null : dateValue.toISOString();
             }
 
             function getLocalISODate() {
@@ -5038,6 +5150,10 @@
                 renderParticipantTeamFilter();
                 renderParticipantTeamOptions();
                 renderPrintTeamOptions();
+
+                if (sportsData.length > 0) {
+                    renderSports();
+                }
             }
 
             function renderTeams() {
@@ -5189,6 +5305,7 @@
                 sportForm.reset();
                 sportId.value = "";
                 sportGameTypeInput.value = "major";
+                sportPlayerLimitInput.value = "";
 
                 sportModal.classList.remove("hidden");
                 sportModal.classList.add("flex");
@@ -5199,6 +5316,7 @@
                 sportId.value = sport.id;
                 sportNameInput.value = sport.sport_name;
                 sportGameTypeInput.value = normalizeGameType(sport.game_type || sport.sport_type || sport.category_type);
+                sportPlayerLimitInput.value = getSportPlayerLimit(sport) || "";
 
                 sportModal.classList.remove("hidden");
                 sportModal.classList.add("flex");
@@ -5209,12 +5327,13 @@
                 sportModal.classList.remove("flex");
                 sportForm.reset();
                 sportId.value = "";
+                sportPlayerLimitInput.value = "";
             }
 
             async function loadSports() {
                 const { data, error } = await supabase
                     .from(SPORTS_TABLE)
-                    .select("id, sport_name, game_type, created_at, updated_at")
+                    .select("id, sport_name, game_type, player_limit, created_at, updated_at")
                     .order("sport_name", { ascending: true });
 
                 if (error) {
@@ -5222,7 +5341,7 @@
 
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="4" class="py-4 px-4 text-red-600">
+                            <td colspan="6" class="py-4 px-4 text-red-600">
                                 Error loading sports. Run the SQL below first, then check your Supabase RLS policies.
                             </td>
                         </tr>
@@ -5247,7 +5366,7 @@
                 if (sportsData.length === 0) {
                     sportsTableBody.innerHTML = `
                         <tr>
-                            <td colspan="4" class="py-4 px-4 text-gray-600">
+                            <td colspan="6" class="py-4 px-4 text-gray-600">
                                 No sports added yet.
                             </td>
                         </tr>
@@ -5258,6 +5377,8 @@
                 sportsData.forEach(sport => {
                     const row = document.createElement("tr");
                     row.className = "border-b border-gray-100 hover:bg-gray-50";
+                    const playerLimit = getSportPlayerLimit(sport);
+                    const availableSlots = getSportTotalAvailableSlots(sport);
 
                     row.innerHTML = `
                         <td class="py-3 px-4 font-medium text-gray-900">
@@ -5268,6 +5389,14 @@
                             <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold ${normalizeGameType(sport.game_type) === "minor" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}">
                                 ${escapeHTML(getSportGameTypeLabel(sport.game_type))}
                             </span>
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            ${playerLimit ? escapeHTML(playerLimit) : `<span class="text-red-600 font-semibold">Not set</span>`}
+                        </td>
+
+                        <td class="py-3 px-4 text-gray-600">
+                            ${availableSlots === null ? "-" : escapeHTML(availableSlots)}
                         </td>
 
                         <td class="py-3 px-4 text-gray-600">
@@ -5325,7 +5454,9 @@
 
                         alert(
                             `Sport: ${selectedSport.sport_name}\n` +
-                            `Type: ${getSportGameTypeLabel(selectedSport.game_type)}`
+                            `Type: ${getSportGameTypeLabel(selectedSport.game_type)}\n` +
+                            `Players per team: ${getSportPlayerLimit(selectedSport) || "Not set"}\n` +
+                            `Total slots available: ${getSportTotalAvailableSlots(selectedSport) ?? "-"}`
                         );
                     });
                 });
@@ -5342,15 +5473,23 @@
 
                 const sportName = sportNameInput.value.trim();
                 const gameType = normalizeGameType(sportGameTypeInput.value);
+                const playerLimit = sportPlayerLimitInput.value ? Number(sportPlayerLimitInput.value) : null;
 
                 if (!sportName) {
                     alert("Please enter a sport name.");
                     return;
                 }
 
+                if (!Number.isInteger(playerLimit) || playerLimit < 1) {
+                    alert("Please enter the number of players allowed per team for this sport category.");
+                    sportPlayerLimitInput.focus();
+                    return;
+                }
+
                 const sportData = {
                     sport_name: sportName,
-                    game_type: gameType
+                    game_type: gameType,
+                    player_limit: playerLimit
                 };
 
                 let result;
@@ -5476,6 +5615,11 @@
                 return normalizeGameType(value) === "minor" ? "Minor Game" : "Major Game";
             }
 
+            function getSportPlayerLimit(sport) {
+                const limit = Number(sport?.player_limit ?? sport?.players_per_team ?? sport?.max_players_per_team ?? 0);
+                return Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 0;
+            }
+
             function getParticipantGameScope(participant) {
                 return participant.game_scope || participant.play_scope || participant.playing_in || "";
             }
@@ -5567,6 +5711,70 @@
 
             function normalizeParticipantSport(value) {
                 return String(value || "").trim();
+            }
+
+            function splitSportIdValues(value) {
+                return String(value || "")
+                    .split(",")
+                    .map(item => item.trim())
+                    .filter(Boolean);
+            }
+
+            function participantIncludesSport(participant, sport) {
+                const sportId = String(sport?.id || "");
+                const sportName = normalizeParticipantSport(sport?.sport_name || sport?.name || sport?.game_name).toLowerCase();
+                const sportIds = [
+                    ...splitSportIdValues(participant.major_sport_id),
+                    ...splitSportIdValues(participant.minor_sport_id)
+                ];
+
+                if (sportId && sportIds.includes(sportId)) {
+                    return true;
+                }
+
+                const sportNames = [
+                    getParticipantMajorSportName(participant),
+                    getParticipantMinorSportName(participant)
+                ].flatMap(splitParticipantSportNames).map(name => name.toLowerCase());
+
+                return Boolean(sportName && sportNames.includes(sportName));
+            }
+
+            function isCountedRegistrationStatus(status) {
+                return normalizeParticipantStatus(status) !== "rejected";
+            }
+
+            function getParticipantSlotTeamKey(participant) {
+                return String(participant.team_id || normalizeParticipantTeam(getParticipantTeamName(participant))).trim().toLowerCase();
+            }
+
+            function countParticipantsForSportTeam(sport, team) {
+                const teamId = String(team?.id || "").trim().toLowerCase();
+                const teamName = normalizeParticipantTeam(team?.[TEAM_NAME_COLUMN] || team?.team || team?.name).toLowerCase();
+
+                return participantsData.filter(participant => {
+                    if (!isCountedRegistrationStatus(participant.status) || !participantIncludesSport(participant, sport)) {
+                        return false;
+                    }
+
+                    const participantTeamId = String(participant.team_id || "").trim().toLowerCase();
+                    const participantTeamName = normalizeParticipantTeam(getParticipantTeamName(participant)).toLowerCase();
+
+                    return Boolean((teamId && participantTeamId === teamId) || (teamName && participantTeamName === teamName));
+                }).length;
+            }
+
+            function getSportTotalAvailableSlots(sport) {
+                const limit = getSportPlayerLimit(sport);
+
+                if (!limit || !teamsData.length) {
+                    return null;
+                }
+
+                return teamsData.reduce((total, team) => {
+                    const used = countParticipantsForSportTeam(sport, team);
+                    return total + Math.max(limit - used, 0);
+                }, 0);
             }
 
             function getParticipantSportFilterValue() {
@@ -6227,9 +6435,14 @@
             function openAddParticipantModal() {
                 participantModalTitle.textContent = "Add Participant";
                 participantForm.reset();
+                activeParticipantEditRecord = null;
                 participantId.value = "";
                 participantStatus.value = "Pending";
+                participantGameScope.value = "";
+                participantCreatedAt.value = "";
+                participantReviewedAt.value = "";
                 renderParticipantTeamOptions();
+                updateParticipantImportEditVisibility();
 
                 participantModal.classList.remove("hidden");
                 participantModal.classList.add("flex");
@@ -6237,11 +6450,27 @@
 
             function openEditParticipantModal(participant) {
                 participantModalTitle.textContent = "Edit Participant";
+                activeParticipantEditRecord = participant;
                 participantId.value = participant.id;
                 participantName.value = getParticipantDisplayName(participant) === "Unnamed participant" ? "" : getParticipantDisplayName(participant);
                 participantStudentId.value = getParticipantIdNumber(participant) === "-" ? "" : getParticipantIdNumber(participant);
-                renderParticipantTeamOptions(getParticipantTeamName(participant) === "-" ? "" : getParticipantTeamName(participant));
+                participantCourse.value = getParticipantCourse(participant) === "-" ? "" : getParticipantCourse(participant);
+                participantAge.value = getParticipantAge(participant) === "-" ? "" : getParticipantAge(participant);
+                participantIsImport.checked = isParticipantImport(participant);
+                participantGameScope.value = getParticipantGameScope(participant) || "";
+                participantMajorSportName.value = getParticipantMajorSportName(participant) === "-" ? "" : getParticipantMajorSportName(participant);
+                participantMinorSportName.value = getParticipantMinorSportName(participant) === "-" ? "" : getParticipantMinorSportName(participant);
+                participantCreatedAt.value = formatDateTimeLocalInput(participant.created_at);
                 participantStatus.value = getParticipantStatusLabel(participant.status);
+                participantReviewedByName.value = participant.reviewed_by_name || "";
+                participantReviewedAt.value = formatDateTimeLocalInput(participant.reviewed_at);
+                participantRejectionReasonEdit.value = participant.rejection_reason || "";
+                renderParticipantTeamOptions({
+                    homeCollege: getParticipantHomeCollege(participant) === "-" ? "" : getParticipantHomeCollege(participant),
+                    team: getParticipantTeamName(participant) === "-" ? "" : getParticipantTeamName(participant),
+                    importCollege: getParticipantImportCollege(participant) === "-" ? "" : getParticipantImportCollege(participant)
+                });
+                updateParticipantImportEditVisibility();
 
                 participantModal.classList.remove("hidden");
                 participantModal.classList.add("flex");
@@ -6252,26 +6481,104 @@
                 participantModal.classList.remove("flex");
                 participantForm.reset();
                 participantId.value = "";
+                activeParticipantEditRecord = null;
             }
 
-            function renderParticipantTeamOptions(selectedTeam = participantTeam.value) {
+            function getTeamName(team) {
+                return normalizeParticipantTeam(team?.[TEAM_NAME_COLUMN] || team?.team || team?.name);
+            }
+
+            function getTeamIdByName(teamName) {
+                const normalizedTeamName = normalizeParticipantTeam(teamName).toLowerCase();
+                const team = teamsData.find(teamRow => getTeamName(teamRow).toLowerCase() === normalizedTeamName);
+                return team?.id || null;
+            }
+
+            function getSelectedTeamId(select) {
+                const selectedOption = select?.options?.[select.selectedIndex];
+                return selectedOption?.dataset?.teamId || getTeamIdByName(select?.value || "");
+            }
+
+            function setTeamSelectOptions(select, selectedTeam, placeholder = "Select a registered team") {
+                if (!select) return;
                 const normalizedSelectedTeam = normalizeParticipantTeam(selectedTeam);
                 const registeredTeams = [...new Set(
                     teamsData
-                        .map(team => normalizeParticipantTeam(team?.[TEAM_NAME_COLUMN] || team?.team || team?.name))
+                        .map(getTeamName)
                         .filter(Boolean)
                 )].sort((a, b) => a.localeCompare(b));
 
-                participantTeam.innerHTML = `
-                    <option value="">${registeredTeams.length ? "Select a registered team" : "No registered teams available"}</option>
-                    ${registeredTeams.map(teamName => `
-                        <option value="${escapeHTML(teamName)}">${escapeHTML(teamName)}</option>
-                    `).join("")}
+                select.innerHTML = `
+                    <option value="">${registeredTeams.length ? placeholder : "No registered teams available"}</option>
+                    ${registeredTeams.map(teamName => {
+                        const teamId = getTeamIdByName(teamName) || "";
+                        return `<option value="${escapeHTML(teamName)}" data-team-id="${escapeHTML(teamId)}">${escapeHTML(teamName)}</option>`;
+                    }).join("")}
+                    ${normalizedSelectedTeam && !registeredTeams.includes(normalizedSelectedTeam) ? `<option value="${escapeHTML(normalizedSelectedTeam)}">${escapeHTML(normalizedSelectedTeam)}</option>` : ""}
                 `;
 
-                if (normalizedSelectedTeam && registeredTeams.includes(normalizedSelectedTeam)) {
-                    participantTeam.value = normalizedSelectedTeam;
+                if (normalizedSelectedTeam) {
+                    select.value = normalizedSelectedTeam;
                 }
+            }
+
+            function renderParticipantTeamOptions(selected = {}) {
+                const selectedTeam = typeof selected === "string" ? selected : selected.team;
+                const selectedHomeCollege = typeof selected === "object" ? selected.homeCollege : participantHomeCollege.value;
+                const selectedImportCollege = typeof selected === "object" ? selected.importCollege : participantImportCollege.value;
+
+                setTeamSelectOptions(participantHomeCollege, selectedHomeCollege ?? participantHomeCollege.value, "Select home college");
+                setTeamSelectOptions(participantTeam, selectedTeam ?? participantTeam.value, "Select team to join");
+                setTeamSelectOptions(participantImportCollege, selectedImportCollege ?? participantImportCollege.value, "Select import college");
+            }
+
+            function updateParticipantImportEditVisibility() {
+                const isImport = participantIsImport.checked;
+                participantImportCollegeGroup.classList.toggle("hidden", !isImport);
+                participantImportCollege.required = isImport;
+
+                if (!isImport) {
+                    participantImportCollege.value = "";
+                }
+            }
+
+            function normalizeParticipantGameScopeValue(value) {
+                const normalizedValue = String(value || "").trim().toLowerCase();
+
+                if (normalizedValue === "major" || normalizedValue === "minor" || normalizedValue === "both") {
+                    return normalizedValue;
+                }
+
+                return null;
+            }
+
+            function resolveParticipantSportIds(sportNames, type) {
+                const names = splitParticipantSportNames(sportNames).map(name => name.toLowerCase());
+
+                if (!names.length) {
+                    return null;
+                }
+
+                const matchingIds = sportsData
+                    .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === type)
+                    .filter(sport => names.includes(normalizeParticipantSport(sport.sport_name || sport.name || sport.game_name).toLowerCase()))
+                    .map(sport => sport.id)
+                    .filter(Boolean);
+
+                return matchingIds.length ? matchingIds.join(",") : null;
+            }
+
+            function getParticipantSportIdForSave(fieldName, sportNames, type) {
+                const existingValue = activeParticipantEditRecord?.[fieldName] || null;
+                const previousNames = type === "major"
+                    ? getParticipantMajorSportName(activeParticipantEditRecord || {})
+                    : getParticipantMinorSportName(activeParticipantEditRecord || {});
+
+                if (normalizeParticipantSport(sportNames) === normalizeParticipantSport(previousNames)) {
+                    return existingValue;
+                }
+
+                return resolveParticipantSportIds(sportNames, type);
             }
 
             async function loadParticipants() {
@@ -6309,6 +6616,9 @@
                 renderParticipantSportFilter();
                 renderPrintTeamOptions();
                 renderParticipants();
+                if (sportsData.length > 0) {
+                    renderSports();
+                }
                 updateAdminMessageNotification();
             }
 
@@ -6717,20 +7027,53 @@
             async function saveParticipant(event) {
                 event.preventDefault();
 
-                    const selectedTeamName = participantTeam.value.trim();
-                    const participantData = {
-                        name: participantName.value.trim(),
-                        full_name: participantName.value.trim(),
-                        student_id: participantStudentId.value.trim(),
-                        id_number: participantStudentId.value.trim(),
-                        home_college: selectedTeamName,
-                        team: selectedTeamName,
-                        team_name: selectedTeamName,
-                        status: normalizeParticipantStatus(participantStatus.value)
-                    };
+                const participantNameValue = participantName.value.trim();
+                const studentIdValue = participantStudentId.value.trim();
+                const selectedHomeCollegeName = participantHomeCollege.value.trim();
+                const selectedTeamName = participantTeam.value.trim();
+                const selectedImportCollegeName = participantIsImport.checked ? participantImportCollege.value.trim() : "";
+                const majorSportName = participantMajorSportName.value.trim();
+                const minorSportName = participantMinorSportName.value.trim();
+                const createdAtValue = getDateTimeLocalInputISO(participantCreatedAt);
+                const reviewedAtValue = getDateTimeLocalInputISO(participantReviewedAt);
+                const participantData = {
+                    name: participantNameValue,
+                    full_name: participantNameValue,
+                    course: participantCourse.value.trim() || null,
+                    age: participantAge.value ? Number(participantAge.value) : null,
+                    student_id: studentIdValue,
+                    id_number: studentIdValue,
+                    home_college_id: getSelectedTeamId(participantHomeCollege),
+                    home_college: selectedHomeCollegeName || selectedTeamName,
+                    team_id: getSelectedTeamId(participantTeam),
+                    team: selectedTeamName,
+                    team_name: selectedTeamName,
+                    is_import: participantIsImport.checked,
+                    import_college_id: participantIsImport.checked ? getSelectedTeamId(participantImportCollege) : null,
+                    import_college: selectedImportCollegeName || null,
+                    game_scope: normalizeParticipantGameScopeValue(participantGameScope.value),
+                    major_sport_id: getParticipantSportIdForSave("major_sport_id", majorSportName, "major"),
+                    major_sport_name: majorSportName || null,
+                    minor_sport_id: getParticipantSportIdForSave("minor_sport_id", minorSportName, "minor"),
+                    minor_sport_name: minorSportName || null,
+                    status: normalizeParticipantStatus(participantStatus.value),
+                    reviewed_by_name: participantReviewedByName.value.trim() || null,
+                    reviewed_at: reviewedAtValue,
+                    rejection_reason: participantRejectionReasonEdit.value.trim() || null
+                };
+
+                if (createdAtValue) {
+                    participantData.created_at = createdAtValue;
+                }
 
                 if (!participantData.name || !participantData.student_id || !participantData.team) {
                     alert("Please complete the participant name, student ID, and team.");
+                    return;
+                }
+
+                if (participantData.is_import && !selectedImportCollegeName) {
+                    alert("Please select the import college for this import player.");
+                    participantImportCollege.focus();
                     return;
                 }
 
@@ -7782,6 +8125,7 @@
             openParticipantModalButton.addEventListener("click", openAddParticipantModal);
             closeParticipantModalButton.addEventListener("click", closeParticipantModalFunction);
             cancelParticipantModal.addEventListener("click", closeParticipantModalFunction);
+            participantIsImport.addEventListener("change", updateParticipantImportEditVisibility);
             closeParticipantDetailsModal.addEventListener("click", closeParticipantDetailsModalFunction);
             participantDetailsModal.addEventListener("click", function (event) {
                 if (event.target === participantDetailsModal) {

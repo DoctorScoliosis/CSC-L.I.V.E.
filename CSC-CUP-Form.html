@@ -545,6 +545,7 @@
         const SPORTS_TABLE = "sports";
         const PARTICIPANTS_TABLE = "participants";
         const DOCUMENTS_BUCKET = "participant-documents";
+        const REGISTRATION_SLOT_COUNTS_VIEW = "registration_slot_counts";
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: { persistSession: true, autoRefreshToken: true }
@@ -579,6 +580,7 @@
         let activeCameraType = null;
         let activeCameraStream = null;
         let sportsData = [];
+        let registrationSlotCounts = [];
         const MAJOR_GAME_OPTIONS = [
             { key: "basketball", label: "Basketball", venue: "indoor" },
             { key: "volleyball", label: "Volleyball", venue: "indoor" },
@@ -817,6 +819,10 @@
             };
         }
 
+        function getCurrentPlayableCollegeSelection() {
+            return getPlayableCollegeSelection(isImportCheckbox.checked);
+        }
+
         function normalizeGameType(value) {
             const normalized = String(value || "").trim().toLowerCase();
             return normalized === "minor" ? "minor" : "major";
@@ -830,6 +836,144 @@
             return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
         }
 
+        function splitSportIdValues(value) {
+            return String(value || "")
+                .split(",")
+                .map(item => item.trim())
+                .filter(Boolean);
+        }
+
+        function getSportPlayerLimit(sport) {
+            const limit = Number(sport?.player_limit ?? sport?.players_per_team ?? sport?.max_players_per_team ?? 0);
+            return Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 0;
+        }
+
+        function getSlotCountForSportCollege(sportId, college) {
+            const normalizedSportId = String(sportId || "");
+            const normalizedCollegeId = String(college?.id || "");
+            const normalizedCollegeName = normalizeSportKey(college?.name || "");
+            const row = registrationSlotCounts.find(item => {
+                const rowSportId = String(item.sport_id || item.sportId || "");
+                const rowTeamId = String(item.team_id || item.teamId || "");
+                const rowTeamName = normalizeSportKey(item.team_name || item.team || item.college_name || "");
+
+                return rowSportId === normalizedSportId
+                    && ((normalizedCollegeId && rowTeamId === normalizedCollegeId) || (normalizedCollegeName && rowTeamName === normalizedCollegeName));
+            });
+
+            return Number(row?.registered_count ?? row?.count ?? 0) || 0;
+        }
+
+        function getRemainingSlotsForSportIds(sportIds, college = getCurrentPlayableCollegeSelection()) {
+            const ids = splitSportIdValues(sportIds);
+
+            if (!college?.id && !college?.name) {
+                return { remaining: 0, needsCollege: true, hasLimit: true };
+            }
+
+            const remainingValues = ids
+                .map(id => {
+                    const sport = sportsData.find(item => String(item.id) === String(id));
+                    const limit = getSportPlayerLimit(sport);
+
+                    if (!sport || !limit) {
+                        return null;
+                    }
+
+                    const used = getSlotCountForSportCollege(id, college);
+                    return Math.max(limit - used, 0);
+                })
+                .filter(value => value !== null);
+
+            if (!remainingValues.length) {
+                return { remaining: Infinity, needsCollege: false, hasLimit: false };
+            }
+
+            return {
+                remaining: Math.min(...remainingValues),
+                needsCollege: false,
+                hasLimit: true
+            };
+        }
+
+        function getSportSlotNote(value) {
+            const availability = getRemainingSlotsForSportIds(value);
+
+            if (availability.needsCollege) {
+                return "Select your college first to check available slots";
+            }
+
+            if (!availability.hasLimit) {
+                return "No player limit set yet";
+            }
+
+            return availability.remaining > 0
+                ? `${availability.remaining} slot${availability.remaining === 1 ? "" : "s"} left for your college`
+                : "No slots left for your college";
+        }
+
+        function getSinglesDoublesCategory(label) {
+            const normalizedLabel = String(label || "").toLowerCase();
+
+            if (/\bsingles?\b/.test(normalizedLabel)) {
+                return "singles";
+            }
+
+            if (/\bdoubles?\b/.test(normalizedLabel)) {
+                return "doubles";
+            }
+
+            return "";
+        }
+
+        function getSinglesDoublesGroupKey(label) {
+            const category = getSinglesDoublesCategory(label);
+
+            if (!category) {
+                return "";
+            }
+
+            return normalizeSportKey(
+                String(label || "")
+                    .replace(/\bsingles?\b/gi, "")
+                    .replace(/\bdoubles?\b/gi, "")
+                    .replace(/\bmen'?s\b|\bwomen'?s\b|\bmixed\b|\bboys?\b|\bgirls?\b/gi, "")
+            );
+        }
+
+        function getGenderMixedCategory(label) {
+            const normalizedLabel = String(label || "").toLowerCase();
+
+            if (/\bmixed\s+doubles?\b/.test(normalizedLabel)) {
+                return "mixed doubles";
+            }
+
+            if (/\bboys?\b/.test(normalizedLabel)) {
+                return "boys";
+            }
+
+            if (/\bgirls?\b/.test(normalizedLabel)) {
+                return "girls";
+            }
+
+            return "";
+        }
+
+        function getGenderMixedGroupKey(label) {
+            const category = getGenderMixedCategory(label);
+
+            if (!category) {
+                return "";
+            }
+
+            return normalizeSportKey(
+                String(label || "")
+                    .replace(/\bsingles?\b/gi, "")
+                    .replace(/\bdoubles?\b/gi, "")
+                    .replace(/\bmen'?s\b|\bwomen'?s\b|\bmixed\b|\bboys?\b|\bgirls?\b/gi, "")
+            );
+        }
+
         function getRegisteredSportsByGameKey(gameKey, type = "major") {
             return sportsData
                 .filter(sport => normalizeGameType(sport.game_type || sport.sport_type || sport.category_type) === type)
@@ -838,6 +982,13 @@
         }
 
         function renderSportCheckbox(container, sport, name) {
+            const singlesDoublesCategory = getSinglesDoublesCategory(sport.label);
+            const singlesDoublesGroup = getSinglesDoublesGroupKey(sport.label);
+            const genderMixedCategory = getGenderMixedCategory(sport.label);
+            const genderMixedGroup = getGenderMixedGroupKey(sport.label);
+            const availability = getRemainingSlotsForSportIds(sport.value);
+            const isUnavailable = availability.needsCollege || (availability.hasLimit && availability.remaining <= 0);
+
             return `
                 <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700">
                     <input
@@ -846,10 +997,19 @@
                         value="${escapeHTML(sport.value)}"
                         data-name="${escapeHTML(sport.label)}"
                         data-venue="${escapeHTML(sport.venue || "")}"
+                        data-singles-doubles-category="${escapeHTML(singlesDoublesCategory)}"
+                        data-singles-doubles-group="${escapeHTML(singlesDoublesGroup)}"
+                        data-gender-mixed-category="${escapeHTML(genderMixedCategory)}"
+                        data-gender-mixed-group="${escapeHTML(genderMixedGroup)}"
+                        data-slot-remaining="${availability.remaining === Infinity ? "" : escapeHTML(availability.remaining)}"
+                        data-slot-needs-college="${availability.needsCollege ? "true" : "false"}"
+                        data-slot-has-limit="${availability.hasLimit ? "true" : "false"}"
+                        ${isUnavailable ? "disabled" : ""}
                         class="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-500">
                     <span class="min-w-0">
-                        <span class="block">${escapeHTML(sport.label)}</span>
+                        <span class="block ${isUnavailable ? "text-slate-400" : ""}">${escapeHTML(sport.label)}</span>
                         ${sport.note ? `<span class="mt-0.5 block text-[11px] font-semibold text-slate-500">${escapeHTML(sport.note)}</span>` : ""}
+                        <span class="mt-0.5 block text-[11px] font-black ${availability.hasLimit && availability.remaining <= 0 ? "text-red-600" : "text-emerald-700"}">${escapeHTML(getSportSlotNote(sport.value))}</span>
                     </span>
                 </label>
             `;
@@ -897,7 +1057,14 @@
                 .map(input => ({
                     id: input.value,
                     name: input.dataset.name || input.value,
-                    venue: input.dataset.venue || ""
+                    venue: input.dataset.venue || "",
+                    singlesDoublesCategory: input.dataset.singlesDoublesCategory || "",
+                    singlesDoublesGroup: input.dataset.singlesDoublesGroup || "",
+                    genderMixedCategory: input.dataset.genderMixedCategory || "",
+                    genderMixedGroup: input.dataset.genderMixedGroup || "",
+                    slotRemaining: input.dataset.slotRemaining || "",
+                    slotNeedsCollege: input.dataset.slotNeedsCollege === "true",
+                    slotHasLimit: input.dataset.slotHasLimit === "true"
                 }));
         }
 
@@ -909,6 +1076,64 @@
 
         function enforceSportSelectionLimits(event) {
             const target = event?.target;
+
+            if (target?.checked) {
+                const availability = getRemainingSlotsForSportIds(target.value);
+
+                if (availability.needsCollege) {
+                    target.checked = false;
+                    setAlert("Please select your college first so available slots can be checked.");
+                    return;
+                }
+
+                if (availability.hasLimit && availability.remaining <= 0) {
+                    target.checked = false;
+                    setAlert(`${target.dataset.name || "This sport category"} has no available slots left for your selected college.`);
+                    return;
+                }
+            }
+
+            if (target?.checked) {
+                const category = target.dataset.singlesDoublesCategory || "";
+                const group = target.dataset.singlesDoublesGroup || "";
+
+                if (category && group) {
+                    const hasOppositeCategorySelected = Array.from(document.querySelectorAll('input[name="majorSport"]:checked, input[name="minorSport"]:checked'))
+                        .some(input => {
+                            return input !== target
+                                && input.dataset.singlesDoublesGroup === group
+                                && input.dataset.singlesDoublesCategory
+                                && input.dataset.singlesDoublesCategory !== category;
+                        });
+
+                    if (hasOppositeCategorySelected) {
+                        target.checked = false;
+                        setAlert("You cannot select singles and doubles categories for the same game at the same time.");
+                        return;
+                    }
+                }
+            }
+
+            if (target?.checked) {
+                const category = target.dataset.genderMixedCategory || "";
+                const group = target.dataset.genderMixedGroup || "";
+
+                if (category && group) {
+                    const hasOtherGenderMixedCategorySelected = Array.from(document.querySelectorAll('input[name="majorSport"]:checked, input[name="minorSport"]:checked'))
+                        .some(input => {
+                            return input !== target
+                                && input.dataset.genderMixedGroup === group
+                                && input.dataset.genderMixedCategory
+                                && input.dataset.genderMixedCategory !== category;
+                        });
+
+                    if (hasOtherGenderMixedCategorySelected) {
+                        target.checked = false;
+                        setAlert("You cannot select boys, girls, and mixed doubles categories for the same game at the same time.");
+                        return;
+                    }
+                }
+            }
 
             const checkedIndoorInputs = Array.from(document.querySelectorAll('input[name="majorSport"][data-venue="indoor"]:checked'));
             const checkedOutdoorInputs = Array.from(document.querySelectorAll('input[name="majorSport"][data-venue="outdoor"]:checked'));
@@ -952,6 +1177,44 @@
                 target.checked = false;
                 setAlert(`You can select only ${MINOR_LIMIT} minor games.`);
             }
+        }
+
+        function hasSinglesDoublesConflict(selectedSports) {
+            const selectedByGroup = new Map();
+
+            return selectedSports.some(sport => {
+                if (!sport.singlesDoublesCategory || !sport.singlesDoublesGroup) {
+                    return false;
+                }
+
+                const existingCategory = selectedByGroup.get(sport.singlesDoublesGroup);
+
+                if (existingCategory && existingCategory !== sport.singlesDoublesCategory) {
+                    return true;
+                }
+
+                selectedByGroup.set(sport.singlesDoublesGroup, sport.singlesDoublesCategory);
+                return false;
+            });
+        }
+
+        function hasGenderMixedConflict(selectedSports) {
+            const selectedByGroup = new Map();
+
+            return selectedSports.some(sport => {
+                if (!sport.genderMixedCategory || !sport.genderMixedGroup) {
+                    return false;
+                }
+
+                const existingCategory = selectedByGroup.get(sport.genderMixedGroup);
+
+                if (existingCategory && existingCategory !== sport.genderMixedCategory) {
+                    return true;
+                }
+
+                selectedByGroup.set(sport.genderMixedGroup, sport.genderMixedCategory);
+                return false;
+            });
         }
 
         function joinSelectionValues(items, field) {
@@ -1004,12 +1267,32 @@
                 resetCameraCapture("importFormPage1");
                 resetCameraCapture("importFormPage2");
             }
+
+            renderSportCheckboxes();
+            updateSportSelectionVisibility();
+        }
+
+        async function loadRegistrationSlotCounts() {
+            const { data, error } = await supabase
+                .from(REGISTRATION_SLOT_COUNTS_VIEW)
+                .select("sport_id, team_id, team_name, registered_count");
+
+            if (error) {
+                console.error("Slot count load error:", error);
+                registrationSlotCounts = [];
+                setAlert("Unable to check available registration slots. Please refresh the page or contact the CSC admin.");
+                return;
+            }
+
+            registrationSlotCounts = data || [];
+            renderSportCheckboxes();
+            updateSportSelectionVisibility();
         }
 
         async function loadSports() {
             const { data, error } = await supabase
                 .from(SPORTS_TABLE)
-                .select("id, sport_name, game_type")
+                .select("id, sport_name, game_type, player_limit")
                 .order("sport_name", { ascending: true });
 
             if (error) {
@@ -1127,6 +1410,28 @@
                 return;
             }
 
+            if (hasSinglesDoublesConflict([...selectedMajorSports, ...selectedMinorSports])) {
+                setAlert("You cannot select singles and doubles categories for the same game at the same time.");
+                minorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
+                return;
+            }
+
+            if (hasGenderMixedConflict([...selectedMajorSports, ...selectedMinorSports])) {
+                setAlert("You cannot select boys, girls, and mixed doubles categories for the same game at the same time.");
+                minorSportField.scrollIntoView({ behavior: "smooth", block: "center" });
+                return;
+            }
+
+            const selectedSportsWithNoSlots = [...selectedMajorSports, ...selectedMinorSports].filter(sport => {
+                const availability = getRemainingSlotsForSportIds(sport.id);
+                return availability.needsCollege || (availability.hasLimit && availability.remaining <= 0);
+            });
+
+            if (selectedSportsWithNoSlots.length) {
+                setAlert(`${selectedSportsWithNoSlots[0].name} has no available slots left for your selected college.`);
+                return;
+            }
+
             const participantId = getParticipantId();
             submitButton.disabled = true;
             submitButton.textContent = "Submitting registration...";
@@ -1201,6 +1506,7 @@
                 updateImportFormVisibility();
                 await loadTeams();
                 await loadSports();
+                await loadRegistrationSlotCounts();
                 setAlert(REGISTRATION_SUCCESS_MESSAGE, "success");
                 openSuccessModal();
             } catch (error) {
@@ -1222,6 +1528,12 @@
 
         gameScopeSelect.addEventListener("change", updateSportSelectionVisibility);
         isImportCheckbox.addEventListener("change", updateImportFormVisibility);
+        teamSelect.addEventListener("change", () => {
+            loadRegistrationSlotCounts();
+        });
+        importCollegeSelect.addEventListener("change", () => {
+            loadRegistrationSlotCounts();
+        });
         captureCameraOverlay.addEventListener("click", () => capturePhoto());
         cancelCameraOverlay.addEventListener("click", () => stopCamera());
         closePrivacyNotice.addEventListener("click", closePrivacyNoticeFunction);
@@ -1243,7 +1555,7 @@
 
         openPrivacyNotice();
         updateImportFormVisibility();
-        Promise.all([loadTeams(), loadSports()]);
+        Promise.all([loadTeams(), loadSports(), loadRegistrationSlotCounts()]);
     </script>
 </body>
 </html>
