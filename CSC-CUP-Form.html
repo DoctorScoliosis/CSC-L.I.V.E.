@@ -543,7 +543,7 @@
     <div id="ruleNoticeModal" class="registration-success-modal" role="dialog" aria-modal="true" aria-labelledby="ruleNoticeTitle">
         <div class="w-full max-w-md rounded-3xl border border-red-100 bg-white p-6 text-center shadow-2xl sm:p-8">
             <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-2xl font-black text-red-700">!</div>
-            <h2 id="ruleNoticeTitle" class="text-xl font-black text-slate-950">Sport Selection Rule</h2>
+            <h2 id="ruleNoticeTitle" class="text-xl font-black text-slate-950">Registration Notice</h2>
             <p id="ruleNoticeMessage" class="mt-4 text-sm font-bold leading-relaxed text-slate-700 sm:text-base"></p>
             <button id="closeRuleNotice" type="button" class="mt-6 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-800 sm:w-auto sm:min-w-32">
                 OK
@@ -594,6 +594,7 @@
         const successModalMessage = document.getElementById("successModalMessage");
         const closeSuccessModal = document.getElementById("closeSuccessModal");
         const ruleNoticeModal = document.getElementById("ruleNoticeModal");
+        const ruleNoticeTitle = document.getElementById("ruleNoticeTitle");
         const ruleNoticeMessage = document.getElementById("ruleNoticeMessage");
         const closeRuleNotice = document.getElementById("closeRuleNotice");
         const REGISTRATION_SUCCESS_MESSAGE = "Your registration has been submitted successfully. The CSC will review your registration. If your registration is forfeited or rejected, your team president will be notified. If you do not receive any notice from your president, your registration will be considered approved.";
@@ -657,6 +658,11 @@
         };
 
         function setAlert(message, type = "error") {
+            if (type !== "success") {
+                openRuleNoticeModal(message, "Registration Notice");
+                return;
+            }
+
             formAlert.textContent = message;
             formAlert.className = `rounded-2xl border-2 px-5 py-4 text-base font-black form-alert-attention ${
                 type === "success"
@@ -694,7 +700,9 @@
             document.body.classList.remove("overflow-hidden");
         }
 
-        function openRuleNoticeModal(message = MAJOR_SELECTION_RULE_MESSAGE) {
+        function openRuleNoticeModal(message = MAJOR_SELECTION_RULE_MESSAGE, title = "Sport Selection Rule") {
+            clearAlert();
+            ruleNoticeTitle.textContent = title;
             ruleNoticeMessage.textContent = message;
             ruleNoticeModal.classList.add("is-open");
             document.body.classList.add("overflow-hidden");
