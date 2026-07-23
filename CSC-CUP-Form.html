@@ -799,6 +799,10 @@
         }
 
         function getSelectedOptionName(select) {
+            if (!getSelectedOptionValue(select)) {
+                return "";
+            }
+
             const selectedOption = select?.options?.[select.selectedIndex];
             return selectedOption?.dataset?.name || selectedOption?.textContent || "";
         }
@@ -828,7 +832,7 @@
 
         function hasCurrentPlayableCollegeSelection() {
             const playableCollege = getCurrentPlayableCollegeSelection();
-            return Boolean(playableCollege.id || playableCollege.name);
+            return Boolean(playableCollege.id);
         }
 
         function normalizeGameType(value) {
@@ -875,7 +879,7 @@
         function getRemainingSlotsForSportIds(sportIds, college = getCurrentPlayableCollegeSelection()) {
             const ids = splitSportIdValues(sportIds);
 
-            if (!college?.id && !college?.name) {
+            if (!college?.id) {
                 return { remaining: 0, needsCollege: true, hasLimit: true };
             }
 
