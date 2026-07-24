@@ -551,28 +551,6 @@
         </div>
     </div>
 
-    <div id="facultyTeamModal" class="registration-success-modal" role="dialog" aria-modal="true" aria-labelledby="facultyTeamModalTitle">
-        <div class="w-full max-w-md rounded-3xl border border-blue-100 bg-white p-6 shadow-2xl sm:p-8">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Faculty Registration</p>
-                    <h2 id="facultyTeamModalTitle" class="mt-2 text-xl font-black text-slate-950">Choose Team to Join</h2>
-                </div>
-                <button id="closeFacultyTeamModal" type="button" class="shrink-0 rounded-full px-3 py-1 text-3xl font-black leading-none text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Close faculty team selection">&times;</button>
-            </div>
-            <p class="mt-4 text-sm font-bold leading-relaxed text-slate-700 sm:text-base">Please choose which college team you will join for the CSC Cup.</p>
-            <label class="mt-5 block">
-                <span class="mb-1 block text-sm font-black text-slate-700">Team to Join</span>
-                <select id="facultyTeamSelect" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
-                    <option value="">Loading teams...</option>
-                </select>
-            </label>
-            <button id="confirmFacultyTeam" type="button" class="mt-6 w-full rounded-2xl bg-blue-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300">
-                Use This Team
-            </button>
-        </div>
-    </div>
-
     <script type="module">
         import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -621,17 +599,12 @@
         const ruleNoticeTitle = document.getElementById("ruleNoticeTitle");
         const ruleNoticeMessage = document.getElementById("ruleNoticeMessage");
         const closeRuleNotice = document.getElementById("closeRuleNotice");
-        const facultyTeamModal = document.getElementById("facultyTeamModal");
-        const facultyTeamSelect = document.getElementById("facultyTeamSelect");
-        const closeFacultyTeamModal = document.getElementById("closeFacultyTeamModal");
-        const confirmFacultyTeam = document.getElementById("confirmFacultyTeam");
         const REGISTRATION_SUCCESS_MESSAGE = "Your registration has been submitted successfully. The CSC will review your registration. If your registration is forfeited or rejected, your team president will be notified. If you do not receive any notice from your president, your registration will be considered approved.";
         let activeCameraType = null;
         let activeCameraStream = null;
         let sportsData = [];
         let teamsData = [];
         let registrationSlotCounts = [];
-        let facultyTeamModalShownForCollegeId = "";
         let isSyncingSportSlots = false;
         let isSubmittingRegistration = false;
         const MAJOR_GAME_OPTIONS = [
@@ -745,21 +718,6 @@
             document.body.classList.remove("overflow-hidden");
         }
 
-        function openFacultyTeamModal() {
-            facultyTeamModal.classList.add("is-open");
-            document.body.classList.add("overflow-hidden");
-            updateFacultyTeamConfirmState();
-        }
-
-        function closeFacultyTeamModalFunction() {
-            facultyTeamModal.classList.remove("is-open");
-            document.body.classList.remove("overflow-hidden");
-        }
-
-        function updateFacultyTeamConfirmState() {
-            confirmFacultyTeam.disabled = !getSelectedOptionValue(facultyTeamSelect);
-        }
-
         function stopCamera(type) {
             if (type && cameras[type]) {
                 cameras[type].stream?.getTracks().forEach(track => track.stop());
@@ -868,7 +826,6 @@
                 console.error("Team load error:", error);
                 teamSelect.innerHTML = `<option value="">Unable to load colleges</option>`;
                 importCollegeSelect.innerHTML = `<option value="">Unable to load colleges</option>`;
-                facultyTeamSelect.innerHTML = `<option value="">Unable to load teams</option>`;
                 setAlert("Unable to load colleges. Please refresh the page or contact the CSC admin.");
                 return;
             }
@@ -880,9 +837,8 @@
         function renderCollegeOptions() {
             const selectedHomeCollegeId = getSelectedOptionValue(teamSelect);
             const selectedImportCollegeId = getSelectedOptionValue(importCollegeSelect);
-            const selectedFacultyTeamId = getSelectedOptionValue(facultyTeamSelect);
             const optionsMarkup = teamsData.map(team => `<option value="${String(team.id)}" data-name="${escapeHTML(team.team || "")}">${escapeHTML(team.team || "Unnamed college")}</option>`).join("");
-            const joinTeamOptionsMarkup = teamsData
+            const importOptionsMarkup = teamsData
                 .filter(team => String(team.id) !== String(selectedHomeCollegeId))
                 .map(team => `<option value="${String(team.id)}" data-name="${escapeHTML(team.team || "")}">${escapeHTML(team.team || "Unnamed college")}</option>`)
                 .join("");
@@ -896,20 +852,11 @@
 
             importCollegeSelect.innerHTML = `
                 <option value="">Select the team to join</option>
-                ${joinTeamOptionsMarkup}
+                ${importOptionsMarkup}
             `;
             if (selectedImportCollegeId && selectedImportCollegeId !== selectedHomeCollegeId && teamsData.some(team => String(team.id) === String(selectedImportCollegeId))) {
                 importCollegeSelect.value = selectedImportCollegeId;
             }
-
-            facultyTeamSelect.innerHTML = `
-                <option value="">Select the team to join</option>
-                ${joinTeamOptionsMarkup}
-            `;
-            if (selectedFacultyTeamId && selectedFacultyTeamId !== selectedHomeCollegeId && teamsData.some(team => String(team.id) === String(selectedFacultyTeamId))) {
-                facultyTeamSelect.value = selectedFacultyTeamId;
-            }
-            updateFacultyTeamConfirmState();
         }
 
         function getSelectedOptionName(select) {
@@ -925,8 +872,8 @@
             return select?.value || "";
         }
 
-        function getPlayableCollegeSelection(isImport, isFaculty = isFacultySelection()) {
-            const select = isFaculty ? facultyTeamSelect : (isImport ? importCollegeSelect : teamSelect);
+        function getPlayableCollegeSelection(isImport) {
+            const select = isImport ? importCollegeSelect : teamSelect;
             return {
                 id: getSelectedOptionValue(select),
                 name: getSelectedOptionName(select)
@@ -952,26 +899,6 @@
         function isFacultySelection() {
             const homeCollege = getHomeCollegeSelection();
             return normalizeSportKey(homeCollege.name) === "faculty";
-        }
-
-        function maybePromptFacultyTeamSelection() {
-            const homeCollege = getHomeCollegeSelection();
-
-            if (!isFacultySelection()) {
-                facultyTeamModalShownForCollegeId = "";
-                return;
-            }
-
-            if (getSelectedOptionValue(facultyTeamSelect)) {
-                return;
-            }
-
-            if (facultyTeamModalShownForCollegeId === homeCollege.id) {
-                return;
-            }
-
-            facultyTeamModalShownForCollegeId = homeCollege.id;
-            openFacultyTeamModal();
         }
 
         function normalizeGameType(value) {
@@ -1457,16 +1384,13 @@
         function updateSportSelectionVisibility() {
             const hasPlayableCollege = hasCurrentPlayableCollegeSelection();
             const isImport = isImportCheckbox.checked;
-            const isFaculty = isFacultySelection();
             updateImportGameScopeOptions();
             gameScopeSelect.disabled = !hasPlayableCollege;
             gameScopeSelect.classList.toggle("cursor-not-allowed", !hasPlayableCollege);
             gameScopeSelect.classList.toggle("opacity-60", !hasPlayableCollege);
-            sportSelectionGateHint.textContent = isFaculty
-                ? "Select the team you are joining first before choosing a sport category."
-                : (isImport
-                    ? "Select the team to join first before choosing a sport category."
-                    : "Select your home college first before choosing a sport category.");
+            sportSelectionGateHint.textContent = isImport
+                ? "Select the team to join first before choosing a sport category."
+                : "Select your home college first before choosing a sport category.";
             sportSelectionGateHint.classList.toggle("hidden", hasPlayableCollege);
 
             if (!hasPlayableCollege) {
@@ -1528,12 +1452,8 @@
         }
 
         function updateImportFormVisibility() {
-            const isFaculty = isFacultySelection();
-            if (isFaculty && isImportCheckbox.checked) {
-                isImportCheckbox.checked = false;
-            }
-
             const isImport = isImportCheckbox.checked;
+            const isFaculty = isFacultySelection();
             documentRequirementsSection.classList.toggle("hidden", isFaculty);
             importFormCard.classList.toggle("hidden", !isImport || isFaculty);
             importCollegeField.classList.toggle("hidden", !isImport);
@@ -1555,7 +1475,6 @@
             }
 
             renderCollegeOptions();
-            maybePromptFacultyTeamSelection();
             renderSportCheckboxes();
             updateSportSelectionVisibility();
             updateSubmitAvailability();
@@ -1692,11 +1611,6 @@
                 return;
             }
 
-            if (isFaculty && !facultyTeamSelect.value) {
-                openFacultyTeamModal();
-                return;
-            }
-
             if (isImport && gameScopeSelect.value !== "major") {
                 openRuleNoticeModal("Import players are only allowed to select major games.");
                 gameScopeSelect.value = "major";
@@ -1705,10 +1619,8 @@
             }
 
             if (!hasCurrentPlayableCollegeSelection()) {
-                setAlert(isFaculty
-                    ? "Please select the team you are joining before choosing a sport category."
-                    : (isImport ? "Please select the team to join before choosing a sport category." : "Please select your home college before choosing a sport category."));
-                (isFaculty ? facultyTeamSelect : (isImport ? importCollegeSelect : teamSelect)).focus();
+                setAlert(isImport ? "Please select the team to join before choosing a sport category." : "Please select your home college before choosing a sport category.");
+                (isImport ? importCollegeSelect : teamSelect).focus();
                 return;
             }
 
@@ -1776,7 +1688,7 @@
                 const fullName = document.getElementById("fullName").value.trim();
                 const idNumber = document.getElementById("idNumber").value.trim();
                 const homeCollege = getHomeCollegeSelection();
-                const playableCollege = getPlayableCollegeSelection(isImport, isFaculty);
+                const playableCollege = getPlayableCollegeSelection(isImport);
                 const majorSportName = requiresMajor ? joinSelectionValues(selectedMajorSports, "name") : "";
                 const minorSportName = requiresMinor ? joinSelectionValues(selectedMinorSports, "name") : "";
                 const majorSportIds = requiresMajor ? joinSelectionValues(selectedMajorSports, "id") : null;
@@ -1836,9 +1748,6 @@
                 }
 
                 form.reset();
-                facultyTeamSelect.value = "";
-                facultyTeamModalShownForCollegeId = "";
-                closeFacultyTeamModalFunction();
                 Object.keys(cameras).forEach(type => {
                     resetCameraCapture(type);
                 });
@@ -1872,28 +1781,11 @@
         gameScopeSelect.addEventListener("change", updateSportSelectionVisibility);
         isImportCheckbox.addEventListener("change", updateImportFormVisibility);
         teamSelect.addEventListener("change", () => {
-            facultyTeamSelect.value = "";
-            facultyTeamModalShownForCollegeId = "";
             renderCollegeOptions();
             updateImportFormVisibility();
             syncSportSlotAvailability();
         });
         importCollegeSelect.addEventListener("change", () => {
-            syncSportSlotAvailability();
-        });
-        facultyTeamSelect.addEventListener("change", () => {
-            updateFacultyTeamConfirmState();
-            syncSportSlotAvailability();
-        });
-        confirmFacultyTeam.addEventListener("click", () => {
-            if (!getSelectedOptionValue(facultyTeamSelect)) {
-                updateFacultyTeamConfirmState();
-                return;
-            }
-
-            closeFacultyTeamModalFunction();
-            renderSportCheckboxes();
-            updateSportSelectionVisibility();
             syncSportSlotAvailability();
         });
         captureCameraOverlay.addEventListener("click", () => capturePhoto());
@@ -1907,15 +1799,9 @@
         });
         closeSuccessModal.addEventListener("click", closeSuccessModalFunction);
         closeRuleNotice.addEventListener("click", closeRuleNoticeModal);
-        closeFacultyTeamModal.addEventListener("click", closeFacultyTeamModalFunction);
         ruleNoticeModal.addEventListener("click", event => {
             if (event.target === ruleNoticeModal) {
                 closeRuleNoticeModal();
-            }
-        });
-        facultyTeamModal.addEventListener("click", event => {
-            if (event.target === facultyTeamModal) {
-                closeFacultyTeamModalFunction();
             }
         });
         successModal.addEventListener("click", event => {
@@ -1931,11 +1817,6 @@
 
             if (event.key === "Escape" && ruleNoticeModal.classList.contains("is-open")) {
                 closeRuleNoticeModal();
-                return;
-            }
-
-            if (event.key === "Escape" && facultyTeamModal.classList.contains("is-open")) {
-                closeFacultyTeamModalFunction();
                 return;
             }
 
