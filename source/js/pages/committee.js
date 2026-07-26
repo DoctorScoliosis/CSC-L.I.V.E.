@@ -8,10 +8,10 @@
  *   2. Owns the tab switcher, sidebar, account identity badge, and logout
  *      (via the shared ui/* and auth/session.js modules).
  *   3. Wires all event listeners.
- *   4. Defines the idle-aware reload scheduling used by the realtime
- *      handlers and fallback polls.
- *   5. Runs the init sequence, the refresh intervals, and the Supabase
- *      realtime subscriptions.
+ *   4. Runs the init sequence, then hands timing over to
+ *      features/committee-refresh.js via initCommitteeRefresh().
+ *   5. Runs the Supabase realtime subscriptions, delegating reloads to the
+ *      schedule functions exported by committee-refresh.js.
  *
  * All actual logic lives in the feature modules:
  *   features/committee-matches.js       — match management
@@ -19,7 +19,7 @@
  *   features/committee-leaderboard.js   — leaderboard + team history
  *   features/committee-overview.js      — overview counts + announcements
  *   features/committee-attendance.js    — participant + attendance checks
- *   features/committee-basketball-*.js  — score sheet render + actions
+ *   features/committee-refresh.js       — idle-aware reload scheduling
  */
 
 import {
@@ -35,10 +35,9 @@ import {
 	SPORTS_TABLE,
 	ANNOUNCEMENTS_TABLE,
 	CONVERSATIONS_TABLE,
-	MESSAGES_TABLE,
-	COMMITTEE_REFRESH_IDLE_DELAY
+	MESSAGES_TABLE
 } from "./committee-context.js";
-import { checkDashboardAuth, loadDashboardUser, signOutAndRedirect, getUserInitial, getUserDisplayName, getDashboardRoleLabel } from "../auth/session.js";
+import { checkDashboardAuth, loadDashboardUser, signOutAndRedirect } from "../auth/session.js";
 import { initBackgroundRotator } from "../features/background-rotator.js";
 import { createTabSwitcher } from "../ui/tabs.js";
 import { openSidebar, closeSidebar, toggleSidebar, initSidebarAutoClose } from "../ui/sidebar.js";
@@ -51,7 +50,6 @@ import {
 	renderMatches,
 	setActiveStatusTab,
 	setActiveMatchScopeFilter,
-	updateCountdownDisplays,
 	openMatchModalFunction,
 	closeMatchModalFunction,
 	saveMatch,
@@ -79,27 +77,23 @@ import {
 	deleteActiveConversation,
 	setConversationMenuVisible,
 	setNotificationPanelVisible,
-	updateMessageNotification,
 	handleCameraInputChange,
 	clearCameraPhoto,
 	toggleChatOpen
 } from "../features/committee-chat.js";
-import {
-	loadLeaderboard,
-	refreshCommitteeLeaderboard,
-	closeHistoryModalFunction
-} from "../features/committee-leaderboard.js";
-import {
-	loadOverviewCounts,
-	loadCommitteeAnnouncements,
-	notifyCommitteeAnnouncementChange
-} from "../features/committee-overview.js";
+import { loadLeaderboard } from "../features/committee-leaderboard.js";
+import { loadOverviewCounts, loadCommitteeAnnouncements, notifyCommitteeAnnouncementChange } from "../features/committee-overview.js";
 import {
 	checkParticipantRegistration,
 	clearParticipantCheck,
 	verifyParticipantAttendance,
 	clearVerifyResult
 } from "../features/committee-attendance.js";
+import {
+	initCommitteeRefresh,
+	scheduleCommitteeRealtimeReload,
+	scheduleCommitteeMessagingReload
+} from "../features/committee-refresh.js";
 
 // --- 1. Auth guard + DOM population ------------------------------------------
 checkDashboardAuth(["committee", "admin"]);
@@ -262,114 +256,15 @@ function renderAccountIdentity(userData = null) {
 		dom.accountDisplayRole.textContent = "Not signed in";
 		return;
 	}
-	dom.accountInitialBadge.textContent = getUserInitial(resolvedUser);
-	dom.accountDisplayName.textContent = getUserDisplayName(resolvedUser);
-	dom.accountDisplayRole.textContent = getDashboardRoleLabel(resolvedUser);
-	dom.accountInitialBadge.title = `${getUserDisplayName(resolvedUser)} • ${getDashboardRoleLabel(resolvedUser)}`;
+	dom.accountInitialBadge.textContent = String(resolvedUser.fullName || resolvedUser.email || "?").trim().charAt(0).toUpperCase() || "?";
+	dom.accountDisplayName.textContent = resolvedUser.fullName || resolvedUser.email || "Current Account";
+	dom.accountDisplayRole.textContent = resolvedUser.role === "admin" ? "Admin Account" : "Committee Account";
+	dom.accountInitialBadge.title = `${dom.accountDisplayName.textContent} • ${dom.accountDisplayRole.textContent}`;
 }
 
 initBackgroundRotator();
 tabSwitcher.restoreActiveTab();
 renderAccountIdentity();
-
-// --- 4. Idle-aware reload scheduling -----------------------------------------
-let committeeLastInteractionAt = 0;
-function trackCommitteeInteraction(event) {
-	committeeLastInteractionAt = Date.now();
-	if (event.type === "input" || event.type === "change") {
-		event.target.closest("form")?.setAttribute("data-auto-refresh-dirty", "true");
-	}
-}
-function clearCommitteeDirtyForm(event) {
-	event.target.removeAttribute("data-auto-refresh-dirty");
-}
-function isCommitteeUserBusy() {
-	const activeElement = document.activeElement;
-	const isEditingField = activeElement?.matches("input, textarea, select, [contenteditable='true']");
-	const hasDirtyForm = Boolean(document.querySelector("form[data-auto-refresh-dirty='true']"));
-	const hasOpenModal = [...document.querySelectorAll("[id$='Modal']")]
-		.some(modal => !modal.classList.contains("hidden"));
-	return Boolean(isEditingField)
-		|| hasDirtyForm
-		|| hasOpenModal
-		|| Date.now() - committeeLastInteractionAt < COMMITTEE_REFRESH_IDLE_DELAY;
-}
-document.addEventListener("input", trackCommitteeInteraction, true);
-document.addEventListener("change", trackCommitteeInteraction, true);
-document.addEventListener("pointerdown", trackCommitteeInteraction, true);
-document.addEventListener("keydown", trackCommitteeInteraction, true);
-document.addEventListener("submit", clearCommitteeDirtyForm, true);
-document.addEventListener("reset", clearCommitteeDirtyForm, true);
-
-let committeeRealtimeReloadTimer = null;
-const pendingCommitteeReloads = {
-	overview: false,
-	leaderboard: false,
-	sports: false,
-	teams: false,
-	matches: false,
-	announcements: false,
-	contacts: false,
-	contactMessages: false,
-	conversations: false
-};
-function scheduleCommitteeRealtimeReload(tasks, delay = 250, options = {}) {
-	Object.assign(pendingCommitteeReloads, tasks);
-	window.clearTimeout(committeeRealtimeReloadTimer);
-	committeeRealtimeReloadTimer = window.setTimeout(async () => {
-		if (!options.force && isCommitteeUserBusy()) {
-			scheduleCommitteeRealtimeReload({}, COMMITTEE_REFRESH_IDLE_DELAY);
-			return;
-		}
-		const reloads = [];
-		if (pendingCommitteeReloads.overview) reloads.push(loadOverviewCounts());
-		if (pendingCommitteeReloads.leaderboard) reloads.push(loadLeaderboard());
-		if (pendingCommitteeReloads.sports) reloads.push(loadSportsForMatches());
-		if (pendingCommitteeReloads.teams) reloads.push(loadRegisteredTeams());
-		if (pendingCommitteeReloads.matches) reloads.push(loadSavedMatches());
-		if (pendingCommitteeReloads.announcements) reloads.push(loadCommitteeAnnouncements());
-		if (pendingCommitteeReloads.contacts) reloads.push(loadContactPersonnel());
-		if (pendingCommitteeReloads.contactMessages) reloads.push(loadContactMessages());
-		if (pendingCommitteeReloads.conversations) reloads.push(loadCommitteeConversations());
-		Object.keys(pendingCommitteeReloads).forEach(key => {
-			pendingCommitteeReloads[key] = false;
-		});
-		await Promise.all(reloads);
-	}, delay);
-}
-function scheduleCommitteeFallbackSync() {
-	scheduleCommitteeRealtimeReload({
-		overview: true,
-		leaderboard: true,
-		sports: true,
-		teams: true,
-		matches: true,
-		announcements: true,
-		contacts: true,
-		conversations: true,
-		contactMessages: Boolean(state.activeContactConversationId)
-	}, 0);
-}
-let committeeMessagingSyncInProgress = false;
-let committeeRealtimeMessagingTimer = null;
-function scheduleCommitteeMessagingReload({ contactMessages = false, conversations = true } = {}, delay = 100) {
-	window.clearTimeout(committeeRealtimeMessagingTimer);
-	committeeRealtimeMessagingTimer = window.setTimeout(async () => {
-		if (committeeMessagingSyncInProgress) {
-			scheduleCommitteeMessagingReload({ contactMessages, conversations }, delay);
-			return;
-		}
-		committeeMessagingSyncInProgress = true;
-		try {
-			const reloads = [];
-			if (conversations) reloads.push(loadCommitteeConversations());
-			if (contactMessages && state.activeContactConversationId) reloads.push(loadContactMessages());
-			await Promise.all(reloads);
-		} finally {
-			committeeMessagingSyncInProgress = false;
-		}
-	}, delay);
-}
 
 // --- 3. Event wiring ---------------------------------------------------------
 document.querySelectorAll(".match-status-tab").forEach(button => {
@@ -436,9 +331,6 @@ dom.cameraInput.addEventListener("change", handleCameraInputChange);
 dom.removeCameraPhoto.addEventListener("click", function () {
 	clearCameraPhoto();
 });
-dom.contactMessageInput.addEventListener("input", function () {
-	// Send-button enablement is handled by committee-chat.js on input.
-});
 dom.contactSearchInput.addEventListener("input", function () {
 	setContactsVisible(true);
 	state.activeContactSearchTerm = this.value || "";
@@ -460,10 +352,14 @@ document.addEventListener("click", function (event) {
 		setNotificationPanelVisible(false);
 	}
 });
-dom.closeHistoryModal.addEventListener("click", closeHistoryModalFunction);
+dom.closeHistoryModal.addEventListener("click", function () {
+	dom.historyModal.classList.add("hidden");
+	dom.historyModal.classList.remove("flex");
+});
 dom.historyModal.addEventListener("click", function (event) {
 	if (event.target === dom.historyModal) {
-		closeHistoryModalFunction();
+		dom.historyModal.classList.add("hidden");
+		dom.historyModal.classList.remove("flex");
 	}
 });
 dom.participantCheckForm.addEventListener("submit", checkParticipantRegistration);
@@ -471,7 +367,7 @@ dom.clearParticipantCheckResult.addEventListener("click", clearParticipantCheck)
 dom.verifyAttendanceForm.addEventListener("submit", verifyParticipantAttendance);
 dom.clearVerificationResult.addEventListener("click", clearVerifyResult);
 
-// --- 5. Init, intervals, realtime --------------------------------------------
+// --- 4. Init, then hand timing over to committee-refresh.js ------------------
 const loadedUser = await loadDashboardUser({
 	allowedRoles: ["committee", "admin"],
 	roleDefault: "committee"
@@ -500,47 +396,44 @@ window.addEventListener("resize", function () {
 	placeMatchControlsForTab(document.querySelector(".tab-content:not(.hidden)")?.id || "overview");
 });
 
-setInterval(() => scheduleCommitteeRealtimeReload({ overview: true }), 10000);
-setInterval(loadCommitteeAnnouncements, 2000);
-setInterval(refreshCommitteeLeaderboard, 2000);
-setInterval(updateCountdownDisplays, 1000);
-setInterval(scheduleCommitteeFallbackSync, 15000);
-document.addEventListener("visibilitychange", function () {
-	if (!document.hidden) {
-		scheduleCommitteeFallbackSync();
-	}
-});
-setInterval(async () => {
-	if (committeeMessagingSyncInProgress) return;
-	committeeMessagingSyncInProgress = true;
-	try {
-		await loadCommitteeConversations();
-		if (state.activeContactConversationId) {
-			await loadContactMessages();
-		}
-	} finally {
-		committeeMessagingSyncInProgress = false;
-	}
-}, 5000);
+// All intervals, the visibilitychange handler, and the interaction tracking
+// now live in committee-refresh.js.
+initCommitteeRefresh();
 
+// --- 5. Realtime subscriptions (delegating to the schedule functions) --------
 supabase
 	.channel("committee-dashboard-realtime")
-	.on("postgres_changes", { event: "*", schema: "public", table: TEAMS_TABLE }, () => scheduleCommitteeRealtimeReload({ overview: true, leaderboard: true, teams: true, matches: true }, 0, { force: true }))
-	.on("postgres_changes", { event: "*", schema: "public", table: PARTICIPANTS_TABLE }, () => scheduleCommitteeRealtimeReload({ overview: true }, 0, { force: true }))
-	.on("postgres_changes", { event: "*", schema: "public", table: ATTENDANCE_TABLE }, () => scheduleCommitteeRealtimeReload({ overview: true, leaderboard: true }, 0, { force: true }))
-	.on("postgres_changes", { event: "*", schema: "public", table: MATCHES_TABLE }, () => scheduleCommitteeRealtimeReload({ overview: true, matches: true, leaderboard: true }, 0, { force: true }))
-	.on("postgres_changes", { event: "*", schema: "public", table: GAME_HISTORY_TABLE }, () => scheduleCommitteeRealtimeReload({ matches: true, leaderboard: true }, 0, { force: true }))
-	.on("postgres_changes", { event: "*", schema: "public", table: BASKETBALL_STATS_TABLE }, () => scheduleCommitteeRealtimeReload({ matches: true }, 0, { force: true }))
-	.on("postgres_changes", { event: "*", schema: "public", table: SPORTS_TABLE }, () => scheduleCommitteeRealtimeReload({ sports: true, matches: true, leaderboard: true }, 0, { force: true }))
+	.on("postgres_changes", { event: "*", schema: "public", table: TEAMS_TABLE }, () => {
+		scheduleCommitteeRealtimeReload({ overview: true, leaderboard: true, teams: true, matches: true }, 0, { force: true });
+	})
+	.on("postgres_changes", { event: "*", schema: "public", table: PARTICIPANTS_TABLE }, () => {
+		scheduleCommitteeRealtimeReload({ overview: true }, 0, { force: true });
+	})
+	.on("postgres_changes", { event: "*", schema: "public", table: ATTENDANCE_TABLE }, () => {
+		scheduleCommitteeRealtimeReload({ overview: true, leaderboard: true }, 0, { force: true });
+	})
+	.on("postgres_changes", { event: "*", schema: "public", table: MATCHES_TABLE }, () => {
+		scheduleCommitteeRealtimeReload({ overview: true, matches: true, leaderboard: true }, 0, { force: true });
+	})
+	.on("postgres_changes", { event: "*", schema: "public", table: GAME_HISTORY_TABLE }, () => {
+		scheduleCommitteeRealtimeReload({ matches: true, leaderboard: true }, 0, { force: true });
+	})
+	.on("postgres_changes", { event: "*", schema: "public", table: BASKETBALL_STATS_TABLE }, () => {
+		scheduleCommitteeRealtimeReload({ matches: true }, 0, { force: true });
+	})
+	.on("postgres_changes", { event: "*", schema: "public", table: SPORTS_TABLE }, () => {
+		scheduleCommitteeRealtimeReload({ sports: true, matches: true, leaderboard: true }, 0, { force: true });
+	})
 	.on("postgres_changes", { event: "*", schema: "public", table: ANNOUNCEMENTS_TABLE }, notifyCommitteeAnnouncementChange)
-	.on("postgres_changes", { event: "*", schema: "public", table: "user_profiles" }, () => scheduleCommitteeRealtimeReload({ contacts: true }, 0, { force: true }))
+	.on("postgres_changes", { event: "*", schema: "public", table: "user_profiles" }, () => {
+		scheduleCommitteeRealtimeReload({ contacts: true }, 0, { force: true });
+	})
 	.on("postgres_changes", { event: "*", schema: "public", table: MESSAGES_TABLE }, payload => {
 		const changedConversationId = payload.new?.conversation_id || payload.old?.conversation_id;
 		const shouldReloadOpenThread = (state.activeContactConversationIds || [])
 			.some(conversationId => String(conversationId) === String(changedConversationId || ""));
 		if (payload.eventType === "INSERT" && String(payload.new?.receiver_id || "") === String(state.currentUser?.id || "") && changedConversationId) {
 			state.latestUnreadMessages.set(String(changedConversationId), payload.new);
-			updateMessageNotification();
 		}
 		scheduleCommitteeMessagingReload({
 			contactMessages: Boolean(shouldReloadOpenThread),
