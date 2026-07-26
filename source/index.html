@@ -236,15 +236,8 @@
                 <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-400 mb-6 shadow-lg">
                     <img src="./assets/logos/L1.png" alt="School Logo" class="w-16 h-16 object-contain">
                 </div>
-
-                <h1 class="font-display text-4xl font-bold text-white mb-4">
-                    Adventist University of the Philippines
-                </h1>
-
-                <p class="text-blue-100 text-lg mb-8">
-                    Central Student Council - Physical Development Web App
-                </p>
-
+                <h1 class="font-display text-4xl font-bold text-white mb-4">Adventist University of the Philippines</h1>
+                <p class="text-blue-100 text-lg mb-8"> Central Student Council - Physical Development Web App</p>
                 <div class="space-y-4 text-left">
                     <div class="flex items-start gap-3">
                         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-yellow-400 text-blue-900 font-bold">✓</div>
@@ -272,18 +265,8 @@
                 </div>
 
                 <div class="hero-auth-actions mt-8 hidden grid-cols-2 gap-3">
-                    <button
-                        type="button"
-                        data-hero-auth-mode="signin"
-                        class="rounded-xl bg-yellow-400 px-4 py-3 text-sm font-bold text-blue-950 shadow-lg transition hover:bg-yellow-300">
-                        Log In
-                    </button>
-                    <button
-                        type="button"
-                        data-hero-auth-mode="register"
-                        class="rounded-xl border border-white/70 bg-white/15 px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-white/25">
-                        Sign In
-                    </button>
+                    <button type="button" data-hero-auth-mode="signin" class="rounded-xl bg-yellow-400 px-4 py-3 text-sm font-bold text-blue-950 shadow-lg transition hover:bg-yellow-300">Log In</button>
+                    <button type="button" data-hero-auth-mode="register" class="rounded-xl border border-white/70 bg-white/15 px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-white/25">Sign In</button>
                 </div>
             </div>
         </section>
@@ -320,215 +303,87 @@
 
                     <!-- Mode Switch -->
                     <div class="grid grid-cols-2 gap-3 mb-6">
-                        <button
-                            type="button"
-                            class="mode-btn active rounded-xl px-4 py-3 font-semibold transition"
-                            data-mode="signin">
-                            Log In
-                        </button>
-
-                        <button
-                            type="button"
-                            class="mode-btn rounded-xl px-4 py-3 font-semibold transition"
-                            data-mode="register">
-                            Sign In
-                        </button>
+                        <button type="button" class="mode-btn active rounded-xl px-4 py-3 font-semibold transition" data-mode="signin">Log In</button>
+                        <button type="button" class="mode-btn rounded-xl px-4 py-3 font-semibold transition" data-mode="register">Sign In</button>
                     </div>
 
                     <!-- Log In Form -->
                     <form id="signInForm" class="space-y-5">
-                        <div class="space-y-2">
-                            <label for="signInEmail" class="block text-sm font-medium text-gray-700">
-                                Email Address
-                            </label>
-                            <div class="relative">
-                                <input
-                                    id="signInEmail"
-                                    type="email"
-                                    required
-                                    autocomplete="email"
-                                    placeholder="your.email@school.edu"
-                                    class="auth-input">
-                            </div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <label for="signInPassword" class="block text-sm font-medium text-gray-700">
-                                Password
-                            </label>
-                            <div class="relative">
-                                <input
-                                    id="signInPassword"
-                                    type="password"
-                                    required
-                                    autocomplete="current-password"
-                                    placeholder="••••••••"
-                                    class="auth-input">
-                            </div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">
-                                Log in as
-                            </label>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <button
-                                    type="button"
-                                    class="signin-role-btn active rounded-xl px-4 py-3 font-semibold transition"
-                                    data-signin-role="admin">
-                                    Admin
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="signin-role-btn rounded-xl px-4 py-3 font-semibold transition"
-                                    data-signin-role="committee">
-                                    Committee
-                                </button>
-                            </div>
-
-                            <p class="small-text text-xs text-gray-500">
-                                Choose the same role assigned to your account.
-                            </p>
-                        </div>
-
-                        <button
-                            id="signInSubmit"
-                            type="submit"
-                            class="submit-btn w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
-                            Log In
-                        </button>
+                        <!-- Email Field -->
+                        <div class="space-y-2"><label for="signInEmail" class="block text-sm font-medium text-gray-700">Email Address</label><div class="relative"><input id="signInEmail" type="email" required autocomplete="email" placeholder="your.email@school.edu" class="auth-input"></div></div>
+                        <!-- Password Field -->
+                        <div class="space-y-2"><label for="signInPassword" class="block text-sm font-medium text-gray-700">Password</label><div class="relative"><input id="signInPassword" type="password" required autocomplete="current-password" placeholder="••••••••" class="auth-input"></div></div>
+                        <!-- Role Selection -->
+                        <div class="space-y-2"><label class="block text-sm font-medium text-gray-700">Log in as</label><div class="grid grid-cols-2 gap-3"><button type="button" class="signin-role-btn active rounded-xl px-4 py-3 font-semibold transition" data-signin-role="admin">Admin</button><button type="button" class="signin-role-btn rounded-xl px-4 py-3 font-semibold transition" data-signin-role="committee">Committee</button></div><p class="small-text text-xs text-gray-500">Choose the same role assigned to your account.</p></div>
+                        <!-- Submit Button -->
+                        <button id="signInSubmit" type="submit" class="submit-btn w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">Log In</button>
                     </form>
 
                     <!-- Sign In Form -->
+                    <!-- Register Form -->
                     <form id="registerForm" class="hidden space-y-5">
+                        <!-- Name Field -->
                         <div class="space-y-2">
-                            <label for="registerName" class="block text-sm font-medium text-gray-700">
-                                Full Name
-                            </label>
+                            <label for="registerName" class="block text-sm font-medium text-gray-700">Full Name</label>
                             <div class="relative">
-                                <input
-                                    id="registerName"
-                                    type="text"
-                                    required
-                                    autocomplete="name"
-                                    placeholder="Enter your full name"
-                                    class="auth-input">
+                                <input id="registerName" type="text" required autocomplete="name" placeholder="Enter your full name" class="auth-input">
                             </div>
                         </div>
 
+                        <!-- Email Field -->
                         <div class="space-y-2">
-                            <label for="registerEmail" class="block text-sm font-medium text-gray-700">
-                                Email Address
-                            </label>
+                            <label for="registerEmail" class="block text-sm font-medium text-gray-700">Email Address</label>
                             <div class="relative">
-                                <input
-                                    id="registerEmail"
-                                    type="email"
-                                    required
-                                    autocomplete="email"
-                                    placeholder="your.email@school.edu"
-                                    class="auth-input">
+                                <input id="registerEmail" type="email" required autocomplete="email" placeholder="your.email@school.edu" class="auth-input">
                             </div>
                         </div>
 
+                        <!-- Mobile Field -->
                         <div class="space-y-2">
-                            <label for="registerMobile" class="block text-sm font-medium text-gray-700">
-                                Mobile Number
-                            </label>
+                            <label for="registerMobile" class="block text-sm font-medium text-gray-700">Mobile Number</label>
                             <div class="relative">
-                                <input
-                                    id="registerMobile"
-                                    type="tel"
-                                    required
-                                    autocomplete="tel"
-                                    inputmode="tel"
-                                    placeholder="Enter mobile number"
-                                    class="auth-input">
+                                <input id="registerMobile" type="tel" required autocomplete="tel" inputmode="tel" placeholder="Enter mobile number" class="auth-input">
                             </div>
                         </div>
 
+                        <!-- Password Field -->
                         <div class="space-y-2">
-                            <label for="registerPassword" class="block text-sm font-medium text-gray-700">
-                                Password
-                            </label>
+                            <label for="registerPassword" class="block text-sm font-medium text-gray-700">Password</label>
                             <div class="relative">
-                                <input
-                                    id="registerPassword"
-                                    type="password"
-                                    required
-                                    minlength="6"
-                                    autocomplete="new-password"
-                                    placeholder="Minimum 6 characters"
-                                    class="auth-input">
+                                <input id="registerPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="Minimum 6 characters" class="auth-input">
                             </div>
                         </div>
 
+                        <!-- Confirm Password Field -->
                         <div class="space-y-2">
-                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
-                                Confirm Password
-                            </label>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700">Confirm Password</label>
                             <div class="relative">
-                                <input
-                                    id="confirmPassword"
-                                    type="password"
-                                    required
-                                    minlength="6"
-                                    autocomplete="new-password"
-                                    placeholder="Repeat password"
-                                    class="auth-input">
+                                <input id="confirmPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="Repeat password" class="auth-input">
                             </div>
                         </div>
 
+                        <!-- Account Role Selection -->
                         <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">
-                                Account Role
-                            </label>
-
+                            <label class="block text-sm font-medium text-gray-700">Account Role</label>
                             <div class="grid grid-cols-2 gap-3">
-                                <button
-                                    type="button"
-                                    class="role-btn active rounded-xl px-4 py-3 font-semibold transition"
-                                    data-role="committee">
-                                    Committee
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="role-btn rounded-xl px-4 py-3 font-semibold transition"
-                                    data-role="admin">
-                                    Admin
-                                </button>
+                                <button type="button" class="role-btn active rounded-xl px-4 py-3 font-semibold transition" data-role="committee">Committee</button>
+                                <button type="button" class="role-btn rounded-xl px-4 py-3 font-semibold transition" data-role="admin">Admin</button>
                             </div>
-
-                            <p class="small-text text-xs text-gray-500">
-                                New accounts must be approved by an admin before dashboard access is allowed.
-                            </p>
+                            <p class="small-text text-xs text-gray-500">New accounts must be approved by an admin before dashboard access is allowed.</p>
                         </div>
 
+                        <!-- Sport Assignment -->
                         <div id="registerSportAssignmentGroup" class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">
-                                Sport Assignment
-                            </label>
-                            <button
-                                id="openRegisterSportModal"
-                                type="button"
-                                class="auth-input flex w-full items-center justify-between text-left">
+                            <label class="block text-sm font-medium text-gray-700">Sport Assignment</label>
+                            <button id="openRegisterSportModal" type="button" class="auth-input flex w-full items-center justify-between text-left">
                                 <span id="selectedRegisterSportLabel">Choose the sport you will handle</span>
                                 <span aria-hidden="true">Select</span>
                             </button>
-                            <p class="small-text text-xs text-gray-500">
-                                Choose one registered sport. An admin can edit this assignment later.
-                            </p>
+                            <p class="small-text text-xs text-gray-500">Choose one registered sport. An admin can edit this assignment later.</p>
                         </div>
 
-                        <button
-                            id="registerSubmit"
-                            type="submit"
-                            class="submit-btn w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
-                            Create Account
-                        </button>
+                        <!-- Submit Button -->
+                        <button id="registerSubmit" type="submit" class="submit-btn w-full rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">Create Account</button>
                     </form>
 
                     <!-- Alert -->
@@ -536,13 +391,9 @@
                         <p id="alertMessage" class="text-sm"></p>
                     </div>
 
+                    <!-- Helper Text -->
                     <div class="mt-6 border-t border-gray-200 pt-4">
-                        <p id="helperText" class="small-text text-center text-sm text-gray-600">
-                            No account yet?
-                            <button type="button" id="goRegister" class="font-semibold text-blue-600 hover:text-blue-700">
-                                Sign in here.
-                            </button>
-                        </p>
+                        <p id="helperText" class="small-text text-center text-sm text-gray-600">No account yet? <button type="button" id="goRegister" class="font-semibold text-blue-600 hover:text-blue-700">Sign in here.</button></p>
                     </div>
                 </div>
             </div>
@@ -561,608 +412,6 @@
         </div>
     </div>
 
-    <script type="module">
-        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-        const SUPABASE_URL = "https://unveyndaaznxgqojwjki.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudmV5bmRhYXpueGdxb2p3amtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MzQyNzUsImV4cCI6MjA5NDIxMDI3NX0.2RUriqqq9kITnl8uPZSdiSrXuo8BhD9nrzqHFUwl2yU";
-
-        // Remove shared credentials created by older builds. Authenticated
-        // sessions now live in sessionStorage so separate tabs can use
-        // different accounts without overwriting each other.
-        localStorage.removeItem("user");
-        localStorage.removeItem("sb-unveyndaaznxgqojwjki-auth-token");
-
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                storage: sessionStorage,
-                storageKey: "csc-live-auth-session",
-                persistSession: true,
-                autoRefreshToken: true,
-                detectSessionInUrl: true
-            }
-        });
-
-        const signInForm = document.getElementById("signInForm");
-        const registerForm = document.getElementById("registerForm");
-        const formTitle = document.getElementById("formTitle");
-        const formSubtitle = document.getElementById("formSubtitle");
-        const helperText = document.getElementById("helperText");
-        const alertBox = document.getElementById("alertBox");
-        const alertMessage = document.getElementById("alertMessage");
-
-        const signInSubmit = document.getElementById("signInSubmit");
-        const registerSubmit = document.getElementById("registerSubmit");
-        const openRegisterSportModal = document.getElementById("openRegisterSportModal");
-        const closeRegisterSportModal = document.getElementById("closeRegisterSportModal");
-        const registerSportModal = document.getElementById("registerSportModal");
-        const registerSportList = document.getElementById("registerSportList");
-        const selectedRegisterSportLabel = document.getElementById("selectedRegisterSportLabel");
-        const registerSportAssignmentGroup = document.getElementById("registerSportAssignmentGroup");
-
-        const OVERALL_COMMITTEE_ASSIGNMENT = {
-            id: "__overall_committee__",
-            sport_name: "Overall Committee"
-        };
-
-        let currentMode = "signin";
-        let selectedSignInRole = "admin";
-        let selectedRegisterRole = "committee";
-        let registeredSports = [];
-        let selectedRegisterSport = null;
-
-        function escapeHTML(value) {
-            return String(value ?? "")
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;")
-                .replaceAll('"', "&quot;")
-                .replaceAll("'", "&#039;");
-        }
-
-        function showAlert(type, message) {
-            alertBox.classList.remove("hidden", "bg-red-50", "border-red-200", "bg-green-50", "border-green-200", "bg-yellow-50", "border-yellow-200");
-            alertMessage.className = "text-sm";
-
-            if (type === "success") {
-                alertBox.classList.add("bg-green-50", "border-green-200");
-                alertMessage.classList.add("text-green-800");
-            } else if (type === "warning") {
-                alertBox.classList.add("bg-yellow-50", "border-yellow-200");
-                alertMessage.classList.add("text-yellow-800");
-            } else {
-                alertBox.classList.add("bg-red-50", "border-red-200");
-                alertMessage.classList.add("text-red-800");
-            }
-
-            alertMessage.textContent = message;
-        }
-
-        function hideAlert() {
-            alertBox.classList.add("hidden");
-            alertMessage.textContent = "";
-        }
-
-        function setLoading(button, isLoading, loadingText, normalText) {
-            button.disabled = isLoading;
-            button.textContent = isLoading ? loadingText : normalText;
-        }
-
-        function setMode(mode) {
-            currentMode = mode;
-            hideAlert();
-
-            document.querySelectorAll(".mode-btn").forEach(button => {
-                button.classList.toggle("active", button.dataset.mode === mode);
-            });
-
-            if (mode === "signin") {
-                signInForm.classList.remove("hidden");
-                registerForm.classList.add("hidden");
-                formTitle.textContent = "Welcome Back";
-                formSubtitle.textContent = "Log in to access CSC-L.I.V.E.";
-                helperText.innerHTML = `
-                    No account yet?
-                    <button type="button" id="goRegister" class="font-semibold text-blue-600 hover:text-blue-700">
-                        Sign in here.
-                    </button>
-                `;
-                document.getElementById("goRegister").addEventListener("click", () => setMode("register"));
-            } else {
-                signInForm.classList.add("hidden");
-                registerForm.classList.remove("hidden");
-                formTitle.textContent = "Create Account";
-                helperText.innerHTML = `
-                    Already have an account?
-                    <button type="button" id="goSignIn" class="font-semibold text-blue-600 hover:text-blue-700">
-                        Log in here.
-                    </button>
-                `;
-                document.getElementById("goSignIn").addEventListener("click", () => setMode("signin"));
-            }
-        }
-
-        function openAuthMode(mode) {
-            setMode(mode);
-            document.getElementById("authForms")?.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-        }
-
-        function setSignInRole(role) {
-            selectedSignInRole = role;
-
-            document.querySelectorAll(".signin-role-btn").forEach(button => {
-                button.classList.toggle("active", button.dataset.signinRole === role);
-            });
-        }
-
-        function setRegisterRole(role) {
-            selectedRegisterRole = role;
-
-            document.querySelectorAll(".role-btn").forEach(button => {
-                button.classList.toggle("active", button.dataset.role === role);
-            });
-
-            const isAdmin = role === "admin";
-            registerSportAssignmentGroup.classList.toggle("hidden", isAdmin);
-            selectedRegisterSportLabel.textContent = isAdmin
-                ? "Admin"
-                : selectedRegisterSport?.sport_name || "Choose the sport you will handle";
-        }
-
-        function normalizeSportGroupKey(value) {
-            return String(value || "")
-                .trim()
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "");
-        }
-
-        function getGeneralSportName(name) {
-            const cleanedName = String(name || "Unnamed sport")
-                .replace(/\s+/g, " ")
-                .trim();
-
-            const categoryStartWords = new Set([
-                "a", "b", "c", "d", "e",
-                "boys", "boy", "girls", "girl",
-                "men", "man", "mens", "male", "s",
-                "women", "woman", "womens", "female",
-                "mixed", "singles", "single", "doubles", "double",
-                "relay", "backstroke", "butterfly", "freestyle",
-                "division", "div", "category", "cat",
-                "bracket", "pool", "group", "class"
-            ]);
-            const normalizedName = cleanedName
-                .replace(/[()']/g, " ")
-                .replace(/[-:/]+/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
-            const tokens = normalizedName.split(" ").filter(Boolean);
-
-            for (let index = 1; index < tokens.length; index += 1) {
-                const token = tokens[index].toLowerCase();
-
-                if (
-                    categoryStartWords.has(token)
-                    || /^[a-e]$/i.test(token)
-                    || /^\d/.test(token)
-                    || /^\d+m$/i.test(token)
-                ) {
-                    return tokens.slice(0, index).join(" ") || cleanedName;
-                }
-            }
-
-            return tokens.join(" ") || cleanedName;
-
-            const withoutTrailingGroup = cleanedName
-                .replace(/\s*[-–—:/]\s*[A-Z0-9]$/i, "")
-                .replace(/\s+[A-Z]$/i, "")
-                .replace(/\s+\d+$/i, "")
-                .trim();
-
-            return withoutTrailingGroup || cleanedName;
-        }
-
-        function getRegisterSportGroups() {
-            const groups = new Map();
-
-            registeredSports.forEach(sport => {
-                const sportName = sport.sport_name || sport.name || "Unnamed sport";
-                const generalName = getGeneralSportName(sportName);
-                const key = normalizeSportGroupKey(generalName);
-
-                if (!groups.has(key)) {
-                    groups.set(key, {
-                        id: `__sport_group__:${key}`,
-                        sport_name: generalName,
-                        isGeneralSportGroup: true,
-                        sourceSports: []
-                    });
-                }
-
-                groups.get(key).sourceSports.push(sport);
-            });
-
-            return [...groups.values()].sort((a, b) => a.sport_name.localeCompare(b.sport_name));
-        }
-
-        function renderRegisterSports() {
-            if (!registerSportList) return;
-            const groupedSports = getRegisterSportGroups();
-            const sportOptions = [OVERALL_COMMITTEE_ASSIGNMENT, ...groupedSports];
-
-            registerSportList.innerHTML = `
-                <button
-                    type="button"
-                    data-register-sport-id="${OVERALL_COMMITTEE_ASSIGNMENT.id}"
-                    class="register-sport-option w-full rounded-xl border px-4 py-3 text-left text-sm font-bold transition ${String(selectedRegisterSport?.id || "") === OVERALL_COMMITTEE_ASSIGNMENT.id ? "border-blue-600 bg-blue-50 text-blue-800" : "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"}">
-                    Overall Committee
-                    <span class="mt-1 block text-xs font-semibold text-amber-700">Can schedule matches for all sports categories.</span>
-                </button>
-                ${groupedSports.length === 0 ? `<p class="rounded-xl bg-gray-50 p-4 text-sm font-semibold text-gray-500">No registered sports are available yet.</p>` : ""}
-            ` + groupedSports.map(sport => `
-                <button
-                    type="button"
-                    data-register-sport-id="${sport.id}"
-                    class="register-sport-option w-full rounded-xl border px-4 py-3 text-left text-sm font-bold transition ${String(selectedRegisterSport?.id || "") === String(sport.id) ? "border-blue-600 bg-blue-50 text-blue-800" : "border-gray-200 bg-white text-gray-800 hover:bg-gray-50"}">
-                    ${escapeHTML(sport.sport_name || "Unnamed sport")}
-                </button>
-            `).join("");
-
-            document.querySelectorAll(".register-sport-option").forEach(button => {
-                button.addEventListener("click", function () {
-                    selectedRegisterSport = sportOptions.find(sport => String(sport.id) === String(this.dataset.registerSportId)) || null;
-                    selectedRegisterSportLabel.textContent = selectedRegisterSport?.sport_name || "Choose the sport you will handle";
-                    closeRegisterSportModalFunction();
-                });
-            });
-        }
-
-        async function loadRegisterSports() {
-            const { data, error } = await supabase
-                .from("sports")
-                .select("id, sport_name")
-                .order("sport_name", { ascending: true });
-
-            if (error) {
-                console.error("Registration sports load error:", error.message || error);
-                registerSportList.innerHTML = `<p class="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-700">Unable to load registered sports.</p>`;
-                return;
-            }
-
-            registeredSports = data || [];
-            renderRegisterSports();
-        }
-
-        function openRegisterSportModalFunction() {
-            renderRegisterSports();
-            registerSportModal.classList.remove("hidden");
-            registerSportModal.classList.add("flex");
-        }
-
-        function closeRegisterSportModalFunction() {
-            registerSportModal.classList.add("hidden");
-            registerSportModal.classList.remove("flex");
-        }
-
-        function redirectByRole(role) {
-            sessionStorage.removeItem("adminDashboardSessionStarted");
-            sessionStorage.removeItem("committeeDashboardSessionStarted");
-
-            if (role === "admin") {
-                window.location.href = "AdminDashboard.html";
-                return;
-            }
-
-            window.location.href = "CommitteeDashboard.html";
-        }
-
-        async function getUserProfile(user) {
-            const { data, error } = await supabase
-                .from("user_profiles")
-                .select("*")
-                .eq("id", user.id)
-                .maybeSingle();
-
-            if (error) {
-                throw error;
-            }
-
-            return data;
-        }
-
-        function normalizeApprovalStatus(status) {
-            return String(status || "").trim().toLowerCase();
-        }
-
-        function isApprovedProfile(profile) {
-            return normalizeApprovalStatus(profile?.approval_status) === "approved";
-        }
-
-        function normalizeAccountRole(role) {
-            return String(role || "").trim().toLowerCase();
-        }
-
-        function validateAuthenticatedProfile(user, profile) {
-            if (!user?.id || !profile?.id) {
-                throw new Error("No registered database profile was found for this account.");
-            }
-
-            if (String(profile.id) !== String(user.id)) {
-                throw new Error("The authenticated account does not match the registered database profile.");
-            }
-
-            const authEmail = String(user.email || "").trim().toLowerCase();
-            const profileEmail = String(profile.email || "").trim().toLowerCase();
-            if (!authEmail || !profileEmail || authEmail !== profileEmail) {
-                throw new Error("The authenticated email does not match the registered account.");
-            }
-
-            const role = normalizeAccountRole(profile.role);
-            if (!["admin", "committee"].includes(role)) {
-                throw new Error("This account does not have a valid dashboard role.");
-            }
-
-            return role;
-        }
-
-        function getApprovalBlockMessage(status) {
-            const normalizedStatus = normalizeApprovalStatus(status);
-            const statusMessages = {
-                hold: "Your account is on hold. Please contact an admin before logging in.",
-                suspended: "Your account is suspended. Please contact an admin before logging in.",
-                rejected: "Your account is rejected. Please contact an admin before logging in.",
-                pending: "Your account is pending admin approval. Please wait for an admin to accept it before logging in."
-            };
-
-            return statusMessages[normalizedStatus] || `Your account status is ${normalizedStatus}. Please contact an admin before logging in.`;
-        }
-
-        async function ensurePendingProfile(user, fullName, mobileNumber, role, sport) {
-            if (!user?.id) {
-                throw new Error("Account was created, but the user profile could not be identified.");
-            }
-
-            const isOverallCommittee = sport?.id === OVERALL_COMMITTEE_ASSIGNMENT.id;
-            const isGeneralSportGroup = Boolean(sport?.isGeneralSportGroup);
-
-            const { error } = await supabase.rpc("save_pending_user_profile", {
-                p_email: user.email,
-                p_full_name: fullName,
-                p_mobile_number: mobileNumber,
-                p_role: role,
-                p_assigned_sport_id: isOverallCommittee || isGeneralSportGroup ? null : (sport?.id || null),
-                p_assigned_sport_name: isOverallCommittee ? OVERALL_COMMITTEE_ASSIGNMENT.sport_name : (sport?.sport_name || null)
-            });
-
-            if (error) {
-                throw error;
-            }
-        }
-
-        async function saveLocalSession(user, profile) {
-            const finalRole = validateAuthenticatedProfile(user, profile);
-
-            const userData = {
-                id: user.id,
-                email: profile?.email || user.email,
-                fullName: profile?.full_name || user.user_metadata?.full_name || "",
-                mobileNumber: profile?.mobile_number || user.user_metadata?.mobile_number || "",
-                role: finalRole,
-                approvalStatus: normalizeApprovalStatus(profile.approval_status),
-                loginTime: new Date().toISOString(),
-                authProvider: "supabase"
-            };
-
-            sessionStorage.setItem("user", JSON.stringify(userData));
-            return userData;
-        }
-
-        document.querySelectorAll(".mode-btn").forEach(button => {
-            button.addEventListener("click", () => setMode(button.dataset.mode));
-        });
-
-        document.querySelectorAll("[data-hero-auth-mode]").forEach(button => {
-            button.addEventListener("click", () => openAuthMode(button.dataset.heroAuthMode));
-        });
-
-        document.querySelectorAll(".signin-role-btn").forEach(button => {
-            button.addEventListener("click", () => setSignInRole(button.dataset.signinRole));
-        });
-
-        document.querySelectorAll(".role-btn").forEach(button => {
-            button.addEventListener("click", () => setRegisterRole(button.dataset.role));
-        });
-
-        document.getElementById("goRegister").addEventListener("click", () => setMode("register"));
-        openRegisterSportModal.addEventListener("click", openRegisterSportModalFunction);
-        closeRegisterSportModal.addEventListener("click", closeRegisterSportModalFunction);
-        registerSportModal.addEventListener("click", event => {
-            if (event.target === registerSportModal) closeRegisterSportModalFunction();
-        });
-        loadRegisterSports();
-
-        signInForm.addEventListener("submit", async function (event) {
-            event.preventDefault();
-            hideAlert();
-            let authenticated = false;
-
-            const email = document.getElementById("signInEmail").value.trim();
-            const password = document.getElementById("signInPassword").value;
-
-            if (!email || !password) {
-                showAlert("error", "Please enter your email and password.");
-                return;
-            }
-
-            setLoading(signInSubmit, true, "Logging in...", "Log In");
-
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-
-                if (error) {
-                    throw error;
-                }
-                authenticated = true;
-
-                const profile = await getUserProfile(data.user);
-                const actualRole = validateAuthenticatedProfile(data.user, profile);
-
-                if (!isApprovedProfile(profile)) {
-                    await supabase.auth.signOut();
-                    sessionStorage.removeItem("user");
-
-                    showAlert("warning", getApprovalBlockMessage(profile?.approval_status));
-                    return;
-                }
-
-                if (actualRole !== selectedSignInRole) {
-                    await supabase.auth.signOut();
-                    sessionStorage.removeItem("user");
-                    const correctRoleLabel = actualRole === "admin" ? "Admin" : "Committee";
-                    const selectedRoleLabel = selectedSignInRole === "admin" ? "Admin" : "Committee";
-                    showAlert(
-                        "error",
-                        `This account is registered as ${correctRoleLabel}, but you selected ${selectedRoleLabel}. Please choose the correct log-in role.`
-                    );
-                    return;
-                }
-
-                const userData = await saveLocalSession(data.user, profile);
-
-                redirectByRole(userData.role);
-
-            } catch (error) {
-                console.error("Log in error:", error);
-                if (authenticated) {
-                    await supabase.auth.signOut();
-                    sessionStorage.removeItem("user");
-                }
-                showAlert("error", error.message || "Failed to log in. Check your account and password.");
-            } finally {
-                setLoading(signInSubmit, false, "Logging in...", "Log In");
-            }
-        });
-
-        registerForm.addEventListener("submit", async function (event) {
-            event.preventDefault();
-            hideAlert();
-
-            const fullName = document.getElementById("registerName").value.trim();
-            const email = document.getElementById("registerEmail").value.trim();
-            const mobileNumber = document.getElementById("registerMobile").value.trim();
-            const password = document.getElementById("registerPassword").value;
-            const confirmPassword = document.getElementById("confirmPassword").value;
-
-            if (!fullName || !email || !mobileNumber || !password || !confirmPassword) {
-                showAlert("error", "Please complete all registration fields.");
-                return;
-            }
-
-            if (selectedRegisterRole === "committee" && !selectedRegisterSport) {
-                showAlert("error", "Please choose the sport you will handle.");
-                openRegisterSportModalFunction();
-                return;
-            }
-
-            if (password.length < 6) {
-                showAlert("error", "Password must be at least 6 characters.");
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                showAlert("error", "Passwords do not match.");
-                return;
-            }
-
-            setLoading(registerSubmit, true, "Creating account...", "Create Account");
-
-            try {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                            mobile_number: mobileNumber,
-                            role: selectedRegisterRole
-                        }
-                    }
-                });
-
-                if (error) {
-                    throw error;
-                }
-
-                const registeredRole = selectedRegisterRole;
-
-                const registeredSport = registeredRole === "admin"
-                    ? { id: null, sport_name: "Admin" }
-                    : selectedRegisterSport;
-
-                await ensurePendingProfile(data.user, fullName, mobileNumber, registeredRole, registeredSport);
-
-                /*
-                    IMPORTANT FLOW UPDATE:
-                    Supabase can automatically create an active session after sign-up
-                    when email confirmation is disabled. The system must NOT redirect
-                    the user immediately after registration. The new user must sign in
-                    again so the dashboard always opens under the account they chose.
-                */
-                try {
-                    const { error: signOutError } = await supabase.auth.signOut();
-
-                    if (signOutError) {
-                        console.warn("Account was created, but automatic post-registration sign-out returned:", signOutError.message || signOutError);
-                    }
-                } catch (signOutCatchError) {
-                    console.warn("Account was created, but automatic post-registration sign-out could not complete:", signOutCatchError.message || signOutCatchError);
-                }
-
-                sessionStorage.removeItem("user");
-                registerForm.reset();
-                setRegisterRole("committee");
-                selectedRegisterSport = null;
-                selectedRegisterSportLabel.textContent = "Choose the sport you will handle";
-                setMode("signin");
-                setSignInRole(registeredRole);
-
-                document.getElementById("signInEmail").value = email;
-                document.getElementById("signInPassword").value = "";
-
-                showAlert("success", "Account created successfully. Please wait for admin approval before logging in.");
-
-            } catch (error) {
-                console.error("Register error:", error);
-                showAlert("error", error.message || "Failed to create account. Please check your Supabase setup.");
-            } finally {
-                setLoading(registerSubmit, false, "Creating account...", "Create Account");
-            }
-        });
-
-        // If this tab already has a valid Supabase session, refresh its cached dashboard profile.
-        const { data: sessionData } = await supabase.auth.getSession();
-
-        if (sessionData?.session?.user) {
-            try {
-                const profile = await getUserProfile(sessionData.session.user);
-                if (isApprovedProfile(profile)) {
-                    await saveLocalSession(sessionData.session.user, profile);
-                } else {
-                    await supabase.auth.signOut();
-                    sessionStorage.removeItem("user");
-                }
-            } catch (error) {
-                console.warn("Existing session found, but profile could not be loaded:", error.message || error);
-                await supabase.auth.signOut();
-                sessionStorage.removeItem("user");
-            }
-        }
-    </script>
+    <script type="module" src="./js/pages/login.js"></script>
 </body>
 </html>
